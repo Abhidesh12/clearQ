@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Profile Link - ClearQ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Manage Your Profile Link</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Current Link -->
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <h5>Your Public Profile Link</h5>
+                        <div class="input-group mt-2">
+                            <input type="text" class="form-control" id="profileLink" 
+                                   value="{{ profile_url }}" readonly>
+                            <button class="btn btn-primary" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-eye me-1"></i> {{ profile_views }} profile views
+                        </small>
+                    </div>
+                    
+                    <!-- Link Status -->
+                    <div class="alert alert-info">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Profile Status:</strong> 
+                                <span class="badge bg-{{ 'success' if is_public else 'warning' }}">
+                                    {{ 'Public' if is_public else 'Private' }}
+                                </span>
+                            </div>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="toggle_visibility">
+                                <button type="submit" class="btn btn-sm btn-{{ 'warning' if is_public else 'success' }}">
+                                    Make {{ 'Private' if is_public else 'Public' }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Regenerate Link -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5>Regenerate Link</h5>
+                            <p class="text-muted">Generate a new random link for your profile</p>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="regenerate">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-sync-alt me-2"></i>Generate New Link
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Customize Link -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Customize Your Link</h5>
+                            <p class="text-muted">Choose a custom username for your profile link</p>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="customize">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">{{ request.host_url }}mentor/public/</span>
+                                    <input type="text" class="form-control" name="custom_slug" 
+                                           value="{{ profile_slug }}" placeholder="your_username">
+                                </div>
+                                <small class="text-muted d-block mb-3">
+                                    Use only lowercase letters, numbers, and underscores
+                                </small>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check me-2"></i>Update Custom Link
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Code Section (Optional) -->
+                    <div class="mt-4 text-center">
+                        <p class="mb-2">Share your profile easily with QR Code</p>
+                        <div id="qrcode" class="d-inline-block p-3 bg-white border rounded"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Share Buttons -->
+            <div class="card shadow mt-4">
+                <div class="card-body">
+                    <h5>Share Profile</h5>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-outline-primary flex-fill" onclick="shareOnWhatsApp()">
+                            <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                        </button>
+                        <button class="btn btn-outline-info flex-fill" onclick="shareOnLinkedIn()">
+                            <i class="fab fa-linkedin me-2"></i>LinkedIn
+                        </button>
+                        <button class="btn btn-outline-dark flex-fill" onclick="shareViaEmail()">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+// Copy link to clipboard
+function copyToClipboard() {
+    const linkInput = document.getElementById('profileLink');
+    linkInput.select();
+    document.execCommand('copy');
+    alert('Link copied to clipboard!');
+}
+
+// Generate QR Code
+QRCode.toCanvas(document.getElementById('qrcode'), '{{ profile_url }}', {
+    width: 150,
+    margin: 1,
+    color: {
+        dark: '#000000',
+        light: '#ffffff'
+    }
+});
+
+// Share functions
+function shareOnWhatsApp() {
+    const text = `Check out my mentor profile on ClearQ: {{ profile_url }}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareOnLinkedIn() {
+    const url = '{{ profile_url }}';
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+}
+
+function shareViaEmail() {
+    const subject = 'My ClearQ Mentor Profile';
+    const body = `Hi,\n\nCheck out my mentor profile on ClearQ:\n{{ profile_url }}\n\nBest regards,\n{{ current_user.full_name }}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+</script>
+{% endblock %}

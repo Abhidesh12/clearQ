@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ mentor.full_name }} - ClearQ Mentor{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Profile Card -->
+            <div class="card shadow mb-4">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" 
+                             style="width: 120px; height: 120px;">
+                            <span class="text-white display-5">{{ (mentor.full_name or mentor.username)[0].upper() }}</span>
+                        </div>
+                    </div>
+                    <h3>{{ mentor.full_name or mentor.username }}</h3>
+                    <h5 class="text-muted">{{ mentor.job_title }}</h5>
+                    <p class="text-primary">{{ mentor.company }}</p>
+                    
+                    <!-- Profile Stats -->
+                    <div class="d-flex justify-content-around mt-4">
+                        <div class="text-center">
+                            <h5 class="mb-0">{{ mentor.profile_views }}</h5>
+                            <small>Profile Views</small>
+                        </div>
+                        <div class="text-center">
+                            <h5 class="mb-0">{{ total_sessions }}</h5>
+                            <small>Sessions</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Share Button -->
+                    <div class="mt-4">
+                        <button class="btn btn-outline-primary w-100" onclick="shareProfile()">
+                            <i class="fas fa-share-alt me-2"></i>Share Profile
+                        </button>
+                        <a href="{{ url_for('explore') }}" class="btn btn-primary w-100 mt-2">
+                            <i class="fas fa-calendar-check me-2"></i>Book Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Professional Info -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Professional Information</h4>
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <p><strong>Domain:</strong> {{ mentor.domain }}</p>
+                            <p><strong>Experience:</strong> {{ mentor.experience }}</p>
+                            <p><strong>Price:</strong> ₹{{ mentor.price }}/session</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Availability:</strong> {{ mentor.availability }}</p>
+                            <p><strong>Company:</strong> {{ mentor.company }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-success">Verified</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skills -->
+            {% if mentor.skills %}
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Skills</h4>
+                    <div class="mt-3">
+                        {% for skill in mentor.skills.split(',') %}
+                        <span class="badge bg-light text-dark border me-2 mb-2 p-2">{{ skill.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Bio -->
+            {% if mentor.bio %}
+            <div class="card shadow">
+                <div class="card-body">
+                    <h4 class="card-title">About</h4>
+                    <p class="mt-3">{{ mentor.bio }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function shareProfile() {
+    const profileUrl = window.location.href;
+    
+    // Check if Web Share API is available (mobile devices)
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this mentor on ClearQ',
+            text: '{{ mentor.full_name or mentor.username }} - {{ mentor.job_title }} at {{ mentor.company }}',
+            url: profileUrl,
+        })
+        .then(() => console.log('Successful share'))
+        .catch((error) => console.log('Error sharing:', error));
+    } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(profileUrl)
+            .then(() => alert('Profile link copied to clipboard!'))
+            .catch(() => {
+                // Fallback for older browsers
+                const tempInput = document.createElement('input');
+                tempInput.value = profileUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                alert('Profile link copied to clipboard!');
+            });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-10 px-4">
+    
+    <!-- AI Search Section -->
+    <div class="bg-indigo-50 p-6 rounded-lg mb-10 shadow-sm border border-indigo-100">
+        <h2 class="text-2xl font-bold text-indigo-800 mb-4"><i class="fas fa-robot mr-2"></i>AI Mentor Match</h2>
+        <form method="POST" action="{{ url_for('explore') }}" class="flex gap-4">
+            <input type="text" name="goal" value="{{ query }}" placeholder="Describe your goal (e.g., 'I want to crack product management interviews at Google')" class="flex-grow p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700">Find Match</button>
+        </form>
+    </div>
+
+    <!-- AI Recommendations -->
+    {% if recommendations %}
+    <div class="mb-12">
+        <h3 class="text-xl font-bold mb-6 text-gray-800">✨ Recommended for You</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for mentor in recommendations %}
+                {% include 'mentor_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+    <hr class="border-gray-200 mb-10">
+    {% endif %}
+
+    <!-- All Mentors -->
+    <h3 class="text-xl font-bold mb-6 text-gray-800">All Expert Mentors</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for mentor in mentors %}
+            {% include 'mentor_card.html' %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Mentor Profile Header -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="relative">
+                <!-- Banner -->
+                <div class="h-48 bg-gradient-to-r from-primary to-secondary"></div>
+                
+                <!-- Mentor Info -->
+                <div class="px-8 pb-8">
+                    <div class="relative -top-12 flex flex-col md:flex-row md:items-end gap-6">
+                        <!-- Avatar -->
+                        <div class="w-32 h-32 rounded-2xl border-4 border-white bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center shadow-lg">
+                            <span class="text-4xl font-bold text-primary">{{ mentor.username[0]|upper }}</span>
+                        </div>
+                        
+                        <!-- Info -->
+                        <div class="flex-1">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h1 class="text-3xl font-bold text-gray-900">{{ mentor.full_name or mentor.username }}</h1>
+                                    <div class="flex items-center gap-4 mt-2">
+                                        {% if mentor.company %}
+                                        <p class="text-lg text-gray-600 flex items-center gap-2">
+                                            <i class="fas fa-building"></i>
+                                            {{ mentor.company }}
+                                        </p>
+                                        {% endif %}
+                                        {% if mentor.job_title %}
+                                        <p class="text-lg text-gray-600 flex items-center gap-2">
+                                            <i class="fas fa-briefcase"></i>
+                                            {{ mentor.job_title }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Verification Badge -->
+                                <div class="flex flex-wrap gap-3">
+                                    {% if mentor.is_verified %}
+                                    <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold flex items-center gap-2">
+                                        <i class="fas fa-check-circle"></i>
+                                        Verified Mentor
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if mentor.domain %}
+                                    <span class="px-4 py-2 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full font-semibold">
+                                        {{ mentor.domain }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Stats -->
+                            <div class="flex flex-wrap gap-8 mt-6">
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-gray-900">50+</p>
+                                    <p class="text-sm text-gray-600">Sessions Completed</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-gray-900">4.9</p>
+                                    <p class="text-sm text-gray-600">Average Rating</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-gray-900">94%</p>
+                                    <p class="text-sm text-gray-600">Success Rate</p>
+                                </div>
+                                {% if mentor.experience %}
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-gray-900">{{ mentor.experience }}</p>
+                                    <p class="text-sm text-gray-600">Experience</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: About & Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- About Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <i class="fas fa-user text-primary"></i>
+                        </div>
+                        About Mentor
+                    </h2>
+                    <p class="text-gray-700 leading-relaxed text-lg">{{ mentor.bio or 'No bio available' }}</p>
+                    
+                    {% if mentor.skills %}
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Core Skills</h3>
+                        <div class="flex flex-wrap gap-3">
+                            {% for skill in mentor.skills.split(',') %}
+                            <span class="px-4 py-2 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full font-medium">
+                                {{ skill.strip() }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Services Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                            <i class="fas fa-concierge-bell text-green-600"></i>
+                        </div>
+                        Services Offered
+                    </h2>
+                    
+                    {% if mentor.services %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% for service in mentor.services.split(',') %}
+                        <div class="p-6 border border-gray-200 rounded-xl hover:border-primary transition-colors group">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-{{ 'comments' if 'Interview' in service else 'file-alt' if 'Resume' in service else 'chart-line' if 'Career' in service else 'brain' }} text-blue-600"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ service.strip() }}</h3>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                {% if 'Interview' in service %}
+                                Mock interviews with detailed feedback and improvement strategies
+                                {% elif 'Resume' in service %}
+                                Professional resume optimization and ATS-friendly formatting
+                                {% elif 'Career' in service %}
+                                Personalized career roadmap and growth strategy
+                                {% else %}
+                                Expert guidance and practical solutions
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-8">No services listed</p>
+                    {% endif %}
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                            <i class="fas fa-star text-yellow-600"></i>
+                        </div>
+                        Reviews & Testimonials
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Sample Reviews -->
+                        <div class="p-6 bg-gray-50 rounded-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                                        R
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">Rahul Sharma</p>
+                                        <div class="flex items-center gap-1">
+                                            {% for i in range(5) %}
+                                            <i class="fas fa-star text-yellow-500 text-sm"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-sm text-gray-500">2 weeks ago</span>
+                            </div>
+                            <p class="text-gray-700">"Excellent mentor! Helped me land my dream job at Google. The mock interviews were incredibly realistic."</p>
+                        </div>
+                        
+                        <div class="p-6 bg-gray-50 rounded-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center font-bold">
+                                        P
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">Priya Mehta</p>
+                                        <div class="flex items-center gap-1">
+                                            {% for i in range(5) %}
+                                            <i class="fas fa-star text-yellow-500 text-sm"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-sm text-gray-500">1 month ago</span>
+                            </div>
+                            <p class="text-gray-700">"The career guidance was spot on. My mentor helped me transition from engineering to product management."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Booking Form -->
+            <div class="space-y-8">
+                <!-- Booking Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 sticky top-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Book a Session</h2>
+                    
+                    <form method="POST" class="space-y-6">
+                        <!-- Service Selection -->
+                        {% if mentor.services %}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Select Service</label>
+                            <div class="space-y-3">
+                                {% for service in mentor.services.split(',') %}
+                                <label class="flex items-center gap-4 p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                                    <input type="radio" name="service" value="{{ service.strip() }}" 
+                                           class="w-5 h-5 text-primary focus:ring-primary" 
+                                           {% if loop.first %}checked{% endif %}>
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-900">{{ service.strip() }}</p>
+                                        <p class="text-sm text-gray-600">
+                                            {% if 'Interview' in service %}
+                                            60 min session
+                                            {% elif 'Resume' in service %}
+                                            45 min review
+                                            {% else %}
+                                            30-60 min consultation
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                            <p class="text-yellow-800">No services available for booking</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Time Slots -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Available Time Slots</label>
+                            {% if slots %}
+                            <div class="grid grid-cols-2 gap-3">
+                                {% for slot in slots %}
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="slot" value="{{ slot }}" required 
+                                           class="peer sr-only">
+                                    <div class="p-4 text-center border-2 border-gray-200 rounded-xl peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary transition-all">
+                                        <p class="font-medium text-gray-900">{{ slot }}</p>
+                                        <p class="text-xs text-gray-500 mt-1">Available</p>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="p-6 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+                                <i class="fas fa-calendar-times text-yellow-500 text-2xl mb-3"></i>
+                                <p class="font-medium text-yellow-800">No slots available today</p>
+                                <p class="text-sm text-yellow-600 mt-1">Please check back tomorrow</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Price Summary -->
+                        <div class="pt-6 border-t border-gray-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-600">Session Fee</span>
+                                <span class="text-2xl font-bold text-primary">₹{{ mentor.price or 0 }}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                                <i class="fas fa-shield-alt text-green-500"></i>
+                                <span>Secure payment • Free cancellation within 24h</span>
+                            </div>
+
+                            <!-- Payment Options -->
+                            <div class="mb-6">
+                                <p class="text-sm font-semibold text-gray-700 mb-3">Payment Method</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" onclick="selectPayment('razorpay')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
+                                        <i class="fab fa-cc-razorpay text-2xl text-blue-600"></i>
+                                    </button>
+                                    <button type="button" onclick="selectPayment('stripe')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
+                                        <i class="fab fa-cc-stripe text-2xl text-purple-600"></i>
+                                    </button>
+                                    <button type="button" onclick="selectPayment('paypal')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
+                                        <i class="fab fa-cc-paypal text-2xl text-blue-400"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Book Button -->
+                            {% if slots and mentor.services %}
+                            <button type="submit" 
+                                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
+                                <i class="fas fa-lock"></i>
+                                Book Now for ₹{{ mentor.price or 0 }}
+                            </button>
+                            
+                            <p class="text-center text-xs text-gray-500 mt-3">
+                                You'll be redirected to secure payment
+                            </p>
+                            {% else %}
+                            <button disabled 
+                                    class="w-full py-4 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-3">
+                                <i class="fas fa-calendar-times"></i>
+                                {% if not mentor.services %}No Services{% else %}No Available Slots{% endif %}
+                            </button>
+                            
+                            {% if slots %}
+                            <button type="button" 
+                                    onclick="requestAvailability()"
+                                    class="w-full mt-3 py-3 border-2 border-primary text-primary font-semibold rounded-xl hover:bg-primary hover:text-white transition-colors">
+                                Request Different Time
+                            </button>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Mentor Stats Card -->
+                <div class="bg-gradient-to-br from-primary to-secondary rounded-2xl p-8 text-white">
+                    <h3 class="text-xl font-bold mb-6">Mentor Stats</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span>Response Time</span>
+                            <span class="font-bold">< 2 hours</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Availability</span>
+                            <span class="font-bold">{{ mentor.availability or 'Flexible' }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Session Completion</span>
+                            <span class="font-bold">100%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Student Retention</span>
+                            <span class="font-bold">85%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedPayment = 'razorpay';
+
+function selectPayment(method) {
+    selectedPayment = method;
+    // Update UI to show selected payment method
+    document.querySelectorAll('[onclick^="selectPayment"]').forEach(btn => {
+        btn.classList.remove('border-primary', 'bg-primary/5');
+        btn.classList.add('border-gray-200');
+    });
+    event.currentTarget.classList.remove('border-gray-200');
+    event.currentTarget.classList.add('border-primary', 'bg-primary/5');
+}
+
+function requestAvailability() {
+    alert('Availability request sent! The mentor will contact you with alternative time slots.');
+}
+
+// Form submission handler
+document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Get form data
+    const serviceInput = document.querySelector('input[name="service"]:checked');
+    const slotInput = document.querySelector('input[name="slot"]:checked');
+    
+    if (!serviceInput || !slotInput) {
+        alert('Please select both a service and a time slot');
+        return;
+    }
+    
+    const service = serviceInput.value;
+    const slot = slotInput.value;
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) return;
+    
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
+    
+    // Submit the form
+    setTimeout(() => {
+        this.submit();
+    }, 1000);
+});
+</script>
+
+<style>
+.sticky {
+    position: sticky;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section for Registration -->
+<section class="min-h-[70vh] flex items-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-8">
+            <span class="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-4">
+                🚀 Join ClearQ Community
+            </span>
+            <h1 class="text-4xl md:text-5xl font-bold text-dark mb-4">
+                Start Your Journey as a 
+                <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    Mentor or Learner
+                </span>
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Whether you're seeking guidance or ready to share your expertise, start your journey with ClearQ today.
+            </p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="flex rounded-xl bg-gray-100 p-1">
+                <button onclick="switchTab('learner')" 
+                        id="btn-learner" 
+                        class="flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md">
+                    <i class="fas fa-user-graduate mr-2"></i>Join as Learner
+                </button>
+                <button onclick="switchTab('mentor')" 
+                        id="btn-mentor" 
+                        class="flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    <i class="fas fa-chalkboard-teacher mr-2"></i>Become a Mentor
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Form Container -->
+<div class="max-w-4xl mx-auto mb-20 px-4 sm:px-6 lg:px-8">
+    <!-- Learner Form -->
+    <form id="learner-form" method="POST" action="{{ url_for('register') }}" 
+          class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 reveal active">
+        <input type="hidden" name="role" id="role-input" value="learner">
+        
+        <div class="mb-8 text-center">
+            <h2 class="text-2xl font-bold text-dark mb-2">Create Learner Account</h2>
+            <p class="text-gray-600">Start your learning journey with personalized mentorship</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Username -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Username <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" 
+                           name="username" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Choose a username">
+                </div>
+            </div>
+            
+            <!-- Email -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Email <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="email" 
+                           name="email" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="your.email@example.com">
+                </div>
+            </div>
+            
+            <!-- Password -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Password <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="password" 
+                           name="password" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Create a strong password">
+                </div>
+            </div>
+            
+            <!-- Confirm Password -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Confirm Password <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="password" 
+                           name="confirm_password" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Confirm your password">
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mt-8">
+            <button type="submit" 
+                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1">
+                <i class="fas fa-rocket mr-2"></i>Start Learning Journey
+            </button>
+        </div>
+    </form>
+
+    <!-- Mentor Form -->
+    <form id="mentor-form" method="POST" action="{{ url_for('register') }}" 
+          class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 reveal hidden">
+        <input type="hidden" name="role" value="mentor">
+        
+        <div class="mb-8 text-center">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-chalkboard-teacher text-white text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-dark mb-2">Become a ClearQ Mentor</h2>
+            <p class="text-gray-600">Join our elite community of experts and shape the next generation of professionals</p>
+        </div>
+
+        <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+            <div class="flex items-center">
+                <i class="fas fa-star text-yellow-500 text-xl mr-3"></i>
+                <div>
+                    <h4 class="font-bold text-dark mb-1">Mentor Benefits</h4>
+                    <p class="text-sm text-gray-600">Earn competitive rates, build your personal brand, and make meaningful impact</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Basic Info -->
+            <div class="md:col-span-2 grid md:grid-cols-2 gap-6">
+                <div class="form-group">
+                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                        Full Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           name="full_name" 
+                           required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Jane Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                        Username <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="jane_doe">
+                </div>
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Email <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="email" 
+                           name="email" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="jane@example.com">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Phone Number
+                </label>
+                <div class="relative">
+                    <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="tel" 
+                           name="phone" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="+91 98765 43210">
+                </div>
+            </div>
+
+            <!-- Professional Info -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Current Job Title <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="job_title" 
+                       required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                       placeholder="Senior Product Manager">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Company <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="company" 
+                       required 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                       placeholder="Google, Amazon, etc.">
+            </div>
+
+            <!-- Domain & Experience -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Primary Domain <span class="text-red-500">*</span>
+                </label>
+                <select name="domain" 
+                        required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                    <option value="">Select your expertise</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="data_science">Data Science & AI</option>
+                    <option value="business">Business & Product</option>
+                    <option value="design">Design</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="finance">Finance</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Years of Experience <span class="text-red-500">*</span>
+                </label>
+                <select name="experience" 
+                        required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                    <option value="">Select range</option>
+                    <option value="1-3">1-3 years</option>
+                    <option value="3-5">3-5 years</option>
+                    <option value="5-8">5-8 years</option>
+                    <option value="8-12">8-12 years</option>
+                    <option value="12+">12+ years</option>
+                </select>
+            </div>
+
+            <!-- Skills Section -->
+            <div class="md:col-span-2 form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Core Skills <span class="text-red-500">*</span>
+                </label>
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" 
+                               id="skill-input"
+                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary"
+                               placeholder="Add a skill (e.g., React, Negotiation)">
+                        <button type="button" 
+                                onclick="addSkill()"
+                                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <div id="skills-container" class="flex flex-wrap gap-2 mb-2"></div>
+                    <input type="hidden" name="skills" id="skills-hidden">
+                    <p class="text-sm text-gray-500 mt-2">Add up to 10 skills. These will be displayed on your profile.</p>
+                </div>
+            </div>
+
+            <!-- Services & Pricing -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Price per Session (₹) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
+                    <input type="number" 
+                           name="price" 
+                           required 
+                           min="0"
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="500">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Availability (Hours/Week)
+                </label>
+                <select name="availability" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                    <option value="">Select availability</option>
+                    <option value="1-3">1-3 hours</option>
+                    <option value="3-5">3-5 hours</option>
+                    <option value="5-8">5-8 hours</option>
+                    <option value="8+">8+ hours</option>
+                </select>
+            </div>
+
+            <!-- Services Offered -->
+            <div class="md:col-span-2 form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Services Offered <span class="text-red-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <label class="flex items-center space-x-2 p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="services" value="resume_review" class="rounded text-primary focus:ring-primary">
+                        <span>Resume Review</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="services" value="mock_interview" class="rounded text-primary focus:ring-primary">
+                        <span>Mock Interview</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="services" value="career_guidance" class="rounded text-primary focus:ring-primary">
+                        <span>Career Guidance</span>
+                    </label>
+                    <label class="flex items-center space-x-2 p-3 border border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="services" value="skill_training" class="rounded text-primary focus:ring-primary">
+                        <span>Skill Training</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Bio -->
+            <div class="md:col-span-2 form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Professional Bio <span class="text-red-500">*</span>
+                </label>
+                <textarea name="bio" 
+                          rows="4" 
+                          required 
+                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                          placeholder="Tell us about your experience, achievements, and what makes you a great mentor..."></textarea>
+                <p class="text-sm text-gray-500 mt-2">Minimum 100 characters</p>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Password <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="password" 
+                           name="password" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Create a strong password">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Confirm Password <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="password" 
+                           name="confirm_password" 
+                           required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Confirm your password">
+                </div>
+            </div>
+
+            <!-- Terms & Conditions -->
+            <div class="md:col-span-2 form-group">
+                <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl">
+                    <input type="checkbox" 
+                           name="terms" 
+                           id="terms"
+                           required 
+                           class="mt-1 rounded text-primary focus:ring-primary">
+                    <label for="terms" class="text-sm text-gray-700">
+                        I agree to the <a href="#" class="text-primary font-semibold hover:underline">Terms of Service</a> 
+                        and <a href="#" class="text-primary font-semibold hover:underline">Privacy Policy</a>. 
+                        I understand that my profile will be reviewed and I may need to provide verification.
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mt-8">
+            <button type="submit" 
+                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1">
+                <i class="fas fa-paper-plane mr-2"></i>Submit Mentor Application
+            </button>
+        </div>
+    </form>
+
+    <!-- Already have account -->
+    <div class="text-center mt-8">
+        <p class="text-gray-600">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="text-primary font-semibold hover:underline">Sign In</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+    
+    .form-label span {
+        color: #ef4444;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+</style>
+
+<script>
+    // Skills Management
+    let skills = [];
+    
+    function addSkill() {
+        const skillInput = document.getElementById('skill-input');
+        const skill = skillInput.value.trim();
+        
+        if (skill && !skills.includes(skill)) {
+            if (skills.length >= 10) {
+                alert('Maximum 10 skills allowed');
+                return;
+            }
+            
+            skills.push(skill);
+            updateSkillsDisplay();
+            skillInput.value = '';
+            skillInput.focus();
+        }
+    }
+    
+    function removeSkill(skill) {
+        skills = skills.filter(s => s !== skill);
+        updateSkillsDisplay();
+    }
+    
+    function updateSkillsDisplay() {
+        const container = document.getElementById('skills-container');
+        const hiddenInput = document.getElementById('skills-hidden');
+        
+        container.innerHTML = '';
+        skills.forEach(skill => {
+            const skillTag = document.createElement('div');
+            skillTag.className = 'inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm';
+            skillTag.innerHTML = `
+                ${skill}
+                <button type="button" onclick="removeSkill('${skill.replace(/'/g, "\\'")}')" 
+                        class="ml-2 text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            `;
+            container.appendChild(skillTag);
+        });
+        
+        hiddenInput.value = skills.join(',');
+    }
+    
+    // Allow adding skills with Enter key
+    document.getElementById('skill-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSkill();
+        }
+    });
+    
+    // Tab Switching
+    function switchTab(role) {
+        const learnerForm = document.getElementById('learner-form');
+        const mentorForm = document.getElementById('mentor-form');
+        const btnLearner = document.getElementById('btn-learner');
+        const btnMentor = document.getElementById('btn-mentor');
+        const roleInput = document.getElementById('role-input');
+        
+        if (role === 'mentor') {
+            learnerForm.classList.add('hidden');
+            mentorForm.classList.remove('hidden');
+            roleInput.value = 'mentor';
+            
+            btnMentor.className = 'flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md';
+            btnLearner.className = 'flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300';
+        } else {
+            learnerForm.classList.remove('hidden');
+            mentorForm.classList.add('hidden');
+            roleInput.value = 'learner';
+            
+            btnLearner.className = 'flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md';
+            btnMentor.className = 'flex-1 py-3 px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300';
+        }
+    }
+    
+    // Form Validation
+    document.getElementById('learner-form').addEventListener('submit', function(e) {
+        const password = this.querySelector('input[name="password"]').value;
+        const confirmPassword = this.querySelector('input[name="confirm_password"]').value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+    
+    document.getElementById('mentor-form').addEventListener('submit', function(e) {
+        const password = this.querySelector('input[name="password"]').value;
+        const confirmPassword = this.querySelector('input[name="confirm_password"]').value;
+        const bio = this.querySelector('textarea[name="bio"]').value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+            return;
+        }
+        
+        if (bio.length < 100) {
+            e.preventDefault();
+            alert('Please write a bio of at least 100 characters.');
+            return;
+        }
+        
+        if (skills.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one skill.');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        submitBtn.disabled = true;
+        
+        // Re-enable after 5 seconds if submission fails
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 5000);
+    });
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        // Trigger animations
+        const reveals = document.querySelectorAll('.reveal');
+        reveals.forEach(el => {
+            el.classList.add('reveal');
+        });
+        
+        // Check for any error messages from Flask
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error')) {
+            alert(urlParams.get('error'));
+        }
+    });
+</script>
+{% endblock %}

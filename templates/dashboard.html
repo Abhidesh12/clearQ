@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-10 px-4">
+    <h1 class="text-3xl font-bold mb-8">My Dashboard</h1>
+
+    {% if type == 'learner' %}
+        <h2 class="text-xl font-semibold mb-4">Your Upcoming Sessions</h2>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mentor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in bookings %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ item.mentor.full_name if item.mentor.full_name else item.mentor.username }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ item.mentor.domain }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ item.booking.service_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ item.booking.slot_time }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.booking.status == 'Paid' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% elif item.booking.status == 'Pending' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">₹{{ item.mentor.price }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.booking.status == 'Paid' %}
+                            <button onclick="window.open('https://meet.google.com/new', '_blank')" 
+                                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                Join Meeting
+                            </button>
+                            {% else %}
+                            <button onclick="if(confirm('Pay ₹{{ item.mentor.price }}?')) { 
+                                fetch('/process-payment/{{ item.booking.id }}', {method: 'POST'})
+                                .then(() => location.reload());
+                            }" 
+                                    class="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                                Pay ₹{{ item.mentor.price }}
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center">
+                            <div class="text-gray-500 mb-4">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <p class="text-gray-500 mb-2">No bookings yet.</p>
+                            <a href="{{ url_for('explore') }}" class="text-indigo-600 hover:text-indigo-900 font-medium underline">
+                                Find a mentor and book your first session
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Enrolled Programs Section -->
+        <div class="mt-12">
+            <h2 class="text-xl font-semibold mb-4">Your Enrolled Programs</h2>
+            {% if current_user.enrollments %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for enrollment in current_user.enrollments %}
+                <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-lg text-gray-900">{{ enrollment.program_name|replace('_', ' ')|title }}</h3>
+                        {% if enrollment.status == 'active' %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                            {{ enrollment.status|title }}
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                            {{ enrollment.status|title }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        {% if enrollment.additional_data %}
+                            {% set data = enrollment.additional_data|from_json %}
+                            <p><span class="font-medium">Enrolled:</span> {{ enrollment.enrollment_date.strftime('%b %d, %Y') }}</p>
+                            {% if data.phone %}<p><span class="font-medium">Phone:</span> {{ data.phone }}</p>{% endif %}
+                            {% if data.education %}<p><span class="font-medium">Education:</span> {{ data.education }}</p>{% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-100">
+                        {% if enrollment.payment_status == 'pending' %}
+                        <button onclick="if(confirm('Pay ₹{{ enrollment.payment_amount }}?')) { 
+                            fetch('/process-enrollment-payment/{{ enrollment.id }}', {method: 'POST'})
+                            .then(() => location.reload());
+                        }" 
+                                class="w-full px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
+                            Complete Payment (₹{{ enrollment.payment_amount }})
+                        </button>
+                        {% else %}
+                        <p class="text-sm text-gray-500 text-center">Payment: {{ enrollment.payment_status|title }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-lg shadow p-8 text-center">
+                <p class="text-gray-500 mb-4">You haven't enrolled in any programs yet.</p>
+                <a href="{{ url_for('enroll') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Enroll in Career Mentorship Program
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    {% elif type == 'mentor' %}
+        <!-- Mentor Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-indigo-50 p-6 rounded-lg">
+                <h3 class="font-bold text-lg text-indigo-800">Total Earnings</h3>
+                <p class="text-3xl font-bold text-gray-900">₹{{ current_user.price * bookings|length }}</p>
+                <p class="text-sm text-indigo-600 mt-2">{{ bookings|length }} sessions × ₹{{ current_user.price }}/session</p>
+            </div>
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h3 class="font-bold text-lg text-green-800">Total Sessions</h3>
+                <p class="text-3xl font-bold text-gray-900">{{ bookings|length }}</p>
+                <p class="text-sm text-green-600 mt-2">Bookings completed</p>
+            </div>
+            <div class="bg-purple-50 p-6 rounded-lg">
+                <h3 class="font-bold text-lg text-purple-800">Your Rate</h3>
+                <p class="text-3xl font-bold text-gray-900">₹{{ current_user.price }}</p>
+                <p class="text-sm text-purple-600 mt-2">Per session</p>
+            </div>
+        </div>
+        
+        <!-- Mentor Profile Status -->
+        {% if not current_user.is_verified %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Profile Under Review</h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <p>Your mentor profile is pending verification by our admin team. You'll be able to accept bookings once verified.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Upcoming Appointments -->
+        <h2 class="text-xl font-semibold mb-4">Your Appointments</h2>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Learner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Earnings</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in bookings %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {% if item.learner %}
+                                    {{ item.learner.username }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.booking.service_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.booking.slot_time }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.booking.status == 'Paid' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% elif item.booking.status == 'Pending' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                {{ item.booking.status }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            ₹{{ current_user.price }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {% if item.booking.status == 'Paid' %}
+                            <button onclick="window.open('https://meet.google.com/new', '_blank')" 
+                                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                Start Meeting
+                            </button>
+                            {% else %}
+                            <span class="px-3 py-1 bg-gray-200 text-gray-600 rounded">
+                                Waiting for payment
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center">
+                            <div class="text-gray-500 mb-4">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <p class="text-gray-500 mb-2">No appointments yet.</p>
+                            {% if not current_user.is_verified %}
+                            <p class="text-sm text-gray-500">Your profile needs verification to appear in mentor listings.</p>
+                            {% else %}
+                            <p class="text-sm text-gray-500">Learners will be able to book sessions with you once your profile is live.</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Quick Profile Info -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Your Profile Info</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600">Domain</p>
+                    <p class="font-medium">{{ current_user.domain or 'Not set' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Services</p>
+                    <p class="font-medium">{{ current_user.services or 'Not set' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Experience</p>
+                    <p class="font-medium">{{ current_user.experience or 'Not set' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Availability</p>
+                    <p class="font-medium">{{ current_user.availability or 'Not set' }}</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Simple alert for testing
+console.log('Dashboard loaded');
+</script>
+{% endblock %}

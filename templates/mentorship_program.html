@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearQ | Career Mentorship Program</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --light-bg: #f8f9fa;
+            --section-1: #ffffff;
+            --section-2: #f0f7ff;
+            --section-3: #f5f9ff;
+            --section-4: #fafcff;
+            --section-5: #f0f8ff;
+            --card-bg: #ffffff;
+            --light-color: #2d3748;
+            --primary-color: #4361ee;
+            --accent-color: #3a86ff;
+            --secondary-color: #7209b7;
+            --subtle-text: #64748b;
+            --hint-text: #94a3b8;
+            --shadow: 0 10px 30px rgba(67, 97, 238, 0.1);
+            --border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--light-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            text-align: center;
+        }
+
+        h1, h2, h3, h4 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            position: relative;
+            display: inline-block;
+            color: var(--primary-color);
+        }
+
+        h2:after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 2px;
+            animation: lineGrow 1s ease-out forwards;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--subtle-text);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        section {
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 18px 36px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.7s ease;
+            z-index: -1;
+        }
+
+        .btn:hover:before {
+            left: 100%;
+        }
+
+        .price {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .old-price {
+            font-size: 1.5rem;
+            text-decoration: line-through;
+            color: var(--hint-text);
+        }
+
+        .new-price {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--secondary-color);
+            text-shadow: 0 0 10px rgba(114, 9, 183, 0.1);
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            transition: all 0.4s ease;
+            border-bottom: var(--border);
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        header.scrolled {
+            padding: 15px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            position: relative;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--light-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 8px 0;
+        }
+
+        .nav-links a:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-color);
+            transition: width 0.4s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .nav-links a:hover:after {
+            width: 100%;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        /* Updated Compact Hero Section - Section 1 */
+        .hero {
+            padding-top: 150px;
+            padding-bottom: 60px;
+            background: linear-gradient(135deg, var(--section-1) 0%, #eef2ff 100%);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hero:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(67, 97, 238, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-main-title {
+            margin-bottom: 20px;
+        }
+
+        .hero-main-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .hero-main-title p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 30px;
+        }
+
+        /* Compact Hero Box */
+        .compact-hero-box {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: var(--shadow);
+            border: var(--border);
+            max-width: 900px;
+            margin: 0 auto 40px;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .compact-hero-box:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .compact-hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+            text-align: left;
+        }
+
+        .compact-hero-text {
+            flex: 1;
+        }
+
+        .compact-hero-text h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-align: left;
+            display: block;
+        }
+
+        .compact-hero-text h2:after {
+            left: 0;
+            transform: none;
+        }
+
+        .compact-hero-text p {
+            font-size: 1.05rem;
+            margin-bottom: 20px;
+            line-height: 1.7;
+        }
+
+        .compact-features {
+            list-style: none;
+            margin: 20px 0 25px;
+        }
+
+        .compact-features li {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: var(--subtle-text);
+            font-size: 0.95rem;
+        }
+
+        .compact-features li i {
+            color: var(--accent-color);
+            margin-top: 3px;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .compact-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0 30px;
+        }
+
+        .compact-detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.95rem;
+            padding: 15px;
+            background: rgba(67, 97, 238, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+
+        .compact-detail-label {
+            color: var(--subtle-text);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .compact-detail-value {
+            color: var(--secondary-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .compact-price-action {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(67, 97, 238, 0.1);
+        }
+
+        .compact-price {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .compact-old-price {
+            font-size: 1.2rem;
+            text-decoration: line-through;
+            color: var(--hint-text);
+        }
+
+        .compact-new-price {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--secondary-color);
+            text-shadow: 0 0 10px rgba(114, 9, 183, 0.1);
+        }
+
+        .compact-video-preview {
+            flex: 0 0 180px;
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(58, 134, 255, 0.1));
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: var(--border);
+            cursor: pointer;
+        }
+
+        .compact-video-preview:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(67, 97, 238, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite linear;
+        }
+
+        .compact-play-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: white;
+            z-index: 2;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .compact-video-preview:hover .compact-play-btn {
+            transform: scale(1.1);
+            background: var(--accent-color);
+        }
+
+        .compact-video-label {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: var(--subtle-text);
+            font-size: 0.8rem;
+            z-index: 2;
+        }
+
+        /* Compact Stats */
+        .compact-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .compact-stat-item {
+            text-align: center;
+            min-width: 110px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: var(--border);
+        }
+
+        .compact-stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--secondary-color);
+            display: block;
+            text-shadow: 0 0 10px rgba(114, 9, 183, 0.1);
+        }
+
+        .compact-stat-label {
+            font-size: 0.8rem;
+            color: var(--subtle-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        /* Compact Pain Points Section - Section 2 */
+        .compact-pain-points {
+            background: var(--section-2);
+            padding: 50px 0;
+            margin-top: 40px;
+            border-radius: 20px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .compact-pain-points h2 {
+            margin-bottom: 10px;
+        }
+
+        .compact-pain-points > p {
+            margin-bottom: 30px;
+            font-size: 1.05rem;
+        }
+
+        .compact-pain-points-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .compact-pain-point-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px 20px;
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            transition: all 0.3s ease;
+            text-align: left;
+            box-shadow: var(--shadow);
+        }
+
+        .compact-pain-point-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 107, 0.4);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .compact-pain-point-card i {
+            font-size: 2rem;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .compact-pain-point-card h4 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .compact-pain-point-card p {
+            font-size: 0.9rem;
+            margin: 0;
+            color: var(--subtle-text);
+            line-height: 1.5;
+        }
+
+        /* Workshop Section - Section 3 */
+        .workshop {
+            background: linear-gradient(135deg, var(--section-3) 0%, #e8f4ff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .workshop:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(58, 134, 255, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .workshop-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .workshop-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: var(--shadow);
+            max-width: 800px;
+            width: 100%;
+            margin-top: 40px;
+            border: 2px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .workshop-card:before {
+            content: 'LIVE';
+            position: absolute;
+            top: 25px;
+            right: -35px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 8px 40px;
+            transform: rotate(45deg);
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        /* Bonuses - Section 4 */
+        .bonuses {
+            margin-top: 80px;
+            background: var(--section-4);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .bonus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .bonus-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: left;
+            transition: all 0.4s ease;
+            border: var(--border);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .bonus-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-color);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .bonus-card h4 {
+            color: var(--light-color);
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+        }
+
+        .bonus-card p {
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            color: var(--subtle-text);
+        }
+
+        .bonus-price {
+            color: var(--secondary-color);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        /* Program Section - Section 5 */
+        .program-section {
+            background: linear-gradient(135deg, var(--section-5) 0%, #e6f0ff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .program-section:before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 60%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(114, 9, 183, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Desktop Grid Layout */
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Mobile Horizontal Scroll */
+        .program-horizontal-scroll {
+            display: none;
+            overflow-x: auto;
+            overflow-y: hidden;
+            gap: 20px;
+            padding: 20px 0 40px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--section-5);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .program-horizontal-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .program-horizontal-scroll::-webkit-scrollbar-track {
+            background: var(--section-5);
+            border-radius: 10px;
+        }
+
+        .program-horizontal-scroll::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .program-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 35px;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: var(--border);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            width: 320px;
+            text-align: left;
+        }
+
+        .program-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent-color);
+        }
+
+        .program-card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .program-card:hover:before {
+            transform: scaleX(1);
+        }
+
+        .program-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.4rem;
+        }
+
+        .program-card h3 i {
+            color: var(--accent-color);
+            font-size: 1.6rem;
+        }
+
+        .program-list {
+            list-style: none;
+            text-align: left;
+        }
+
+        .program-list li {
+            margin-bottom: 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .program-list li:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 12px;
+            width: 5px;
+            height: 5px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+
+        .program-list i {
+            color: var(--accent-color);
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        /* Certification - Section 6 */
+        .cert-section {
+            background: linear-gradient(135deg, var(--section-1) 0%, #eef2ff 100%);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .cert-section:before {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 60%;
+            height: 120%;
+            background: radial-gradient(circle, rgba(58, 134, 255, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .cert-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cert-image {
+            width: 100%;
+            max-width: 600px;
+            height: 350px;
+            margin-top: 40px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(58, 134, 255, 0.1));
+            border: 2px dashed rgba(67, 97, 238, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cert-image:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(67, 97, 238, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite linear;
+        }
+
+        .cert-placeholder {
+            color: var(--hint-text);
+            font-size: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 1;
+        }
+
+        .cert-placeholder i {
+            font-size: 3rem;
+            color: rgba(67, 97, 238, 0.3);
+        }
+
+        /* Testimonials - Section 7 */
+        .testimonials {
+            background: linear-gradient(135deg, var(--section-2) 0%, #e8f0ff 100%);
+            padding: 100px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .testimonials:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(67, 97, 238, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .testimonial-container {
+            position: relative;
+            height: 320px;
+            overflow: hidden;
+            margin-top: 50px;
+        }
+
+        .testimonial-track {
+            display: flex;
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            align-items: center;
+            animation: scrollTestimonials 40s linear infinite;
+        }
+
+        .testimonial-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: all 0.4s ease;
+            border: var(--border);
+            width: 350px;
+            margin-right: 30px;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .testimonial-card:before {
+            content: '"';
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            font-size: 5rem;
+            color: var(--primary-color);
+            opacity: 0.1;
+            font-family: serif;
+            line-height: 1;
+        }
+
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--light-color);
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .author-avatar {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .author-info h4 {
+            margin-bottom: 5px;
+            color: var(--light-color);
+        }
+
+        .author-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--subtle-text);
+        }
+
+        /* Pause animation on hover */
+        .testimonial-track:hover {
+            animation-play-state: paused;
+        }
+
+        /* FAQ - Section 8 */
+        .faq-section {
+            background: linear-gradient(135deg, var(--section-3) 0%, #f0f5ff 100%);
+            position: relative;
+        }
+
+        .faq-section:before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            right: -15%;
+            width: 50%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(114, 9, 183, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .faq-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .faq-item {
+            background: var(--card-bg);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: var(--border);
+            transition: all 0.3s ease;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .faq-item:hover {
+            border-color: rgba(67, 97, 238, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-question {
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            text-align: left;
+            color: var(--light-color);
+        }
+
+        .faq-question:hover {
+            background: rgba(67, 97, 238, 0.03);
+        }
+
+        .faq-question i {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: var(--accent-color);
+        }
+
+        .faq-item.active .faq-question i {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 25px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, padding 0.3s ease;
+            text-align: left;
+        }
+
+        .faq-item.active .faq-answer {
+            padding-bottom: 25px;
+            max-height: 500px;
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            padding: 80px 0 30px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .footer-logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 2.2rem;
+            color: white;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .footer-logo:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: var(--accent-color);
+        }
+
+        .footer-links {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .footer-links a {
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .social-icons a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 1.2rem;
+        }
+
+        .social-icons a:hover {
+            background: var(--primary-color);
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .copyright {
+            margin-top: 40px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section - Section 9 */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            padding: 100px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes lineGrow {
+            from {
+                width: 0;
+            }
+            to {
+                width: 70px;
+            }
+        }
+
+        @keyframes scrollTestimonials {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 992px) {
+            h1 {
+                font-size: 2.4rem;
+            }
+            
+            h2 {
+                font-size: 1.9rem;
+            }
+            
+            /* Compact Hero Box Mobile */
+            .compact-hero-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 30px;
+            }
+            
+            .compact-hero-text {
+                text-align: center;
+            }
+            
+            .compact-hero-text h2:after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .compact-features li {
+                justify-content: center;
+            }
+            
+            .compact-details {
+                grid-template-columns: 1fr;
+                max-width: 300px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            .compact-price-action {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .compact-video-preview {
+                flex: 0 0 150px;
+                width: 100%;
+                max-width: 250px;
+                margin: 0 auto;
+            }
+            
+            .compact-pain-points-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            .compact-pain-point-card {
+                text-align: center;
+            }
+            
+            /* Show horizontal scroll for program section on mobile */
+            .program-grid {
+                display: none;
+            }
+            
+            .program-horizontal-scroll {
+                display: flex;
+            }
+            
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 280px;
+                height: 100vh;
+                background: var(--card-bg);
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 100px 30px 30px;
+                gap: 0;
+                transition: right 0.5s cubic-bezier(0.77, 0.2, 0.05, 1);
+                z-index: 999;
+                box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+                border-left: var(--border);
+            }
+            
+            .nav-links.active {
+                right: 0;
+            }
+            
+            .nav-links li {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+            
+            .nav-links a {
+                display: block;
+                padding: 15px 0;
+                font-size: 1.1rem;
+                border-bottom: var(--border);
+                width: 100%;
+                text-align: left;
+            }
+            
+            .nav-links a:after {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(5px);
+                z-index: 998;
+            }
+            
+            .mobile-overlay.active {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            section {
+                padding: 60px 0;
+            }
+            
+            .hero {
+                padding-top: 130px;
+                padding-bottom: 40px;
+            }
+            
+            .hero-main-title h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-main-title p {
+                font-size: 1rem;
+            }
+            
+            .compact-hero-box {
+                padding: 30px 20px;
+            }
+            
+            .compact-hero-text h2 {
+                font-size: 1.6rem;
+            }
+            
+            .compact-stats {
+                gap: 20px;
+            }
+            
+            .compact-stat-item {
+                min-width: 90px;
+                padding: 15px;
+            }
+            
+            .compact-stat-number {
+                font-size: 1.8rem;
+            }
+            
+            .workshop-card {
+                padding: 30px 20px;
+            }
+            
+            .bonuses {
+                padding: 30px 20px;
+            }
+            
+            .bonus-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .testimonial-card {
+                width: 300px;
+            }
+            
+            .footer-links {
+                gap: 15px;
+            }
+            
+            .footer-links li {
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .compact-price-action {
+                align-items: center;
+            }
+            
+            .compact-price {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .compact-new-price {
+                font-size: 1.8rem;
+            }
+            
+            .compact-old-price {
+                font-size: 1.1rem;
+            }
+            
+            .compact-stats {
+                gap: 15px;
+            }
+            
+            .compact-stat-item {
+                min-width: 80px;
+                padding: 12px;
+            }
+            
+            .compact-stat-number {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="{{ url_for('index') }}" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>ClearQ</span>
+                </a>
+                
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('explore') }}">Find Mentors</a></li>
+                    <li><a href="#program">Program</a></li>
+                    <li><a href="#benefits">What You'll Get</a></li>
+                    <li><a href="#bonuses">Bonuses</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li>
+                        <a href="{{ url_for('enroll') }}" class="btn" style="padding: 12px 25px; margin-top: 10px;">
+                            Enroll Now
+                        </a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li>
+                        <a href="{{ url_for('dashboard') }}" class="btn" style="padding: 12px 25px; margin-top: 10px; background: #f0f0f0; color: #333;">
+                            Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+    </header>
+
+    <!-- Compact Hero Section - Section 1 -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <div class="hero-main-title">
+                    <h1>Career Mentorship Program</h1>
+                    <p>Get your 1st job with Personal Mentorship & Real Job Support</p>
+                </div>
+                
+                <!-- Compact Hero Box -->
+                <div class="compact-hero-box fade-in">
+                    <div class="compact-hero-content">
+                        <div class="compact-hero-text">
+                            <h2>Career Mentorship Program</h2>
+                            <p>Get your 1st job with Personal Mentorship & Real Job Support. Built from real hiring & interview experience.</p>
+                            
+                            <ul class="compact-features">
+                                <li><i class="fas fa-check-circle"></i> See how real candidates crack interviews and get hired</li>
+                                <li><i class="fas fa-check-circle"></i> Get a step-by-step career roadmap from resume to offer</li>
+                                <li><i class="fas fa-check-circle"></i> Use practical, proven methods - not theory</li>
+                            </ul>
+                            
+                            <div class="compact-details">
+                                <div class="compact-detail-item">
+                                    <span class="compact-detail-label">Format</span>
+                                    <span class="compact-detail-value">Live Sessions</span>
+                                </div>
+                                <div class="compact-detail-item">
+                                    <span class="compact-detail-label">Duration</span>
+                                    <span class="compact-detail-value">2 Months</span>
+                                </div>
+                                <div class="compact-detail-item">
+                                    <span class="compact-detail-label">Support</span>
+                                    <span class="compact-detail-value">24/7 Access</span>
+                                </div>
+                            </div>
+                            
+                            <div class="compact-price-action">
+                                <div class="compact-price">
+                                    <div>
+                                        <span class="compact-old-price">₹999</span>
+                                        <span class="compact-new-price">₹499</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- CHANGED THIS LINE -->
+                                <a href="{{ url_for('enroll') }}" class="btn" style="padding: 15px 30px; font-size: 0.95rem;">Enroll Now →</a>
+                            </div>
+                        </div>
+                        
+                        <div class="compact-video-preview">
+                            <div class="compact-play-btn">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="compact-video-label">Watch Preview</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Compact Stats -->
+                <div class="compact-stats fade-in">
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-number">10K+</span>
+                        <span class="compact-stat-label">RECRUITER CONTACTS</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-number">2K+</span>
+                        <span class="compact-stat-label">SUCCESS STORIES</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-number">95%</span>
+                        <span class="compact-stat-label">SUCCESS RATE</span>
+                    </div>
+                </div>
+                
+                <!-- Compact Pain Points Section - Section 2 -->
+                <div class="compact-pain-points fade-in">
+                    <h2>Trying to get hired, but…</h2>
+                    <p>These common challenges might be holding you back</p>
+                    
+                    <div class="compact-pain-points-grid">
+                        <div class="compact-pain-point-card">
+                            <i class="fas fa-question-circle"></i>
+                            <h4>You're unsure what companies actually expect</h4>
+                            <p>Lack of clarity on real job requirements and expectations</p>
+                        </div>
+                        
+                        <div class="compact-pain-point-card">
+                            <i class="fas fa-tired"></i>
+                            <h4>You prepare a lot, but interviews still don't go well</h4>
+                            <p>Despite preparation, interviews don't convert to offers</p>
+                        </div>
+                        
+                        <div class="compact-pain-point-card">
+                            <i class="fas fa-user-friends"></i>
+                            <h4>You don't have referrals or proper guidance</h4>
+                            <p>No network for referrals and lack of mentorship</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workshop Section - Section 3 -->
+    <section class="workshop" id="program">
+        <div class="container">
+            <div class="workshop-content fade-in">
+                <h2>Introducing the Ultimate Live Career Mentorship Program</h2>
+                <p>Built from real hiring & interview experience</p>
+                
+                <div class="workshop-card">
+                    <h3>Live Career Mentorship Program</h3>
+                    <p>Get personalized guidance, mock interviews, job referrals, and real support until you land your dream job.</p>
+                    
+                    <div class="price">
+                        <span class="old-price">₹999</span>
+                        <span class="new-price">₹499</span>
+                    </div>
+                    
+                    <!-- CHANGED THIS LINE -->
+                    <a href="{{ url_for('enroll') }}" class="btn">Enroll Now <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+            
+            <!-- Bonuses - Section 4 -->
+            <div class="bonuses fade-in" id="bonuses">
+                <h2>Unlock Bonuses Worth ₹5,000</h2>
+                <p>Get these exclusive bonuses when you enroll in the mentorship program</p>
+                
+                <div class="bonus-grid">
+                    <div class="bonus-card">
+                        <h4>10,000+ Recruiter Contacts</h4>
+                        <p>Reach decision-makers directly with proven outreach methods</p>
+                        <div class="bonus-price">₹1000 FREE</div>
+                    </div>
+                    
+                    <div class="bonus-card">
+                        <h4>AI-Powered Career Course</h4>
+                        <p>Use AI the smart way to prepare, apply & stand out</p>
+                        <div class="bonus-price">₹2000 FREE</div>
+                    </div>
+                    
+                    <div class="bonus-card">
+                        <h4>Referral-Backed Job Leads</h4>
+                        <p>Apply through referrals and increase your chances</p>
+                        <div class="bonus-price">₹2000 FREE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- What You'll Get Section - Section 5 -->
+    <section class="program-section" id="benefits">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2>What You Will Actually Get</h2>
+                <p>Comprehensive career support from resume to job offer</p>
+            </div>
+            
+            <!-- Desktop Grid Layout -->
+            <div class="program-grid">
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-comments"></i> Mock Interviews</h3>
+                    <ul class="program-list">
+                        <li>Real company‑style mock interviews</li>
+                        <li>Technical, HR & managerial rounds</li>
+                        <li>Detailed feedback on answers, body language & confidence</li>
+                        <li>Improvement tips before real interviews</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-user-tie"></i> 1:1 Mentorship Calls</h3>
+                    <ul class="program-list">
+                        <li>Choose what fits your need</li>
+                        <li>1:1 Call (30 Minutes) – Resume review, interview prep, career planning</li>
+                        <li>Monthly Mentorship – Regular follow‑ups, strategy & progress tracking</li>
+                        <li>100% personalized guidance</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-briefcase"></i> Premium Job Opportunities</h3>
+                    <ul class="program-list">
+                        <li>Access to premium & internal job openings</li>
+                        <li>Jobs shared with better response rate</li>
+                        <li>Roles suitable for freshers & experienced candidates</li>
+                        <li>Referral Jobs with higher interview chances</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-graduation-cap"></i> Internship & Certificate</h3>
+                    <ul class="program-list">
+                        <li>Internship opportunities (based on availability)</li>
+                        <li>Hands‑on exposure</li>
+                        <li>Experience / Participation certificate to boost resume</li>
+                        <li>ATS‑Friendly Resume Templates</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-robot"></i> AI Course & Certification</h3>
+                    <ul class="program-list">
+                        <li>Learn how to use AI tools for resume enhancement</li>
+                        <li>Interview practice & job search automation</li>
+                        <li>Career planning with AI assistance</li>
+                        <li>Mentorship completion certificate</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card fade-in">
+                    <h3><i class="fas fa-headset"></i> Comprehensive Support</h3>
+                    <ul class="program-list">
+                        <li>HR Email List (Curated) with ready‑to‑use templates</li>
+                        <li>Premium Study Material (Company‑Wise)</li>
+                        <li>2 Months Continuous Support</li>
+                        <li>Ongoing guidance during job applications</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Mobile Horizontal Scroll Layout -->
+            <div class="program-horizontal-scroll">
+                <div class="program-card">
+                    <h3><i class="fas fa-comments"></i> Mock Interviews</h3>
+                    <ul class="program-list">
+                        <li>Real company‑style mock interviews</li>
+                        <li>Technical, HR & managerial rounds</li>
+                        <li>Detailed feedback on answers, body language & confidence</li>
+                        <li>Improvement tips before real interviews</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card">
+                    <h3><i class="fas fa-user-tie"></i> 1:1 Mentorship Calls</h3>
+                    <ul class="program-list">
+                        <li>Choose what fits your need</li>
+                        <li>1:1 Call (30 Minutes) – Resume review, interview prep, career planning</li>
+                        <li>Monthly Mentorship – Regular follow‑ups, strategy & progress tracking</li>
+                        <li>100% personalized guidance</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card">
+                    <h3><i class="fas fa-briefcase"></i> Premium Job Opportunities</h3>
+                    <ul class="program-list">
+                        <li>Access to premium & internal job openings</li>
+                        <li>Jobs shared with better response rate</li>
+                        <li>Roles suitable for freshers & experienced candidates</li>
+                        <li>Referral Jobs with higher interview chances</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card">
+                    <h3><i class="fas fa-graduation-cap"></i> Internship & Certificate</h3>
+                    <ul class="program-list">
+                        <li>Internship opportunities (based on availability)</li>
+                        <li>Hands‑on exposure</li>
+                        <li>Experience / Participation certificate to boost resume</li>
+                        <li>ATS‑Friendly Resume Templates</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card">
+                    <h3><i class="fas fa-robot"></i> AI Course & Certification</h3>
+                    <ul class="program-list">
+                        <li>Learn how to use AI tools for resume enhancement</li>
+                        <li>Interview practice & job search automation</li>
+                        <li>Career planning with AI assistance</li>
+                        <li>Mentorship completion certificate</li>
+                    </ul>
+                </div>
+                
+                <div class="program-card">
+                    <h3><i class="fas fa-headset"></i> Comprehensive Support</h3>
+                    <ul class="program-list">
+                        <li>HR Email List (Curated) with ready‑to‑use templates</li>
+                        <li>Premium Study Material (Company‑Wise)</li>
+                        <li>2 Months Continuous Support</li>
+                        <li>Ongoing guidance during job applications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certification - Section 6 -->
+    <section class="cert-section" id="certification">
+        <div class="container">
+            <div class="cert-content fade-in">
+                <h2>Get Certified</h2>
+                <p>Earn your mentorship completion certificate to boost your resume & LinkedIn profile</p>
+                
+                <div class="cert-image">
+                    <div class="cert-placeholder">
+                        <i class="fas fa-certificate"></i>
+                        <div>Mentorship Completion Certificate</div>
+                        <div style="font-size: 0.9rem; color: var(--hint-text);">Your certificate will appear here after program completion</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 40px; text-align: center; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <p><i class="fas fa-check-circle" style="color: var(--accent-color); margin-right: 10px;"></i> Strengthens Resume & LinkedIn Profile</p>
+                    <p><i class="fas fa-check-circle" style="color: var(--accent-color); margin-right: 10px;"></i> Validates Your Skills to Employers</p>
+                    <p><i class="fas fa-check-circle" style="color: var(--accent-color); margin-right: 10px;"></i> Increases Job Application Success Rate</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials - Section 7 -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2>What Our Students Say</h2>
+                <p>Hear from candidates who transformed their career with CommonJobs Mentorship</p>
+            </div>
+            
+            <div class="testimonial-container">
+                <div class="testimonial-track" id="testimonialTrack">
+                    <!-- Testimonial cards will be duplicated by JavaScript for continuous flow -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ - Section 8 -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2>Frequently Asked Questions</h2>
+                <p>Get answers to the most common questions about our mentorship program</p>
+            </div>
+            
+            <div class="faq-container">
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>After payment, what's the next process?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>After successful payment, our support team will assign you to a WhatsApp group where all further processes take place, including mentorship scheduling and resource access.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Is there any hidden charges?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>No, there is only one time payment. All features, bonuses, and support are included in the program fee.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Is this mentorship the right fit for me?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes. This mentorship is ideal if you are a student, fresher, or job seeker who wants clear guidance, interview preparation, referrals, and real job support.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>What kind of roles is this mentorship suitable for?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>This mentorship is suitable for IT, Non-IT, freshers, entry-level, and early-career roles. The guidance is customized based on your background and goals.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Do I need a laptop to attend the mentorship?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>A laptop is recommended for resume building, mock interviews, and job applications. However, you can attend calls and sessions using a mobile phone if needed.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Will I receive a certificate after completing the mentorship?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes. You will receive a mentorship completion certificate after successfully completing the program.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>What language will the mentorship be conducted in?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>The mentorship will be conducted in Hinglish (Hindi + English) for easy understanding.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>I'm facing issues with payment. What should I do?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>If you face any payment issues, please contact our support team and we'll help you complete your enrollment smoothly.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item fade-in">
+                    <div class="faq-question">
+                        <span>Is this amount refundable?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>No, after payment the amount is not refundable as we allocate resources and mentorship slots immediately.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section - Section 9 -->
+    <section class="cta-section" id="enroll">
+        <div class="container">
+            <div class="fade-in">
+                <h2 style="color: white; margin-bottom: 25px;">Start Your Career Journey Today!</h2>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.2rem; max-width: 700px; margin: 0 auto 30px;">
+                    Stop struggling with job applications alone. Get personalized mentorship, real job support, and land your dream job faster.
+                </p>
+                
+                <div class="price">
+                    <span class="old-price" style="color: rgba(255, 255, 255, 0.7);">₹999</span>
+                    <span class="new-price" style="color: #ffd166;">₹499</span>
+                </div>
+                
+                <!-- CHANGED THIS LINE -->
+                <a href="{{ url_for('enroll') }}" class="btn" style="background: white; color: var(--primary-color); font-size: 1.2rem; padding: 20px 45px;">
+                    Enroll Now <i class="fas fa-arrow-right"></i>
+                </a>
+                
+                <p style="margin-top: 25px; color: rgba(255, 255, 255, 0.8); font-size: 0.95rem;">
+                    <i class="fas fa-shield-alt"></i> 2 Months Continuous Support • <i class="fas fa-certificate"></i> Completion Certificate
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <!-- CHANGED THIS LINE -->
+                <div class="footer-logo">ClearQ</div>
+                
+                <p style="max-width: 600px; margin-bottom: 20px; color: #cbd5e0;">Your ultimate guide to landing your first job with personalized mentorship and real job support.</p>
+                
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('explore') }}">Find Mentors</a></li>
+                    <li><a href="#program">Program</a></li>
+                    <li><a href="#benefits">Benefits</a></li>
+                    <li><a href="#bonuses">Bonuses</a></li>
+                    <li><a href="#certification">Certification</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+                
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+                
+                <div class="copyright">
+                    &copy; 2024 ClearQ Career Mentorship. All rights reserved. | support@clearq.in
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle - Fixed
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const navLinks = document.getElementById('navLinks');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        
+        function toggleMobileMenu() {
+            navLinks.classList.toggle('active');
+            mobileOverlay.classList.toggle('active');
+            mobileMenuBtn.innerHTML = navLinks.classList.contains('active') 
+                ? '<i class="fas fa-times"></i>' 
+                : '<i class="fas fa-bars"></i>';
+        }
+        
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        mobileOverlay.addEventListener('click', toggleMobileMenu);
+        
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                mobileOverlay.classList.remove('active');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+        });
+        
+        // Header scroll effect
+        const header = document.getElementById('header');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+        
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                item.classList.toggle('active');
+            });
+        });
+        
+        // Testimonials continuous flow
+        const testimonials = [
+            {
+                text: "The mentorship program completely transformed my job search. I went from 0 interview calls to 3 job offers in just 2 months! The mock interviews were incredibly helpful.",
+                name: "Rahul S.",
+                role: "Software Engineer"
+            },
+            {
+                text: "As a fresher with no experience, I was struggling to get noticed. The referral-backed job leads and resume optimization helped me land my first job at a top company.",
+                name: "Priya M.",
+                role: "Marketing Executive"
+            },
+            {
+                text: "The 1:1 mentorship calls were game-changing. My mentor helped me identify my strengths and weaknesses, and the personalized guidance made all the difference.",
+                name: "Amit K.",
+                role: "Data Analyst"
+            },
+            {
+                text: "The AI-powered career course taught me how to stand out in applications. I learned to use AI tools effectively and my interview success rate improved dramatically.",
+                name: "Neha R.",
+                role: "Product Manager"
+            },
+            {
+                text: "The HR email list and outreach templates saved me so much time. I connected directly with hiring managers and got responses I never would have gotten otherwise.",
+                name: "Vikram P.",
+                role: "Business Analyst"
+            },
+            {
+                text: "The 2-month continuous support was invaluable. Whenever I faced rejection or had doubts, my mentor was there to guide me and keep me motivated.",
+                name: "Sneha T.",
+                role: "UX Designer"
+            }
+        ];
+        
+        function createTestimonialCard(testimonial) {
+            const initials = testimonial.name.split(' ').map(n => n[0]).join('');
+            
+            return `
+                <div class="testimonial-card">
+                    <div class="testimonial-text">
+                        ${testimonial.text}
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">${initials}</div>
+                        <div class="author-info">
+                            <h4>${testimonial.name}</h4>
+                            <p>${testimonial.role}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function initTestimonialFlow() {
+            const track = document.getElementById('testimonialTrack');
+            
+            // Create enough testimonials for continuous flow (duplicate the array)
+            const testimonialHTML = [...testimonials, ...testimonials, ...testimonials]
+                .map(createTestimonialCard)
+                .join('');
+            
+            track.innerHTML = testimonialHTML;
+        }
+        
+        // Scroll animations
+        const fadeElements = document.querySelectorAll('.fade-in');
+        
+        function checkScroll() {
+            fadeElements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('visible');
+                }
+            });
+        }
+        
+        // Initial check for elements in view
+        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('load', checkScroll);
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                if (this.getAttribute('href') === '#') return;
+                
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Video play button interaction
+        document.querySelector('.compact-play-btn').addEventListener('click', function() {
+            alert("Mentorship program preview would play here. In a real implementation, this would open a modal with an embedded video.");
+        });
+        
+        // Initialize testimonials
+        initTestimonialFlow();
+    </script>
+</body>
+</html>
