@@ -1,12 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Analytics</title>
-</head>
-<body>
-    <h1>Admin Analytics</h1>
-    <p>View platform analytics and reports.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Analytics Dashboard</h2>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_users }}</h5>
+                    <p class="card-text">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_mentors }}</h5>
+                    <p class="card-text">Mentors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_learners }}</h5>
+                    <p class="card-text">Learners</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">{{ total_bookings }}</h5>
+                    <p class="card-text">Total Bookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Revenue Summary</h5>
+                    <p>Total Revenue: <strong>₹{{ revenue }}</strong></p>
+                    <hr>
+                    <h6>Monthly Growth</h6>
+                    {% for month in monthly_data %}
+                    <p>{{ month.month }}: ₹{{ month.revenue }} ({{ month.users }} users)</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Platform Statistics</h5>
+                    <p>Active Users: <strong>{{ total_users }}</strong></p>
+                    <p>Active Mentors: <strong>{{ total_mentors }}</strong></p>
+                    <p>Active Learners: <strong>{{ total_learners }}</strong></p>
+                    <p>Total Bookings: <strong>{{ total_bookings }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
