@@ -674,21 +674,20 @@ def mentor_detail(id):
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Use the original dashboard.html template
     if current_user.role == 'admin':
         pending_mentors = User.query.filter_by(role='mentor', is_verified=False).all()
         total_users = User.query.count()
         verified_mentors = User.query.filter_by(role='mentor', is_verified=True).count()
         total_bookings = Booking.query.count()
-        total_revenue = db.session.query(db.func.sum(Booking.query.join(User, Booking.mentor_id == User.id).filter(Booking.status == 'Paid').with_entities(User.price))).scalar() or 0
         
         # Get recent bookings with mentor names
         recent_bookings = []
-        bookings = Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
+        bookings = Booking.query.limit(5).all()
         for booking in bookings:
             mentor = User.query.get(booking.mentor_id)
             learner = User.query.get(booking.learner_id)
             recent_bookings.append({
-                'id': booking.id,
                 'mentor_name': mentor.username if mentor else 'Unknown',
                 'learner_name': learner.username if learner else 'Unknown',
                 'service_name': booking.service_name,
@@ -698,32 +697,15 @@ def dashboard():
                 'created_at': booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A'
             })
         
-        # Get enrollment stats
-        enrollments = Enrollment.query.all()
-        pending_enrollments = Enrollment.query.filter_by(payment_status='pending').count()
-        completed_enrollments = Enrollment.query.filter_by(payment_status='completed').count()
-        
         return render_template('admin.html', 
                              pending_mentors=pending_mentors,
                              total_users=total_users,
                              verified_mentors=verified_mentors,
                              total_bookings=total_bookings,
-                             total_revenue=total_revenue,
-                             recent_bookings=recent_bookings,
-                             enrollments=enrollments,
-                             pending_enrollments=pending_enrollments,
-                             completed_enrollments=completed_enrollments)
+                             recent_bookings=recent_bookings)
     
     elif current_user.role == 'mentor':
-        # Mentor dashboard with sidebar menu structure
-        my_bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(Booking.created_at.desc()).all()
-        
-        # Get booking statistics
-        total_bookings = len(my_bookings)
-        pending_bookings = len([b for b in my_bookings if b.status == 'Pending'])
-        completed_bookings = len([b for b in my_bookings if b.status == 'Completed'])
-        revenue = current_user.price * completed_bookings if current_user.price else 0
-        
+        my_bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
         # Get learner names for bookings
         bookings_with_learners = []
         for booking in my_bookings:
@@ -732,28 +714,22 @@ def dashboard():
                 'booking': booking,
                 'learner': learner
             })
+        # Add additional mentor stats
+        total_bookings = len(my_bookings)
+        pending_bookings = len([b for b in my_bookings if b.status == 'Pending'])
+        completed_bookings = len([b for b in my_bookings if b.status == 'Completed'])
+        revenue = current_user.price * completed_bookings if current_user.price else 0
         
-        # Get testimonials (in a real app, this would be from a Testimonial model)
-        testimonials = []
-        
-        # Get services offered
-        services = [s.strip() for s in current_user.services.split(',')] if current_user.services else []
-        
-        return render_template('mentor_dashboard.html', 
-                             bookings=bookings_with_learners,
+        return render_template('dashboard.html', 
+                             bookings=bookings_with_learners, 
+                             type='mentor',
                              total_bookings=total_bookings,
                              pending_bookings=pending_bookings,
                              completed_bookings=completed_bookings,
-                             revenue=revenue,
-                             testimonials=testimonials,
-                             services=services)
+                             revenue=revenue)
         
     else:  # Learner
-        my_bookings = Booking.query.filter_by(learner_id=current_user.id).order_by(Booking.created_at.desc()).all()
-        
-        # Get enrollment status
-        enrollment = Enrollment.query.filter_by(user_id=current_user.id).first()
-        
+        my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
         bookings_with_mentors = []
         for booking in my_bookings:
             mentor = User.query.get(booking.mentor_id)
@@ -761,25 +737,55 @@ def dashboard():
                 'booking': booking,
                 'mentor': mentor
             })
+        # Add enrollment info for learner
+        enrollment = Enrollment.query.filter_by(user_id=current_user.id).first()
         
-        # Get recommended mentors based on user's past bookings or interests
-        recommended_mentors = []
-        if my_bookings:
-            # If user has booked before, recommend similar mentors
-            booked_mentors = [b.mentor_id for b in my_bookings]
-            domain_mentors = User.query.filter(
-                User.role == 'mentor',
-                User.is_verified == True,
-                User.id.notin_(booked_mentors)
-            ).limit(3).all()
-            recommended_mentors = domain_mentors
-        
-        return render_template('learner_dashboard.html', 
-                             bookings=bookings_with_mentors,
-                             enrollment=enrollment,
-                             recommended_mentors=recommended_mentors)
+        return render_template('dashboard.html', 
+                             bookings=bookings_with_mentors, 
+                             type='learner',
+                             enrollment=enrollment)
 
-# New routes for mentor dashboard sections
+@app.route('/verify/<int:id>')
+@login_required
+def verify_mentor(id):
+    if current_user.role != 'admin':
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    mentor = User.query.get(id)
+    if not mentor:
+        flash('Mentor not found')
+        return redirect(url_for('dashboard'))
+    
+    if mentor.role != 'mentor':
+        flash('User is not a mentor')
+        return redirect(url_for('dashboard'))
+    
+    mentor.is_verified = True
+    db.session.commit()
+    flash(f'{mentor.username} has been verified!')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reject-mentor/<int:id>', methods=['POST'])
+@login_required
+def reject_mentor(id):
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    mentor = User.query.get(id)
+    if not mentor:
+        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    
+    if mentor.role != 'mentor':
+        return jsonify({'success': False, 'message': 'User is not a mentor'}), 400
+    
+    # Delete the mentor application (or mark as rejected)
+    db.session.delete(mentor)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Mentor application rejected'})
+
+# New routes for mentor dashboard sections (optional access)
 @app.route('/mentor/bookings')
 @login_required
 def mentor_bookings():
@@ -911,7 +917,7 @@ def mentor_settings():
     
     return render_template('mentor_settings.html')
 
-# New routes for learner dashboard
+# New routes for learner (optional access)
 @app.route('/learner/enrollments')
 @login_required
 def learner_enrollments():
@@ -949,7 +955,7 @@ def learner_profile():
     
     return render_template('learner_profile.html')
 
-# New routes for admin
+# New routes for admin (optional access)
 @app.route('/admin/users')
 @login_required
 def admin_users():
@@ -1010,46 +1016,6 @@ def admin_analytics():
                          total_bookings=total_bookings,
                          revenue=revenue,
                          monthly_data=monthly_data)
-
-@app.route('/verify/<int:id>')
-@login_required
-def verify_mentor(id):
-    if current_user.role != 'admin':
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
-    
-    mentor = User.query.get(id)
-    if not mentor:
-        flash('Mentor not found')
-        return redirect(url_for('dashboard'))
-    
-    if mentor.role != 'mentor':
-        flash('User is not a mentor')
-        return redirect(url_for('dashboard'))
-    
-    mentor.is_verified = True
-    db.session.commit()
-    flash(f'{mentor.username} has been verified!')
-    return redirect(url_for('dashboard'))
-
-@app.route('/reject-mentor/<int:id>', methods=['POST'])
-@login_required
-def reject_mentor(id):
-    if current_user.role != 'admin':
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    mentor = User.query.get(id)
-    if not mentor:
-        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
-    
-    if mentor.role != 'mentor':
-        return jsonify({'success': False, 'message': 'User is not a mentor'}), 400
-    
-    # Delete the mentor application (or mark as rejected)
-    db.session.delete(mentor)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Mentor application rejected'})
 
 # Update booking status
 @app.route('/update-booking-status/<int:booking_id>', methods=['POST'])
