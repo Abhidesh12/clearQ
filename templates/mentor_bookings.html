@@ -1,12 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentor Bookings</title>
-</head>
-<body>
-    <h1>Mentor Bookings</h1>
-    <p>View and manage your upcoming and past bookings.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Bookings</h2>
+    <div class="card">
+        <div class="card-body">
+            {% if bookings %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Learner</th>
+                            <th>Service</th>
+                            <th>Time Slot</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in bookings %}
+                        <tr>
+                            <td>{{ item.learner.username }}</td>
+                            <td>{{ item.booking.service_name }}</td>
+                            <td>{{ item.booking.slot_time }}</td>
+                            <td>
+                                <span class="badge bg-{% if item.booking.status == 'Pending' %}warning{% elif item.booking.status == 'Paid' %}primary{% else %}success{% endif %}">
+                                    {{ item.booking.status }}
+                                </span>
+                            </td>
+                            <td>{{ item.booking.created_at.strftime('%Y-%m-%d') if item.booking.created_at else 'N/A' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">View</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No bookings yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
