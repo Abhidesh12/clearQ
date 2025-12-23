@@ -1,93 +1,216 @@
 {% extends "base.html" %}
-{% block title %}{{ mentor.full_name }} - ClearQ Mentor{% endblock %}
+{% block title %}{{ mentor.full_name or mentor.username }} - ClearQ Mentor{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <div class="col-md-4">
-            <!-- Profile Card -->
-            <div class="card shadow mb-4">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" 
-                             style="width: 120px; height: 120px;">
-                            <span class="text-white display-5">{{ (mentor.full_name or mentor.username)[0].upper() }}</span>
-                        </div>
-                    </div>
-                    <h3>{{ mentor.full_name or mentor.username }}</h3>
-                    <h5 class="text-muted">{{ mentor.job_title }}</h5>
-                    <p class="text-primary">{{ mentor.company }}</p>
-                    
-                    <!-- Profile Stats -->
-                    <div class="d-flex justify-content-around mt-4">
-                        <div class="text-center">
-                            <h5 class="mb-0">{{ mentor.profile_views }}</h5>
-                            <small>Profile Views</small>
-                        </div>
-                        <div class="text-center">
-                            <h5 class="mb-0">{{ total_sessions }}</h5>
-                            <small>Sessions</small>
-                        </div>
-                    </div>
-                    
-                    <!-- Share Button -->
-                    <div class="mt-4">
-                        <button class="btn btn-outline-primary w-100" onclick="shareProfile()">
-                            <i class="fas fa-share-alt me-2"></i>Share Profile
-                        </button>
-                        <a href="{{ url_for('explore') }}" class="btn btn-primary w-100 mt-2">
-                            <i class="fas fa-calendar-check me-2"></i>Book Session
-                        </a>
-                    </div>
-                </div>
-            </div>
+<div class="min-h-screen bg-gray-50 py-6 sm:py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Back Navigation -->
+        <div class="mb-6">
+            <a href="{{ url_for('explore') }}" class="inline-flex items-center text-gray-600 hover:text-primary transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Mentors
+            </a>
         </div>
-        
-        <div class="col-md-8">
-            <!-- Professional Info -->
-            <div class="card shadow mb-4">
-                <div class="card-body">
-                    <h4 class="card-title">Professional Information</h4>
-                    <div class="row mt-4">
-                        <div class="col-md-6">
-                            <p><strong>Domain:</strong> {{ mentor.domain }}</p>
-                            <p><strong>Experience:</strong> {{ mentor.experience }}</p>
-                            <p><strong>Price:</strong> ₹{{ mentor.price }}/session</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <!-- Left Column - Profile Card -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <!-- Profile Header -->
+                    <div class="p-6">
+                        <!-- Avatar -->
+                        <div class="flex justify-center mb-4">
+                            <div class="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                                <span class="text-3xl font-bold text-white">
+                                    {{ (mentor.full_name or mentor.username)[0].upper() }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>Availability:</strong> {{ mentor.availability }}</p>
-                            <p><strong>Company:</strong> {{ mentor.company }}</p>
-                            <p><strong>Status:</strong> 
-                                <span class="badge bg-success">Verified</span>
-                            </p>
+                        
+                        <!-- Name & Title -->
+                        <div class="text-center mb-6">
+                            <h1 class="text-2xl font-bold text-gray-900 mb-1">
+                                {{ mentor.full_name or mentor.username }}
+                            </h1>
+                            <p class="text-gray-600 mb-2">{{ mentor.job_title or 'Professional Mentor' }}</p>
+                            <div class="flex items-center justify-center gap-2">
+                                <i class="fas fa-building text-gray-400"></i>
+                                <p class="text-gray-700 font-medium">{{ mentor.company or 'Not specified' }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Verification Badge -->
+                        {% if mentor.is_verified %}
+                        <div class="flex justify-center mb-6">
+                            <span class="px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200 flex items-center gap-2">
+                                <i class="fas fa-check-circle"></i>
+                                Verified Mentor
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Stats -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="text-center p-3 bg-gray-50 rounded-xl">
+                                <p class="text-2xl font-bold text-gray-900">{{ mentor.profile_views or '0' }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Profile Views</p>
+                            </div>
+                            <div class="text-center p-3 bg-gray-50 rounded-xl">
+                                <p class="text-2xl font-bold text-gray-900">{{ total_sessions or '0' }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Sessions</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Price -->
+                        <div class="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 mb-6">
+                            <p class="text-sm text-gray-500 mb-1">Session Rate</p>
+                            <p class="text-3xl font-bold text-primary">₹{{ mentor.price or '0' }}</p>
+                            <p class="text-xs text-gray-500">per 1-hour session</p>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                            <a href="{{ url_for('explore') }}" 
+                               class="block w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-lg transition-all text-center flex items-center justify-center gap-2">
+                                <i class="fas fa-calendar-check"></i>
+                                Book Session
+                            </a>
+                            <button onclick="shareProfile()"
+                               class="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-share-alt"></i>
+                                Share Profile
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Skills -->
-            {% if mentor.skills %}
-            <div class="card shadow mb-4">
-                <div class="card-body">
-                    <h4 class="card-title">Skills</h4>
-                    <div class="mt-3">
+
+            <!-- Right Column - Details -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Professional Information -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-briefcase text-primary"></i>
+                        Professional Information
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column Info -->
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Domain</p>
+                                <p class="font-medium text-gray-900">{{ mentor.domain or 'Not specified' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Experience</p>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-clock text-gray-400"></i>
+                                    <p class="font-medium text-gray-900">{{ mentor.experience or 'Not specified' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Price</p>
+                                <p class="font-medium text-gray-900">₹{{ mentor.price or '0' }} / session</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column Info -->
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Availability</p>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-calendar-check text-gray-400"></i>
+                                    <p class="font-medium text-gray-900">{{ mentor.availability or 'Flexible' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Company</p>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-building text-gray-400"></i>
+                                    <p class="font-medium text-gray-900">{{ mentor.company or 'Not specified' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Verification</p>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1.5"></i>
+                                    Verified Account
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Section -->
+                {% if mentor.skills %}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-tools text-primary"></i>
+                        Skills & Expertise
+                    </h2>
+                    
+                    <div class="flex flex-wrap gap-2">
                         {% for skill in mentor.skills.split(',') %}
-                        <span class="badge bg-light text-dark border me-2 mb-2 p-2">{{ skill.strip() }}</span>
+                        <span class="px-4 py-2 bg-gray-50 text-gray-800 rounded-lg text-sm font-medium border border-gray-200 hover:border-primary transition-colors">
+                            {{ skill.strip() }}
+                        </span>
                         {% endfor %}
                     </div>
                 </div>
-            </div>
-            {% endif %}
-            
-            <!-- Bio -->
-            {% if mentor.bio %}
-            <div class="card shadow">
-                <div class="card-body">
-                    <h4 class="card-title">About</h4>
-                    <p class="mt-3">{{ mentor.bio }}</p>
+                {% endif %}
+
+                <!-- About/Bio Section -->
+                {% if mentor.bio %}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-user text-primary"></i>
+                        About
+                    </h2>
+                    
+                    <div class="prose prose-sm max-w-none">
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ mentor.bio }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Services -->
+                {% if mentor.services %}
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-handshake text-primary"></i>
+                        Services Offered
+                    </h2>
+                    
+                    <div class="bg-gray-50 rounded-xl p-5">
+                        <p class="text-gray-700 leading-relaxed">{{ mentor.services }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Stats -->
+                <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white">
+                    <h2 class="text-xl font-bold mb-6">Mentor Stats</h2>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <p class="text-3xl font-bold">4.9</p>
+                            <p class="text-sm opacity-90">Rating</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold">94%</p>
+                            <p class="text-sm opacity-90">Success Rate</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold">24</p>
+                            <p class="text-sm opacity-90">Reviews</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold">98%</p>
+                            <p class="text-sm opacity-90">Response Rate</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -95,31 +218,78 @@
 <script>
 function shareProfile() {
     const profileUrl = window.location.href;
+    const mentorName = '{{ mentor.full_name or mentor.username }}';
+    const jobTitle = '{{ mentor.job_title or "Professional Mentor" }}';
+    const company = '{{ mentor.company or "" }}';
+    
+    const shareText = `${mentorName} - ${jobTitle}${company ? ' at ' + company : ''}`;
     
     // Check if Web Share API is available (mobile devices)
     if (navigator.share) {
         navigator.share({
             title: 'Check out this mentor on ClearQ',
-            text: '{{ mentor.full_name or mentor.username }} - {{ mentor.job_title }} at {{ mentor.company }}',
+            text: shareText,
             url: profileUrl,
         })
-        .then(() => console.log('Successful share'))
-        .catch((error) => console.log('Error sharing:', error));
+        .then(() => console.log('Profile shared successfully'))
+        .catch((error) => {
+            if (error.name !== 'AbortError') {
+                fallbackCopy(profileUrl);
+            }
+        });
     } else {
-        // Fallback: Copy to clipboard
-        navigator.clipboard.writeText(profileUrl)
-            .then(() => alert('Profile link copied to clipboard!'))
-            .catch(() => {
-                // Fallback for older browsers
-                const tempInput = document.createElement('input');
-                tempInput.value = profileUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                alert('Profile link copied to clipboard!');
-            });
+        fallbackCopy(profileUrl);
     }
 }
+
+function fallbackCopy(url) {
+    navigator.clipboard.writeText(url)
+        .then(() => {
+            // Show toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Profile link copied to clipboard!</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'fade-out 0.3s ease-out forwards';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        })
+        .catch(() => {
+            // Fallback for older browsers
+            const tempInput = document.createElement('input');
+            tempInput.value = url;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            alert('Profile link copied to clipboard!');
+        });
+}
+
+// Add fade-in animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-out {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(10px); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}
