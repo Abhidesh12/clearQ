@@ -1,12 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learner Dashboard</title>
-</head>
-<body>
-    <h1>Learner Dashboard</h1>
-    <p>Welcome to your learner dashboard. Track your progress and manage your mentors.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Learner Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="sidebar-sticky pt-3">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>LEARNER MENU</span>
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('learner_enrollments') }}">
+                            <i class="fas fa-graduation-cap"></i> My Enrollments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('explore') }}">
+                            <i class="fas fa-search"></i> Find Mentors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('saved_mentors') }}">
+                            <i class="fas fa-bookmark"></i> Saved Mentors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('learner_profile') }}">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                {% if enrollment %}
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>MENTORSHIP PROGRAM</span>
+                </h6>
+                <div class="px-3">
+                    <div class="alert alert-info">
+                        <small>Status: <strong>{{ enrollment.status|title }}</strong></small><br>
+                        <small>Payment: <strong>{{ enrollment.payment_status|title }}</strong></small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Learner Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('explore') }}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Find a Mentor
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Welcome Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="jumbotron">
+                        <h1 class="display-4">Hello, {{ current_user.username }}!</h1>
+                        <p class="lead">Welcome to your learning journey. Find the perfect mentor to guide you.</p>
+                        <hr class="my-4">
+                        <p>Track your bookings, manage enrollments, and connect with mentors.</p>
+                        <a class="btn btn-primary btn-lg" href="{{ url_for('explore') }}" role="button">Browse Mentors</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- My Bookings -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>My Bookings</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if bookings %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mentor</th>
+                                            <th>Service</th>
+                                            <th>Time Slot</th>
+                                            <th>Status</th>
+                                            <th>Amount</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in bookings[:5] %}
+                                        <tr>
+                                            <td>{{ item.mentor.username }}</td>
+                                            <td>{{ item.booking.service_name }}</td>
+                                            <td>{{ item.booking.slot_time }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if item.booking.status == 'Pending' %}warning{% elif item.booking.status == 'Paid' %}primary{% else %}success{% endif %}">
+                                                    {{ item.booking.status }}
+                                                </span>
+                                            </td>
+                                            <td>₹{{ item.mentor.price if item.mentor.price else 0 }}</td>
+                                            <td>{{ item.booking.created_at.strftime('%Y-%m-%d') if item.booking.created_at else 'N/A' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <a href="#" class="btn btn-outline-primary">View All Bookings</a>
+                            {% else %}
+                            <p class="text-muted">No bookings yet. <a href="{{ url_for('explore') }}">Find a mentor</a> to get started.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommended Mentors -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Recommended Mentors</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recommended_mentors %}
+                                {% for mentor in recommended_mentors %}
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-circle bg-primary text-white">
+                                            {{ mentor.username[0]|upper }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">{{ mentor.username }}</h6>
+                                        <small class="text-muted">{{ mentor.domain }}</small><br>
+                                        <a href="{{ url_for('mentor_detail', id=mentor.id) }}" class="btn btn-sm btn-outline-primary mt-1">View</a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">Complete your profile to get personalized recommendations.</p>
+                            {% endif %}
+                            <a href="{{ url_for('explore') }}" class="btn btn-primary w-100 mt-2">Browse All Mentors</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h6>Learning Progress</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" style="width: 65%"></div>
+                            </div>
+                            <small>65% of mentorship program completed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 48px);
+    padding-top: .5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 10px 20px;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e9ecef;
+}
+
+.sidebar-heading {
+    font-size: .75rem;
+    text-transform: uppercase;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
