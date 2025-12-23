@@ -1,12 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learner Profile</title>
-</head>
-<body>
-    <h1>Learner Profile</h1>
-    <p>View and edit your learner profile information.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Profile</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="full_name" value="{{ current_user.full_name or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" value="{{ current_user.phone or '' }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Career Interest / Domain</label>
+                    <input type="text" class="form-control" name="domain" value="{{ current_user.domain or '' }}" placeholder="Data Science, Software Engineering, Product Management">
+                </div>
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
