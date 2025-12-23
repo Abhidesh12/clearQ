@@ -1,106 +1,117 @@
 {% extends "base.html" %}
+{% block title %}{{ mentor.full_name or mentor.username }} - ClearQ Mentor{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Mentor Profile Header -->
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
-            <div class="relative">
-                <!-- Banner -->
-                <div class="h-48 bg-gradient-to-r from-primary to-secondary"></div>
-                
-                <!-- Mentor Info -->
-                <div class="px-8 pb-8">
-                    <div class="relative -top-12 flex flex-col md:flex-row md:items-end gap-6">
-                        <!-- Avatar -->
-                        <div class="w-32 h-32 rounded-2xl border-4 border-white bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center shadow-lg">
-                            <span class="text-4xl font-bold text-primary">{{ mentor.username[0]|upper }}</span>
-                        </div>
-                        
-                        <!-- Info -->
-                        <div class="flex-1">
-                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                    <h1 class="text-3xl font-bold text-gray-900">{{ mentor.full_name or mentor.username }}</h1>
-                                    <div class="flex items-center gap-4 mt-2">
-                                        {% if mentor.company %}
-                                        <p class="text-lg text-gray-600 flex items-center gap-2">
-                                            <i class="fas fa-building"></i>
-                                            {{ mentor.company }}
-                                        </p>
-                                        {% endif %}
-                                        {% if mentor.job_title %}
-                                        <p class="text-lg text-gray-600 flex items-center gap-2">
-                                            <i class="fas fa-briefcase"></i>
-                                            {{ mentor.job_title }}
-                                        </p>
-                                        {% endif %}
-                                    </div>
-                                </div>
+<div class="min-h-screen bg-gray-50 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Back Navigation -->
+        <div class="mb-4 sm:mb-6">
+            <a href="{{ url_for('explore') }}" class="inline-flex items-center text-gray-600 hover:text-primary transition-colors text-sm sm:text-base">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Mentors
+            </a>
+        </div>
+
+        <!-- Mentor Header -->
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 sm:mb-8">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <!-- Avatar -->
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+                        <span class="text-2xl sm:text-3xl font-bold text-white">
+                            {{ mentor.username[0]|upper }}
+                        </span>
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                                    {{ mentor.full_name or mentor.username }}
+                                </h1>
                                 
-                                <!-- Verification Badge -->
-                                <div class="flex flex-wrap gap-3">
-                                    {% if mentor.is_verified %}
-                                    <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold flex items-center gap-2">
-                                        <i class="fas fa-check-circle"></i>
-                                        Verified Mentor
-                                    </span>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    {% if mentor.company %}
+                                    <div class="flex items-center gap-1.5 text-gray-600 text-sm">
+                                        <i class="fas fa-building text-xs"></i>
+                                        <span class="truncate">{{ mentor.company }}</span>
+                                    </div>
                                     {% endif %}
                                     
-                                    {% if mentor.domain %}
-                                    <span class="px-4 py-2 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full font-semibold">
-                                        {{ mentor.domain }}
-                                    </span>
+                                    {% if mentor.job_title %}
+                                    <span class="text-gray-400 hidden sm:inline">•</span>
+                                    <div class="flex items-center gap-1.5 text-gray-600 text-sm">
+                                        <i class="fas fa-briefcase text-xs"></i>
+                                        <span class="truncate">{{ mentor.job_title }}</span>
+                                    </div>
                                     {% endif %}
                                 </div>
                             </div>
                             
-                            <!-- Stats -->
-                            <div class="flex flex-wrap gap-8 mt-6">
-                                <div class="text-center">
-                                    <p class="text-2xl font-bold text-gray-900">50+</p>
-                                    <p class="text-sm text-gray-600">Sessions Completed</p>
-                                </div>
-                                <div class="text-center">
-                                    <p class="text-2xl font-bold text-gray-900">4.9</p>
-                                    <p class="text-sm text-gray-600">Average Rating</p>
-                                </div>
-                                <div class="text-center">
-                                    <p class="text-2xl font-bold text-gray-900">94%</p>
-                                    <p class="text-sm text-gray-600">Success Rate</p>
-                                </div>
-                                {% if mentor.experience %}
-                                <div class="text-center">
-                                    <p class="text-2xl font-bold text-gray-900">{{ mentor.experience }}</p>
-                                    <p class="text-sm text-gray-600">Experience</p>
-                                </div>
+                            <!-- Badges -->
+                            <div class="flex flex-wrap gap-2">
+                                {% if mentor.is_verified %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fas fa-check-circle text-xs"></i>
+                                    Verified
+                                </span>
+                                {% endif %}
+                                
+                                {% if mentor.domain %}
+                                <span class="px-3 py-1 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full text-xs font-medium whitespace-nowrap">
+                                    {{ mentor.domain }}
+                                </span>
                                 {% endif %}
                             </div>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="flex flex-wrap gap-4 sm:gap-6 mt-4 sm:mt-6">
+                            <div class="text-center">
+                                <p class="text-lg sm:text-xl font-bold text-gray-900">50+</p>
+                                <p class="text-xs text-gray-600">Sessions</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg sm:text-xl font-bold text-gray-900">4.9</p>
+                                <p class="text-xs text-gray-600">Rating</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg sm:text-xl font-bold text-gray-900">94%</p>
+                                <p class="text-xs text-gray-600">Success</p>
+                            </div>
+                            {% if mentor.experience %}
+                            <div class="text-center">
+                                <p class="text-lg sm:text-xl font-bold text-gray-900">{{ mentor.experience }}</p>
+                                <p class="text-xs text-gray-600">Exp.</p>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: About & Details -->
-            <div class="lg:col-span-2 space-y-8">
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <!-- Left Column - Mentor Info -->
+            <div class="lg:col-span-2 space-y-4 sm:space-y-6">
                 <!-- About Section -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <i class="fas fa-user text-primary"></i>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-primary text-sm"></i>
                         </div>
-                        About Mentor
+                        About
                     </h2>
-                    <p class="text-gray-700 leading-relaxed text-lg">{{ mentor.bio or 'No bio available' }}</p>
+                    <p class="text-gray-700 text-sm sm:text-base leading-relaxed">{{ mentor.bio or 'No bio available' }}</p>
                     
                     {% if mentor.skills %}
-                    <div class="mt-8">
-                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Core Skills</h3>
-                        <div class="flex flex-wrap gap-3">
+                    <div class="mt-6">
+                        <h3 class="text-base font-semibold text-gray-900 mb-3">Skills</h3>
+                        <div class="flex flex-wrap gap-2">
                             {% for skill in mentor.skills.split(',') %}
-                            <span class="px-4 py-2 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full font-medium">
+                            <span class="px-3 py-1.5 bg-gray-50 text-gray-800 rounded-lg text-xs sm:text-sm font-medium border border-gray-200">
                                 {{ skill.strip() }}
                             </span>
                             {% endfor %}
@@ -110,123 +121,126 @@
                 </div>
 
                 <!-- Services Section -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                            <i class="fas fa-concierge-bell text-green-600"></i>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-concierge-bell text-green-600 text-sm"></i>
                         </div>
-                        Services Offered
+                        Services
                     </h2>
                     
                     {% if mentor.services %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
                         {% for service in mentor.services.split(',') %}
-                        <div class="p-6 border border-gray-200 rounded-xl hover:border-primary transition-colors group">
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div class="p-4 border border-gray-200 rounded-xl hover:border-primary transition-colors">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                                     <i class="fas fa-{{ 'comments' if 'Interview' in service else 'file-alt' if 'Resume' in service else 'chart-line' if 'Career' in service else 'brain' }} text-blue-600"></i>
                                 </div>
-                                <h3 class="text-lg font-semibold text-gray-900">{{ service.strip() }}</h3>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-semibold text-gray-900 text-sm sm:text-base">{{ service.strip() }}</h3>
+                                    <p class="text-gray-600 text-xs sm:text-sm mt-1">
+                                        {% if 'Interview' in service %}
+                                        Mock interviews with detailed feedback
+                                        {% elif 'Resume' in service %}
+                                        Professional resume optimization
+                                        {% elif 'Career' in service %}
+                                        Personalized career roadmap
+                                        {% else %}
+                                        Expert guidance and solutions
+                                        {% endif %}
+                                    </p>
+                                </div>
                             </div>
-                            <p class="text-gray-600 text-sm">
-                                {% if 'Interview' in service %}
-                                Mock interviews with detailed feedback and improvement strategies
-                                {% elif 'Resume' in service %}
-                                Professional resume optimization and ATS-friendly formatting
-                                {% elif 'Career' in service %}
-                                Personalized career roadmap and growth strategy
-                                {% else %}
-                                Expert guidance and practical solutions
-                                {% endif %}
-                            </p>
                         </div>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <p class="text-gray-500 text-center py-8">No services listed</p>
+                    <p class="text-gray-500 text-center py-6 text-sm">No services listed</p>
                     {% endif %}
                 </div>
 
                 <!-- Reviews Section -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-                            <i class="fas fa-star text-yellow-600"></i>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-star text-yellow-600 text-sm"></i>
                         </div>
-                        Reviews & Testimonials
+                        Reviews
                     </h2>
                     
-                    <div class="space-y-6">
-                        <!-- Sample Reviews -->
-                        <div class="p-6 bg-gray-50 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
+                    <div class="space-y-4">
+                        <!-- Review 1 -->
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                                    <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">
                                         R
                                     </div>
                                     <div>
-                                        <p class="font-semibold">Rahul Sharma</p>
-                                        <div class="flex items-center gap-1">
+                                        <p class="font-semibold text-gray-900 text-sm">Rahul Sharma</p>
+                                        <div class="flex items-center gap-1 mt-0.5">
                                             {% for i in range(5) %}
-                                            <i class="fas fa-star text-yellow-500 text-sm"></i>
+                                            <i class="fas fa-star text-yellow-500 text-xs"></i>
                                             {% endfor %}
                                         </div>
                                     </div>
                                 </div>
-                                <span class="text-sm text-gray-500">2 weeks ago</span>
+                                <span class="text-xs text-gray-500 whitespace-nowrap">2 weeks ago</span>
                             </div>
-                            <p class="text-gray-700">"Excellent mentor! Helped me land my dream job at Google. The mock interviews were incredibly realistic."</p>
+                            <p class="text-gray-700 text-sm">"Excellent mentor! Helped me land my dream job at Google."</p>
                         </div>
                         
-                        <div class="p-6 bg-gray-50 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
+                        <!-- Review 2 -->
+                        <div class="p-4 bg-gray-50 rounded-xl">
+                            <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center font-bold">
+                                    <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-sm">
                                         P
                                     </div>
                                     <div>
-                                        <p class="font-semibold">Priya Mehta</p>
-                                        <div class="flex items-center gap-1">
+                                        <p class="font-semibold text-gray-900 text-sm">Priya Mehta</p>
+                                        <div class="flex items-center gap-1 mt-0.5">
                                             {% for i in range(5) %}
-                                            <i class="fas fa-star text-yellow-500 text-sm"></i>
+                                            <i class="fas fa-star text-yellow-500 text-xs"></i>
                                             {% endfor %}
                                         </div>
                                     </div>
                                 </div>
-                                <span class="text-sm text-gray-500">1 month ago</span>
+                                <span class="text-xs text-gray-500 whitespace-nowrap">1 month ago</span>
                             </div>
-                            <p class="text-gray-700">"The career guidance was spot on. My mentor helped me transition from engineering to product management."</p>
+                            <p class="text-gray-700 text-sm">"Great career guidance for transitioning to product management."</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Booking Form -->
-            <div class="space-y-8">
+            <!-- Right Column - Booking -->
+            <div class="space-y-4 sm:space-y-6">
                 <!-- Booking Card -->
-                <div class="bg-white rounded-2xl shadow-xl p-8 sticky top-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Book a Session</h2>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-24">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Book Session</h2>
                     
-                    <form method="POST" class="space-y-6">
+                    <form method="POST" class="space-y-4 sm:space-y-6">
                         <!-- Service Selection -->
                         {% if mentor.services %}
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-3">Select Service</label>
-                            <div class="space-y-3">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Service</label>
+                            <div class="space-y-2">
                                 {% for service in mentor.services.split(',') %}
-                                <label class="flex items-center gap-4 p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-primary transition-colors">
+                                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary transition-colors">
                                     <input type="radio" name="service" value="{{ service.strip() }}" 
-                                           class="w-5 h-5 text-primary focus:ring-primary" 
+                                           class="w-4 h-4 text-primary focus:ring-primary flex-shrink-0" 
                                            {% if loop.first %}checked{% endif %}>
-                                    <div class="flex-1">
-                                        <p class="font-medium text-gray-900">{{ service.strip() }}</p>
-                                        <p class="text-sm text-gray-600">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-900 text-sm truncate">{{ service.strip() }}</p>
+                                        <p class="text-xs text-gray-600 mt-0.5 truncate">
                                             {% if 'Interview' in service %}
                                             60 min session
                                             {% elif 'Resume' in service %}
                                             45 min review
                                             {% else %}
-                                            30-60 min consultation
+                                            Consultation
                                             {% endif %}
                                         </p>
                                     </div>
@@ -234,87 +248,71 @@
                                 {% endfor %}
                             </div>
                         </div>
-                        {% else %}
-                        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                            <p class="text-yellow-800">No services available for booking</p>
-                        </div>
                         {% endif %}
 
                         <!-- Time Slots -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-3">Available Time Slots</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Time Slot</label>
                             {% if slots %}
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 gap-2">
                                 {% for slot in slots %}
                                 <label class="cursor-pointer">
                                     <input type="radio" name="slot" value="{{ slot }}" required 
                                            class="peer sr-only">
-                                    <div class="p-4 text-center border-2 border-gray-200 rounded-xl peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary transition-all">
-                                        <p class="font-medium text-gray-900">{{ slot }}</p>
-                                        <p class="text-xs text-gray-500 mt-1">Available</p>
+                                    <div class="p-3 text-center border-2 border-gray-200 rounded-lg peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary transition-all">
+                                        <p class="font-medium text-gray-900 text-sm">{{ slot }}</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">Available</p>
                                     </div>
                                 </label>
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <div class="p-6 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
-                                <i class="fas fa-calendar-times text-yellow-500 text-2xl mb-3"></i>
-                                <p class="font-medium text-yellow-800">No slots available today</p>
-                                <p class="text-sm text-yellow-600 mt-1">Please check back tomorrow</p>
+                            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                                <i class="fas fa-calendar-times text-yellow-500 text-lg mb-2"></i>
+                                <p class="font-medium text-yellow-800 text-sm">No slots today</p>
+                                <p class="text-xs text-yellow-600 mt-1">Check back tomorrow</p>
                             </div>
                             {% endif %}
                         </div>
 
-                        <!-- Price Summary -->
-                        <div class="pt-6 border-t border-gray-200">
+                        <!-- Price & Booking -->
+                        <div class="pt-4 border-t border-gray-200">
                             <div class="flex justify-between items-center mb-4">
-                                <span class="text-gray-600">Session Fee</span>
-                                <span class="text-2xl font-bold text-primary">₹{{ mentor.price or 0 }}</span>
+                                <div>
+                                    <p class="text-gray-600 text-sm">Session Fee</p>
+                                    <p class="text-xs text-gray-500">1-hour session</p>
+                                </div>
+                                <span class="text-xl font-bold text-primary">₹{{ mentor.price or 0 }}</span>
                             </div>
                             
-                            <div class="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                            <!-- Security Note -->
+                            <div class="flex items-center gap-2 text-xs text-gray-600 mb-4">
                                 <i class="fas fa-shield-alt text-green-500"></i>
-                                <span>Secure payment • Free cancellation within 24h</span>
-                            </div>
-
-                            <!-- Payment Options -->
-                            <div class="mb-6">
-                                <p class="text-sm font-semibold text-gray-700 mb-3">Payment Method</p>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button type="button" onclick="selectPayment('razorpay')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
-                                        <i class="fab fa-cc-razorpay text-2xl text-blue-600"></i>
-                                    </button>
-                                    <button type="button" onclick="selectPayment('stripe')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
-                                        <i class="fab fa-cc-stripe text-2xl text-purple-600"></i>
-                                    </button>
-                                    <button type="button" onclick="selectPayment('paypal')" class="p-3 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors">
-                                        <i class="fab fa-cc-paypal text-2xl text-blue-400"></i>
-                                    </button>
-                                </div>
+                                <span>Secure payment • 24h cancellation</span>
                             </div>
 
                             <!-- Book Button -->
                             {% if slots and mentor.services %}
                             <button type="submit" 
-                                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3">
-                                <i class="fas fa-lock"></i>
-                                Book Now for ₹{{ mentor.price or 0 }}
+                                    class="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:shadow-md transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-lock text-sm"></i>
+                                Book Now - ₹{{ mentor.price or 0 }}
                             </button>
                             
-                            <p class="text-center text-xs text-gray-500 mt-3">
-                                You'll be redirected to secure payment
+                            <p class="text-center text-xs text-gray-500 mt-2">
+                                Redirect to secure payment
                             </p>
                             {% else %}
                             <button disabled 
-                                    class="w-full py-4 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-3">
+                                    class="w-full py-3 bg-gray-100 text-gray-400 font-semibold rounded-lg cursor-not-allowed flex items-center justify-center gap-2">
                                 <i class="fas fa-calendar-times"></i>
-                                {% if not mentor.services %}No Services{% else %}No Available Slots{% endif %}
+                                {% if not mentor.services %}No Services{% else %}No Slots{% endif %}
                             </button>
                             
                             {% if slots %}
                             <button type="button" 
                                     onclick="requestAvailability()"
-                                    class="w-full mt-3 py-3 border-2 border-primary text-primary font-semibold rounded-xl hover:bg-primary hover:text-white transition-colors">
+                                    class="w-full mt-3 py-2 border-2 border-primary text-primary font-medium rounded-lg hover:bg-primary hover:text-white transition-colors text-sm">
                                 Request Different Time
                             </button>
                             {% endif %}
@@ -323,25 +321,25 @@
                     </form>
                 </div>
 
-                <!-- Mentor Stats Card -->
-                <div class="bg-gradient-to-br from-primary to-secondary rounded-2xl p-8 text-white">
-                    <h3 class="text-xl font-bold mb-6">Mentor Stats</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span>Response Time</span>
-                            <span class="font-bold">< 2 hours</span>
+                <!-- Quick Stats -->
+                <div class="bg-gradient-to-br from-primary to-secondary rounded-xl p-4 sm:p-6 text-white">
+                    <h3 class="text-base sm:text-lg font-bold mb-4">Quick Stats</h3>
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div class="text-center p-2 bg-white/10 rounded-lg">
+                            <p class="text-sm sm:text-base font-bold">2h</p>
+                            <p class="text-xs opacity-90">Response Time</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span>Availability</span>
-                            <span class="font-bold">{{ mentor.availability or 'Flexible' }}</span>
+                        <div class="text-center p-2 bg-white/10 rounded-lg">
+                            <p class="text-sm sm:text-base font-bold">{{ mentor.availability|default('Flex') }}</p>
+                            <p class="text-xs opacity-90">Availability</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span>Session Completion</span>
-                            <span class="font-bold">100%</span>
+                        <div class="text-center p-2 bg-white/10 rounded-lg">
+                            <p class="text-sm sm:text-base font-bold">100%</p>
+                            <p class="text-xs opacity-90">Completion</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span>Student Retention</span>
-                            <span class="font-bold">85%</span>
+                        <div class="text-center p-2 bg-white/10 rounded-lg">
+                            <p class="text-sm sm:text-base font-bold">85%</p>
+                            <p class="text-xs opacity-90">Retention</p>
                         </div>
                     </div>
                 </div>
@@ -351,57 +349,74 @@
 </div>
 
 <script>
-let selectedPayment = 'razorpay';
-
-function selectPayment(method) {
-    selectedPayment = method;
-    // Update UI to show selected payment method
-    document.querySelectorAll('[onclick^="selectPayment"]').forEach(btn => {
-        btn.classList.remove('border-primary', 'bg-primary/5');
-        btn.classList.add('border-gray-200');
-    });
-    event.currentTarget.classList.remove('border-gray-200');
-    event.currentTarget.classList.add('border-primary', 'bg-primary/5');
-}
-
 function requestAvailability() {
-    alert('Availability request sent! The mentor will contact you with alternative time slots.');
+    // Show a simple modal or message
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full">
+            <div class="text-center mb-4">
+                <i class="fas fa-calendar-plus text-primary text-3xl mb-3"></i>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Request Availability</h3>
+                <p class="text-gray-600 text-sm">The mentor will contact you with alternative time slots.</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" placeholder="Your email" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                <textarea placeholder="Preferred days/times..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                <div class="flex gap-3">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="submitAvailabilityRequest()" 
+                            class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+                        Send Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
-// Form submission handler
-document.querySelector('form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Get form data
-    const serviceInput = document.querySelector('input[name="service"]:checked');
-    const slotInput = document.querySelector('input[name="slot"]:checked');
-    
-    if (!serviceInput || !slotInput) {
-        alert('Please select both a service and a time slot');
-        return;
+function submitAvailabilityRequest() {
+    alert('Availability request sent! The mentor will contact you soon.');
+    document.querySelector('.fixed').remove();
+}
+
+// Payment selection
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const serviceInput = this.querySelector('input[name="service"]:checked');
+            const slotInput = this.querySelector('input[name="slot"]:checked');
+            
+            if (!serviceInput || !slotInput) {
+                alert('Please select both a service and a time slot');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = this.querySelector('button[type="submit"]:not([disabled])');
+            if (submitBtn) {
+                const originalHTML = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                submitBtn.disabled = true;
+                
+                // Simulate form submission
+                setTimeout(() => {
+                    alert('Booking request submitted! You will receive a confirmation email.');
+                    submitBtn.innerHTML = originalHTML;
+                    submitBtn.disabled = false;
+                }, 1500);
+            }
+        });
     }
-    
-    const service = serviceInput.value;
-    const slot = slotInput.value;
-    
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) return;
-    
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitBtn.disabled = true;
-    
-    // Submit the form
-    setTimeout(() => {
-        this.submit();
-    }, 1000);
 });
 </script>
-
-<style>
-.sticky {
-    position: sticky;
-}
-</style>
 {% endblock %}
