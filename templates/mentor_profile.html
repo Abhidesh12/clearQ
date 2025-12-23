@@ -1,12 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentor Profile</title>
-</head>
-<body>
-    <h1>Mentor Profile</h1>
-    <p>View and edit your mentor profile information.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Profile</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="full_name" value="{{ current_user.full_name or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" value="{{ current_user.phone or '' }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Job Title</label>
+                        <input type="text" class="form-control" name="job_title" value="{{ current_user.job_title or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Company</label>
+                        <input type="text" class="form-control" name="company" value="{{ current_user.company or '' }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Domain</label>
+                        <input type="text" class="form-control" name="domain" value="{{ current_user.domain or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Experience</label>
+                        <input type="text" class="form-control" name="experience" value="{{ current_user.experience or '' }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Skills (comma separated)</label>
+                    <input type="text" class="form-control" name="skills" value="{{ current_user.skills or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Bio</label>
+                    <textarea class="form-control" name="bio" rows="3">{{ current_user.bio or '' }}</textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Price per session (₹)</label>
+                        <input type="number" class="form-control" name="price" value="{{ current_user.price or '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Availability</label>
+                        <input type="text" class="form-control" name="availability" value="{{ current_user.availability or '' }}">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
