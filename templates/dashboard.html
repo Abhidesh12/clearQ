@@ -5,6 +5,33 @@
     <h1 class="text-3xl font-bold mb-8">My Dashboard</h1>
 
     {% if type == 'learner' %}
+        <!-- Learner Quick Access -->
+        <div class="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Quick Access</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="{{ url_for('explore') }}" class="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                    <i class="fas fa-search text-2xl text-indigo-600 mb-2"></i>
+                    <span class="font-medium text-indigo-800">Find Mentors</span>
+                    <span class="text-sm text-indigo-600 text-center mt-1">Browse available mentors</span>
+                </a>
+                <a href="{{ url_for('learner_enrollments') }}" class="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <i class="fas fa-graduation-cap text-2xl text-green-600 mb-2"></i>
+                    <span class="font-medium text-green-800">My Enrollments</span>
+                    <span class="text-sm text-green-600 text-center mt-1">View program enrollments</span>
+                </a>
+                <a href="{{ url_for('saved_mentors') }}" class="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                    <i class="fas fa-bookmark text-2xl text-yellow-600 mb-2"></i>
+                    <span class="font-medium text-yellow-800">Saved Mentors</span>
+                    <span class="text-sm text-yellow-600 text-center mt-1">Your favorite mentors</span>
+                </a>
+                <a href="{{ url_for('learner_profile') }}" class="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-user text-2xl text-purple-600 mb-2"></i>
+                    <span class="font-medium text-purple-800">My Profile</span>
+                    <span class="text-sm text-purple-600 text-center mt-1">Update your information</span>
+                </a>
+            </div>
+        </div>
+
         <h2 class="text-xl font-semibold mb-4">Your Upcoming Sessions</h2>
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
@@ -144,17 +171,53 @@
         </div>
 
     {% elif type == 'mentor' %}
+        <!-- Mentor Quick Access -->
+        <div class="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Mentor Tools</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <a href="{{ url_for('mentor_bookings') }}" class="flex flex-col items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-calendar-check text-xl text-blue-600 mb-2"></i>
+                    <span class="font-medium text-blue-800 text-sm text-center">Bookings</span>
+                </a>
+                <a href="{{ url_for('mentor_services') }}" class="flex flex-col items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <i class="fas fa-concierge-bell text-xl text-green-600 mb-2"></i>
+                    <span class="font-medium text-green-800 text-sm text-center">Services</span>
+                </a>
+                <a href="{{ url_for('mentor_calendar') }}" class="flex flex-col items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-calendar-alt text-xl text-purple-600 mb-2"></i>
+                    <span class="font-medium text-purple-800 text-sm text-center">Calendar</span>
+                </a>
+                <a href="{{ url_for('mentor_payouts') }}" class="flex flex-col items-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                    <i class="fas fa-wallet text-xl text-yellow-600 mb-2"></i>
+                    <span class="font-medium text-yellow-800 text-sm text-center">Payouts</span>
+                </a>
+                <a href="{{ url_for('mentor_profile') }}" class="flex flex-col items-center p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                    <i class="fas fa-user-edit text-xl text-indigo-600 mb-2"></i>
+                    <span class="font-medium text-indigo-800 text-sm text-center">Profile</span>
+                </a>
+                <a href="{{ url_for('mentor_settings') }}" class="flex flex-col items-center p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                    <i class="fas fa-cog text-xl text-red-600 mb-2"></i>
+                    <span class="font-medium text-red-800 text-sm text-center">Settings</span>
+                </a>
+            </div>
+        </div>
+
         <!-- Mentor Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-indigo-50 p-6 rounded-lg">
                 <h3 class="font-bold text-lg text-indigo-800">Total Earnings</h3>
-                <p class="text-3xl font-bold text-gray-900">₹{{ current_user.price * bookings|length }}</p>
-                <p class="text-sm text-indigo-600 mt-2">{{ bookings|length }} sessions × ₹{{ current_user.price }}/session</p>
+                <p class="text-3xl font-bold text-gray-900">₹{{ revenue if revenue else current_user.price * completed_bookings if completed_bookings else 0 }}</p>
+                <p class="text-sm text-indigo-600 mt-2">{{ total_bookings if total_bookings else bookings|length }} sessions × ₹{{ current_user.price }}/session</p>
             </div>
             <div class="bg-green-50 p-6 rounded-lg">
                 <h3 class="font-bold text-lg text-green-800">Total Sessions</h3>
-                <p class="text-3xl font-bold text-gray-900">{{ bookings|length }}</p>
+                <p class="text-3xl font-bold text-gray-900">{{ total_bookings if total_bookings else bookings|length }}</p>
                 <p class="text-sm text-green-600 mt-2">Bookings completed</p>
+            </div>
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h3 class="font-bold text-lg text-blue-800">Pending</h3>
+                <p class="text-3xl font-bold text-gray-900">{{ pending_bookings if pending_bookings else 0 }}</p>
+                <p class="text-sm text-blue-600 mt-2">Awaiting payment</p>
             </div>
             <div class="bg-purple-50 p-6 rounded-lg">
                 <h3 class="font-bold text-lg text-purple-800">Your Rate</h3>
