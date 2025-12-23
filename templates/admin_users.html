@@ -1,12 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Users</title>
-</head>
-<body>
-    <h1>Admin Users</h1>
-    <p>Manage all users (mentors and learners) in the system.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Users Management</h2>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Verified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'mentor' %}primary{% else %}success{% endif %}">
+                                    {{ user.role }}
+                                </span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                            <td>
+                                {% if user.role == 'mentor' %}
+                                <span class="badge bg-{% if user.is_verified %}success{% else %}warning{% endif %}">
+                                    {{ 'Verified' if user.is_verified else 'Pending' }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
