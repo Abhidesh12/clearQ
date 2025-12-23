@@ -1,12 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentor Calendar</title>
-</head>
-<body>
-    <h1>Mentor Calendar</h1>
-    <p>View and manage your availability and scheduled sessions.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Calendar</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5>Booked Slots</h5>
+            {% if booked_slots %}
+            <ul class="list-group">
+                {% for slot in booked_slots %}
+                <li class="list-group-item">
+                    <strong>{{ slot.time }}</strong> - {{ slot.service }} with {{ slot.learner }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No bookings scheduled.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
