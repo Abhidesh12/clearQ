@@ -1,36 +1,205 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-10 px-4">
+<div class="min-h-screen bg-gray-50">
     
     <!-- AI Search Section -->
-    <div class="bg-indigo-50 p-6 rounded-lg mb-10 shadow-sm border border-indigo-100">
-        <h2 class="text-2xl font-bold text-indigo-800 mb-4"><i class="fas fa-robot mr-2"></i>AI Mentor Match</h2>
-        <form method="POST" action="{{ url_for('explore') }}" class="flex gap-4">
-            <input type="text" name="goal" value="{{ query }}" placeholder="Describe your goal (e.g., 'I want to crack product management interviews at Google')" class="flex-grow p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700">Find Match</button>
-        </form>
-    </div>
-
-    <!-- AI Recommendations -->
-    {% if recommendations %}
-    <div class="mb-12">
-        <h3 class="text-xl font-bold mb-6 text-gray-800">✨ Recommended for You</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {% for mentor in recommendations %}
-                {% include 'mentor_card.html' %}
-            {% endfor %}
+    <div class="bg-gradient-to-br from-primary/5 via-white to-secondary/5 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-robot text-primary mr-2"></i>AI Mentor Match
+                </h1>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    Describe your goal and let our AI find the perfect mentor for you
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('explore') }}" class="max-w-3xl mx-auto">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        name="goal" 
+                        value="{{ query }}" 
+                        placeholder="Describe your goal (e.g., 'I want to crack product management interviews at Google')" 
+                        class="w-full px-5 py-4 pl-14 pr-40 rounded-xl border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white shadow-sm"
+                    >
+                    <i class="fas fa-robot absolute left-5 top-1/2 transform -translate-y-1/2 text-primary text-lg"></i>
+                    <button 
+                        type="submit" 
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-primary to-secondary text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all"
+                    >
+                        Find Match
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-    <hr class="border-gray-200 mb-10">
-    {% endif %}
 
-    <!-- All Mentors -->
-    <h3 class="text-xl font-bold mb-6 text-gray-800">All Expert Mentors</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {% for mentor in mentors %}
-            {% include 'mentor_card.html' %}
-        {% endfor %}
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- AI Recommendations -->
+        {% if recommendations %}
+        <div class="mb-10">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-star text-yellow-500"></i>
+                        ✨ Recommended for You
+                    </h3>
+                    <p class="text-gray-600 text-sm mt-1">
+                        Based on your search: "{{ query }}"
+                    </p>
+                </div>
+                <span class="px-3 py-1 bg-gradient-to-r from-primary/10 to-secondary/10 text-primary rounded-full text-sm font-medium">
+                    {{ recommendations|length }} matches
+                </span>
+            </div>
+            
+            <!-- Responsive Grid for Recommendations -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {% for mentor in recommendations %}
+                    <div class="transform transition-all duration-200 hover:-translate-y-1">
+                        {% include 'mentor_card.html' %}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <hr class="border-gray-200 my-10">
+        </div>
+        {% endif %}
+
+        <!-- All Mentors Section -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">All Expert Mentors</h3>
+                    <p class="text-gray-600 text-sm mt-1">
+                        {% if mentors %}
+                            Showing {{ mentors|length }} mentor{% if mentors|length != 1 %}s{% endif %}
+                            {% if recommendations %}
+                                (excluding recommendations)
+                            {% endif %}
+                        {% else %}
+                            No mentors available
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Filter Options -->
+                <div class="flex items-center gap-3">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                        <option>Sort by: Default</option>
+                        <option>Price: Low to High</option>
+                        <option>Price: High to Low</option>
+                        <option>Experience</option>
+                        <option>Rating</option>
+                    </select>
+                    
+                    <div class="relative group">
+                        <button class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
+                            <i class="fas fa-filter"></i>
+                            Filter
+                        </button>
+                        <!-- Filter dropdown would go here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- All Mentors Grid -->
+            {% if mentors %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {% for mentor in mentors %}
+                        {% if not recommendations or mentor not in recommendations %}
+                            <div class="transform transition-all duration-200 hover:-translate-y-1">
+                                {% include 'mentor_card.html' %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-16 bg-white rounded-xl border border-gray-200">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+                        <i class="fas fa-user-slash text-gray-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No mentors found</h3>
+                    <p class="text-gray-600 max-w-md mx-auto mb-6">
+                        We couldn't find any mentors in our database. Try adjusting your search or check back later.
+                    </p>
+                    <button onclick="location.href='{{ url_for('explore') }}'" 
+                            class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-lg transition-all">
+                        Clear Search
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination (if you need it) -->
+        {% if mentors and mentors|length >= 12 %}
+            <div class="flex justify-center items-center space-x-2 mt-12 pt-8 border-t border-gray-200">
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-chevron-left text-sm"></i>
+                </button>
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-semibold text-sm">
+                    1
+                </button>
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                    2
+                </button>
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                    3
+                </button>
+                <span class="text-gray-500 px-2 text-sm">...</span>
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                    5
+                </button>
+                <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-chevron-right text-sm"></i>
+                </button>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- CTA for Mentors -->
+    <div class="bg-gradient-to-r from-primary/5 to-secondary/5 border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white text-center">
+                <h2 class="text-2xl font-bold mb-4">Share Your Expertise</h2>
+                <p class="text-lg opacity-90 max-w-2xl mx-auto mb-8">
+                    Become a mentor and help shape the next generation of professionals. 
+                    Join our community of verified experts.
+                </p>
+                <a href="#" class="inline-flex items-center px-8 py-3 bg-white text-primary font-bold rounded-xl hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    Apply as Mentor
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Simple filter toggle for demo
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click effect to mentor cards
+        document.querySelectorAll('.mentor-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('a')) {
+                    this.querySelector('a').click();
+                }
+            });
+        });
+        
+        // Update mentor count display
+        const mentorCards = document.querySelectorAll('.mentor-card');
+        const countElement = document.querySelector('.mentor-count');
+        if (countElement && mentorCards.length > 0) {
+            countElement.textContent = `${mentorCards.length} mentors found`;
+        }
+    });
+</script>
 {% endblock %}
