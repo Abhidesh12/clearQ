@@ -1,12 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Enrollments</title>
-</head>
-<body>
-    <h1>Admin Enrollments</h1>
-    <p>Manage and view all enrollments across the platform.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Enrollments Management</h2>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Program</th>
+                            <th>Enrollment Date</th>
+                            <th>Payment Status</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in enrollments %}
+                        <tr>
+                            <td>{{ item.enrollment.id }}</td>
+                            <td>{{ item.user.username }} ({{ item.user.email }})</td>
+                            <td>{{ item.enrollment.program_name }}</td>
+                            <td>{{ item.enrollment.enrollment_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge bg-{% if item.enrollment.payment_status == 'completed' %}success{% else %}warning{% endif %}">
+                                    {{ item.enrollment.payment_status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ item.enrollment.status }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
