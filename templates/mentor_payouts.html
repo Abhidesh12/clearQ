@@ -1,12 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentor Payouts</title>
-</head>
-<body>
-    <h1>Mentor Payouts</h1>
-    <p>Track your earnings and request payouts.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Payouts</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Earnings Summary</h5>
+                    <p>Total Earnings: <strong>₹{{ total_earnings }}</strong></p>
+                    <p>Pending Payout: <strong>₹{{ pending_payout }}</strong></p>
+                    <button class="btn btn-primary">Request Payout</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Payout History</h5>
+                    {% if payout_history %}
+                    <ul class="list-group">
+                        {% for payout in payout_history %}
+                        <li class="list-group-item">
+                            {{ payout.date }} - ₹{{ payout.amount }} ({{ payout.status }})
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No payout history.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
