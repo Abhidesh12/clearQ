@@ -200,6 +200,36 @@ def from_json_filter(value):
     except:
         return {}
 
+# --- DATABASE RESET ROUTE (FOR DEVELOPMENT ONLY) ---
+@app.route('/reset-db')
+def reset_database():
+    """Drop and recreate all tables (DEVELOPMENT ONLY)"""
+    try:
+        # Drop all tables
+        db.drop_all()
+        
+        # Recreate all tables with current schema
+        db.create_all()
+        
+        # Create admin user
+        admin = User(
+            username='admin', 
+            email='admin@clearq.in', 
+            role='admin'
+        )
+        admin.set_password('admin123')
+        db.session.add(admin)
+        db.session.commit()
+        
+        return """
+        <h1>Database Reset Successful!</h1>
+        <p>All tables have been dropped and recreated with the current schema.</p>
+        <p><a href='/'>Go to Home</a></p>
+        <p><a href='/add-sample-mentors'>Add Sample Mentors</a></p>
+        """
+    except Exception as e:
+        return f"<h1>Error resetting database:</h1><p>{str(e)}</p>"
+
 # --- DEBUG ROUTES ---
 @app.route('/check-data')
 def check_data():
@@ -225,6 +255,7 @@ def check_data():
                 Verified: {mentor.is_verified}<br>
                 Domain: {mentor.domain or 'Not set'}<br>
                 Company: {mentor.company or 'Not set'}<br>
+                Previous Company: {mentor.previous_company or 'Not set'}<br>
                 Created: {mentor.created_at}
             </div>
             """
@@ -1212,20 +1243,47 @@ def debug_paths():
         
     return output
 
-# Create DB on first run - with error handling for existing columns
+# Initialize database with proper error handling
 with app.app_context():
     try:
-        db.create_all()
-        # Try to add admin user
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', email='admin@clearq.in', role='admin')
+        # Check if database exists and has tables
+        inspector = db.inspect(db.engine)
+        tables = inspector.get_table_names()
+        
+        if not tables:
+            print("Creating fresh database...")
+            db.create_all()
+            
+            # Create admin user
+            admin = User(
+                username='admin', 
+                email='admin@clearq.in', 
+                role='admin'
+            )
             admin.set_password('admin123')
             db.session.add(admin)
             db.session.commit()
             print("Database and admin user created successfully")
+        else:
+            print(f"Database exists with {len(tables)} tables")
+            
+            # Check if User table has the previous_company column
+            columns = inspector.get_columns('user')
+            column_names = [col['name'] for col in columns]
+            if 'previous_company' not in column_names:
+                print("WARNING: Database schema is outdated. Missing 'previous_company' column.")
+                print("Please visit /reset-db to recreate database with current schema.")
+            else:
+                print("Database schema is up to date.")
+                
     except Exception as e:
-        print(f"Database initialization error (may be expected if tables exist): {e}")
-        # Continue anyway - the app might still work
+        print(f"Database initialization error: {e}")
+        # Try to create tables anyway
+        try:
+            db.create_all()
+            print("Database created as fallback")
+        except Exception as e2:
+            print(f"Could not create database: {e2}")
 
 if __name__ == '__main__':
     app.run(debug=True)
