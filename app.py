@@ -35,7 +35,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200))
     role = db.Column(db.String(20), default='learner')  # 'learner', 'mentor', 'admin'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # Make nullable for existing DB
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     
     # Mentor Specific Fields
     full_name = db.Column(db.String(100), nullable=True)
@@ -43,13 +43,26 @@ class User(UserMixin, db.Model):
     job_title = db.Column(db.String(100), nullable=True)
     domain = db.Column(db.String(100), nullable=True)  # e.g., Data Science, SDE
     company = db.Column(db.String(100), nullable=True)
+    previous_company = db.Column(db.String(100), nullable=True)  # New field
     experience = db.Column(db.String(50), nullable=True)
     skills = db.Column(db.Text, nullable=True)
     services = db.Column(db.Text, nullable=True)  # Resume Review, Mock Interview
-    bio = db.Column(db.Text, nullable=True)  # Used for AI matching
+    bio = db.Column(db.Text, nullable=True)
     price = db.Column(db.Integer, default=0, nullable=True)
     availability = db.Column(db.String(50), nullable=True)
     is_verified = db.Column(db.Boolean, default=False)
+    
+    # New fields for enhanced profile
+    profile_image = db.Column(db.String(500), nullable=True)
+    facebook_url = db.Column(db.String(200), nullable=True)
+    instagram_url = db.Column(db.String(200), nullable=True)
+    youtube_url = db.Column(db.String(200), nullable=True)
+    linkedin_url = db.Column(db.String(200), nullable=True)
+    success_rate = db.Column(db.Integer, default=95)  # percentage
+    response_rate = db.Column(db.Integer, default=98)  # percentage
+    rating = db.Column(db.Float, default=4.9)
+    review_count = db.Column(db.Integer, default=24)
+    profile_views = db.Column(db.Integer, default=0)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -77,6 +90,32 @@ class Booking(db.Model):
     slot_time = db.Column(db.String(50))
     status = db.Column(db.String(20), default='Pending')  # Pending, Paid, Completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    product_type = db.Column(db.String(50), default='1:1 call')  # '1:1 call', 'Digital Product', 'Webinar', 'Combo'
+    duration = db.Column(db.String(50), nullable=True)  # '30 mins', '1 hour', 'Downloadable'
+    price = db.Column(db.Integer, nullable=False)
+    tag = db.Column(db.String(20), nullable=True)  # 'Best Seller', 'Recommended', 'Popular'
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    mentor = db.relationship('User', backref='products')
+
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    comment = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    learner = db.relationship('User', foreign_keys=[learner_id])
+    product = db.relationship('Product')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -196,7 +235,7 @@ def check_data():
 
 @app.route('/add-sample-mentors')
 def add_sample_mentors():
-    """Add sample mentors for testing"""
+    """Add sample mentors for testing with enhanced data"""
     
     sample_mentors = [
         {
@@ -206,14 +245,19 @@ def add_sample_mentors():
             'full_name': 'John Doe',
             'domain': 'Data Science',
             'company': 'Google',
+            'previous_company': 'Microsoft',
             'job_title': 'Senior Data Scientist',
             'experience': '5 years',
-            'skills': 'Python, Machine Learning, SQL, TensorFlow',
+            'skills': 'Python, Machine Learning, SQL, TensorFlow, PyTorch, Data Analysis',
             'services': 'Resume Review, Mock Interview, Career Guidance',
-            'bio': 'I help aspiring data scientists land their dream jobs at FAANG companies. With 5+ years at Google, I know exactly what hiring managers look for.',
+            'bio': 'I help aspiring data scientists land their dream jobs at FAANG companies. With 5+ years at Google and 3 years at Microsoft, I know exactly what hiring managers look for. I\'ve conducted over 200 mock interviews and helped 50+ students get into top tech companies.',
             'price': 1500,
             'availability': 'Weekdays 6-9 PM',
-            'is_verified': True
+            'is_verified': True,
+            'rating': 4.9,
+            'review_count': 42,
+            'success_rate': 96,
+            'response_rate': 99
         },
         {
             'username': 'jane_smith',
@@ -222,14 +266,19 @@ def add_sample_mentors():
             'full_name': 'Jane Smith',
             'domain': 'Product Management',
             'company': 'Microsoft',
-            'job_title': 'Product Manager',
+            'previous_company': 'Amazon',
+            'job_title': 'Senior Product Manager',
             'experience': '7 years',
-            'skills': 'Product Strategy, Agile, User Research, Roadmapping',
+            'skills': 'Product Strategy, Agile, User Research, Roadmapping, A/B Testing',
             'services': 'Mock Interview, Product Case Studies, Career Transition',
-            'bio': 'Ex-Microsoft PM with 7+ years experience. I specialize in helping engineers transition to product management roles.',
+            'bio': 'Ex-Microsoft PM with 7+ years experience. I specialize in helping engineers transition to product management roles. I\'ve successfully mentored 30+ engineers into PM roles at top companies including Google, Meta, and Amazon.',
             'price': 2000,
             'availability': 'Weekends 10 AM - 6 PM',
-            'is_verified': True
+            'is_verified': True,
+            'rating': 4.8,
+            'review_count': 35,
+            'success_rate': 94,
+            'response_rate': 97
         },
         {
             'username': 'alex_wong',
@@ -238,14 +287,40 @@ def add_sample_mentors():
             'full_name': 'Alex Wong',
             'domain': 'Software Engineering',
             'company': 'Amazon',
+            'previous_company': 'Google',
             'job_title': 'Senior SDE',
             'experience': '8 years',
-            'skills': 'Java, System Design, AWS, Distributed Systems',
+            'skills': 'Java, System Design, AWS, Distributed Systems, Microservices, Docker',
             'services': 'Coding Interview Prep, System Design, Resume Review',
-            'bio': 'Senior SDE at Amazon with expertise in large-scale distributed systems. I help engineers crack coding interviews at top tech companies.',
+            'bio': 'Senior SDE at Amazon with expertise in large-scale distributed systems. I help engineers crack coding interviews at top tech companies. With 8+ years of experience and 500+ mock interviews conducted, I know what it takes to succeed in technical interviews.',
             'price': 1800,
             'availability': 'Mon-Fri 7-10 PM',
-            'is_verified': True
+            'is_verified': True,
+            'rating': 4.95,
+            'review_count': 58,
+            'success_rate': 98,
+            'response_rate': 100
+        },
+        {
+            'username': 'sara_johnson',
+            'email': 'sara@example.com',
+            'password': 'test123',
+            'full_name': 'Sara Johnson',
+            'domain': 'UX Design',
+            'company': 'Meta',
+            'previous_company': 'Apple',
+            'job_title': 'Lead UX Designer',
+            'experience': '6 years',
+            'skills': 'Figma, User Research, Prototyping, Design Systems, UX Writing',
+            'services': 'Portfolio Review, Design Critique, Career Coaching',
+            'bio': 'Lead UX Designer at Meta with 6+ years of experience. I help designers build compelling portfolios and prepare for design interviews. I\'ve mentored 40+ designers who now work at companies like Google, Airbnb, and Netflix.',
+            'price': 1600,
+            'availability': 'Tue-Thu 5-9 PM',
+            'is_verified': True,
+            'rating': 4.7,
+            'review_count': 28,
+            'success_rate': 92,
+            'response_rate': 95
         }
     ]
     
@@ -260,6 +335,7 @@ def add_sample_mentors():
                 full_name=data['full_name'],
                 domain=data['domain'],
                 company=data['company'],
+                previous_company=data['previous_company'],
                 job_title=data['job_title'],
                 experience=data['experience'],
                 skills=data['skills'],
@@ -267,7 +343,11 @@ def add_sample_mentors():
                 bio=data['bio'],
                 price=data['price'],
                 availability=data['availability'],
-                is_verified=data['is_verified']
+                is_verified=data['is_verified'],
+                rating=data['rating'],
+                review_count=data['review_count'],
+                success_rate=data['success_rate'],
+                response_rate=data['response_rate']
             )
             mentor.set_password(data['password'])
             db.session.add(mentor)
@@ -275,7 +355,54 @@ def add_sample_mentors():
     
     db.session.commit()
     
-    return f"Added {added_count} sample mentors! <a href='/explore'>Go to Explore</a>"
+    # Add sample products for these mentors
+    sample_products = [
+        {
+            'mentor_username': 'john_doe',
+            'name': 'Resume Review',
+            'description': 'Detailed feedback on your resume with ATS optimization tips',
+            'product_type': 'Digital Product',
+            'duration': '24-hour delivery',
+            'price': 500,
+            'tag': 'Best Seller'
+        },
+        {
+            'mentor_username': 'john_doe',
+            'name': 'Mock Interview',
+            'description': '1-hour technical mock interview with detailed feedback',
+            'product_type': '1:1 call',
+            'duration': '1 hour',
+            'price': 1500,
+            'tag': 'Popular'
+        },
+        {
+            'mentor_username': 'jane_smith',
+            'name': 'Product Case Study Review',
+            'description': 'In-depth review of your product case studies',
+            'product_type': '1:1 call',
+            'duration': '45 mins',
+            'price': 1200,
+            'tag': 'Recommended'
+        }
+    ]
+    
+    for product_data in sample_products:
+        mentor = User.query.filter_by(username=product_data['mentor_username']).first()
+        if mentor and not Product.query.filter_by(mentor_id=mentor.id, name=product_data['name']).first():
+            product = Product(
+                mentor_id=mentor.id,
+                name=product_data['name'],
+                description=product_data['description'],
+                product_type=product_data['product_type'],
+                duration=product_data['duration'],
+                price=product_data['price'],
+                tag=product_data['tag']
+            )
+            db.session.add(product)
+    
+    db.session.commit()
+    
+    return f"Added {added_count} sample mentors with products! <a href='/explore'>Go to Explore</a>"
 
 # --- ROUTES ---
 
@@ -288,16 +415,11 @@ def explore():
     recommendations = []
     query = ""
     
-    # Debug logging
-    print("=== EXPLORE ROUTE ===")
-    
     if request.method == 'POST':
         query = request.form.get('goal')
-        print(f"Search query: {query}")
         if query:
             try:
                 recommendations = get_ai_recommendations(query)
-                print(f"AI found {len(recommendations)} recommendations")
             except Exception as e:
                 print(f"AI error: {e}")
                 # Fallback: simple text matching
@@ -310,15 +432,74 @@ def explore():
     # Get all verified mentors
     all_mentors = User.query.filter_by(role='mentor', is_verified=True).all()
     
-    # Debug logging
-    print(f"Total verified mentors: {len(all_mentors)}")
-    for mentor in all_mentors:
-        print(f"  - {mentor.username}: {mentor.domain}")
+    # Get top companies mentors
+    top_companies = ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix']
+    top_mentors = [m for m in all_mentors if m.company in top_companies]
     
     return render_template('mentors.html', 
                          mentors=all_mentors, 
                          recommendations=recommendations, 
-                         query=query)
+                         query=query,
+                         top_mentors=top_mentors)
+
+# Username-based profile routes
+@app.route('/<username>')
+def mentor_public_profile(username):
+    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    
+    # Increment profile views
+    mentor.profile_views = (mentor.profile_views or 0) + 1
+    db.session.commit()
+    
+    # Get mentor's products
+    products = Product.query.filter_by(mentor_id=mentor.id, is_active=True).all()
+    
+    # Get reviews
+    reviews = Review.query.filter_by(mentor_id=mentor.id).all()
+    
+    # Categorize products by type
+    product_types = {}
+    for product in products:
+        if product.product_type not in product_types:
+            product_types[product.product_type] = []
+        product_types[product.product_type].append(product)
+    
+    # Calculate total sessions
+    total_sessions = Booking.query.filter_by(mentor_id=mentor.id).count()
+    
+    return render_template('mentor_public_profile.html',
+                         mentor=mentor,
+                         products=products,
+                         product_types=product_types,
+                         reviews=reviews,
+                         total_sessions=total_sessions)
+
+@app.route('/<username>/<int:product_id>')
+def product_detail(username, product_id):
+    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    product = Product.query.filter_by(id=product_id, mentor_id=mentor.id, is_active=True).first_or_404()
+    
+    # Get reviews for this product
+    reviews = Review.query.filter_by(product_id=product_id).all()
+    
+    # For time-based products, get available slots
+    available_slots = []
+    if product.product_type in ['1:1 call', 'Webinar']:
+        booked_slots = [b.slot_time for b in Booking.query.filter_by(mentor_id=mentor.id).all()]
+        all_slots = ["10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "5:00 PM", "6:00 PM"]
+        available_slots = [s for s in all_slots if s not in booked_slots]
+    
+    return render_template('product_detail.html',
+                         mentor=mentor,
+                         product=product,
+                         reviews=reviews,
+                         available_slots=available_slots)
+
+# Keep old route for backward compatibility
+@app.route('/mentor/<int:id>')
+def mentor_detail_legacy(id):
+    mentor = User.query.get_or_404(id)
+    return redirect(url_for('mentor_public_profile', username=mentor.username))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -364,6 +545,7 @@ def register():
             phone = request.form.get('phone')
             job_title = request.form.get('job_title')
             company = request.form.get('company')
+            previous_company = request.form.get('previous_company')
             domain = request.form.get('domain')
             experience = request.form.get('experience')
             skills = request.form.get('skills') or ''
@@ -374,6 +556,12 @@ def register():
             # Get services as list and convert to string
             services_list = request.form.getlist('services')
             services = ', '.join(services_list) if services_list else ""
+            
+            # Social media links
+            facebook_url = request.form.get('facebook_url')
+            instagram_url = request.form.get('instagram_url')
+            youtube_url = request.form.get('youtube_url')
+            linkedin_url = request.form.get('linkedin_url')
             
             # Check if passwords match
             if password != confirm_password:
@@ -400,6 +588,7 @@ def register():
                 phone=phone,
                 job_title=job_title,
                 company=company,
+                previous_company=previous_company,
                 domain=domain,
                 experience=experience,
                 skills=skills,
@@ -407,6 +596,10 @@ def register():
                 bio=bio,
                 price=int(price) if price else 0,
                 availability=availability,
+                facebook_url=facebook_url,
+                instagram_url=instagram_url,
+                youtube_url=youtube_url,
+                linkedin_url=linkedin_url,
                 is_verified=False
             )
             user.set_password(password)
@@ -510,89 +703,33 @@ def process_enrollment_payment(enrollment_id):
     
     return jsonify({'success': True, 'message': 'Payment completed successfully'})
 
-# Optional: Add edit profile route
-@app.route('/edit-profile', methods=['GET', 'POST'])
+# Product booking/purchase
+@app.route('/book-product/<int:product_id>', methods=['POST'])
 @login_required
-def edit_profile():
-    if request.method == 'POST':
-        # Handle profile updates
-        if current_user.role == 'mentor':
-            current_user.full_name = request.form.get('full_name')
-            current_user.domain = request.form.get('domain')
-            current_user.price = int(request.form.get('price')) if request.form.get('price') else 0
-            current_user.bio = request.form.get('bio')
-            current_user.availability = request.form.get('availability')
-        
-        db.session.commit()
-        flash('Profile updated successfully!')
-        return redirect(url_for('dashboard'))
+def book_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    mentor = User.query.get(product.mentor_id)
     
-    return render_template('edit_profile.html')
-    
-@app.route('/process-enrollment', methods=['POST'])
-def process_enrollment():
-    """API endpoint to process enrollment (for AJAX)"""
-    try:
-        data = request.get_json()
+    if product.product_type in ['1:1 call', 'Webinar']:
+        slot = request.form.get('slot')
         
-        # Extract data
-        full_name = data.get('fullName')
-        email = data.get('email')
-        phone = data.get('phone')
-        education = data.get('education')
-        
-        # Validation
-        if not all([full_name, email, phone]):
-            return jsonify({'success': False, 'message': 'All fields are required'}), 400
-        
-        # Create user account if email doesn't exist
-        existing_user = User.query.filter_by(email=email).first()
-        if not existing_user:
-            # Create new user
-            username = email.split('@')[0]
-            # Ensure username is unique
-            counter = 1
-            original_username = username
-            while User.query.filter_by(username=username).first():
-                username = f"{original_username}_{counter}"
-                counter += 1
-            
-            user = User(
-                username=username,
-                email=email,
-                role='learner'
-            )
-            user.set_password('temp123')
-            db.session.add(user)
-            db.session.commit()
-            user_id = user.id
-        else:
-            user_id = existing_user.id
-        
-        # Save enrollment
-        enrollment_data = {
-            'full_name': full_name,
-            'phone': phone,
-            'education': education
-        }
-        
-        enrollment = Enrollment(
-            user_id=user_id,
-            program_name='career_mentorship',
-            payment_status='pending',
-            payment_amount=499,
-            additional_data=json.dumps(enrollment_data)
+        # Create booking
+        booking = Booking(
+            mentor_id=product.mentor_id,
+            learner_id=current_user.id,
+            service_name=product.name,
+            slot_time=slot,
+            status='Pending'
         )
-        db.session.add(enrollment)
+        db.session.add(booking)
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'message': 'Enrollment successful! Check your email for confirmation.'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        flash(f'Booking created for {product.name}! Please complete payment of ₹{product.price}.')
+    else:
+        # Handle digital product purchase
+        flash(f'{product.name} purchased successfully for ₹{product.price}!')
+    
+    return redirect(url_for('dashboard'))
 
 @app.route('/mentorship-program')
 def mentorship_program():
@@ -624,52 +761,6 @@ def logout():
     logout_user()
     flash('You have been logged out.')
     return redirect(url_for('index'))
-
-@app.route('/mentor/<int:id>', methods=['GET', 'POST'])
-def mentor_detail(id):
-    mentor = User.query.get_or_404(id)
-    if mentor.role != 'mentor':
-        flash('User is not a mentor')
-        return redirect(url_for('explore'))
-    
-    # Basic slots logic
-    slots = ["10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "5:00 PM", "6:00 PM"]
-    
-    # Remove slots that are already booked for this mentor
-    booked_slots = [b.slot_time for b in Booking.query.filter_by(mentor_id=id).all()]
-    available_slots = [s for s in slots if s not in booked_slots]
-
-    if request.method == 'POST':
-        if not current_user.is_authenticated:
-            flash('Please login to book a session')
-            return redirect(url_for('login'))
-            
-        service = request.form.get('service')
-        slot = request.form.get('slot')
-        
-        # Check if slot is still available
-        if slot not in available_slots:
-            flash('Selected slot is no longer available')
-            return redirect(url_for('mentor_detail', id=id))
-        
-        # Create booking
-        booking = Booking(
-            mentor_id=id, 
-            learner_id=current_user.id, 
-            service_name=service, 
-            slot_time=slot, 
-            status='Paid'
-        )
-        db.session.add(booking)
-        db.session.commit()
-        
-        flash('Booking Confirmed! Payment Successful.')
-        return redirect(url_for('dashboard'))
-
-    # Parse services
-    services = [s.strip() for s in mentor.services.split(',')] if mentor.services else []
-    
-    return render_template('mentor_detail.html', mentor=mentor, slots=available_slots, services=services)
 
 @app.route('/dashboard')
 @login_required
@@ -785,7 +876,41 @@ def reject_mentor(id):
     
     return jsonify({'success': True, 'message': 'Mentor application rejected'})
 
-# New routes for mentor dashboard sections (optional access)
+# Product management for mentors
+@app.route('/mentor/products', methods=['GET', 'POST'])
+@login_required
+def mentor_products():
+    if current_user.role != 'mentor':
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        # Add new product
+        name = request.form.get('name')
+        description = request.form.get('description')
+        product_type = request.form.get('product_type')
+        duration = request.form.get('duration')
+        price = request.form.get('price')
+        tag = request.form.get('tag')
+        
+        product = Product(
+            mentor_id=current_user.id,
+            name=name,
+            description=description,
+            product_type=product_type,
+            duration=duration,
+            price=int(price) if price else 0,
+            tag=tag
+        )
+        db.session.add(product)
+        db.session.commit()
+        flash('Product added successfully!')
+        return redirect(url_for('mentor_products'))
+    
+    # Get mentor's products
+    products = Product.query.filter_by(mentor_id=current_user.id).all()
+    return render_template('mentor_products.html', products=products)
+
+# New routes for mentor dashboard sections
 @app.route('/mentor/bookings')
 @login_required
 def mentor_bookings():
@@ -868,17 +993,24 @@ def mentor_profile():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        # Update mentor profile
+        # Update mentor profile with all new fields
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
         current_user.job_title = request.form.get('job_title')
         current_user.company = request.form.get('company')
+        current_user.previous_company = request.form.get('previous_company')
         current_user.domain = request.form.get('domain')
         current_user.experience = request.form.get('experience')
         current_user.skills = request.form.get('skills')
         current_user.bio = request.form.get('bio')
         current_user.price = int(request.form.get('price')) if request.form.get('price') else 0
         current_user.availability = request.form.get('availability')
+        current_user.facebook_url = request.form.get('facebook_url')
+        current_user.instagram_url = request.form.get('instagram_url')
+        current_user.youtube_url = request.form.get('youtube_url')
+        current_user.linkedin_url = request.form.get('linkedin_url')
+        current_user.success_rate = int(request.form.get('success_rate')) if request.form.get('success_rate') else 95
+        current_user.response_rate = int(request.form.get('response_rate')) if request.form.get('response_rate') else 98
         
         db.session.commit()
         flash('Profile updated successfully!')
@@ -917,7 +1049,7 @@ def mentor_settings():
     
     return render_template('mentor_settings.html')
 
-# New routes for learner (optional access)
+# New routes for learner
 @app.route('/learner/enrollments')
 @login_required
 def learner_enrollments():
@@ -955,7 +1087,7 @@ def learner_profile():
     
     return render_template('learner_profile.html')
 
-# New routes for admin (optional access)
+# New routes for admin
 @app.route('/admin/users')
 @login_required
 def admin_users():
