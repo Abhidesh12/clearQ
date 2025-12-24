@@ -231,6 +231,34 @@ def reset_database():
         return f"<h1>Error resetting database:</h1><p>{str(e)}</p>"
 
 # --- DEBUG ROUTES ---
+
+@app.route('/force-db-reset')
+def force_db_reset():
+    """FORCE reset database - DANGER: This will DELETE ALL DATA!"""
+    try:
+        print("Dropping all tables...")
+        db.drop_all()
+        print("Creating all tables with new schema...")
+        db.create_all()
+        
+        # Create admin user
+        admin = User(
+            username='admin', 
+            email='admin@clearq.in', 
+            role='admin'
+        )
+        admin.set_password('admin123')
+        db.session.add(admin)
+        db.session.commit()
+        
+        return """
+        <h1>✅ Database Reset Complete!</h1>
+        <p>All tables have been dropped and recreated with the current schema.</p>
+        <p>Missing columns like 'previous_company' have been added.</p>
+        <p><a href='/'>Go to Home</a> | <a href='/add-sample-mentors'>Add Sample Mentors</a></p>
+        """
+    except Exception as e:
+        return f"<h1>❌ Error:</h1><pre>{str(e)}</pre>"
 @app.route('/check-data')
 def check_data():
     """Check what data exists in database"""
@@ -1287,3 +1315,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
