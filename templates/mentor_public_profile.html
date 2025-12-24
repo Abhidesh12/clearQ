@@ -20,10 +20,14 @@
                     <div class="p-6">
                         <!-- Avatar -->
                         <div class="flex justify-center mb-4">
-                            <div class="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                            <div class="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center overflow-hidden">
+                                {% if mentor.profile_image %}
+                                <img src="{{ mentor.profile_image }}" alt="{{ mentor.full_name or mentor.username }}" class="w-full h-full object-cover">
+                                {% else %}
                                 <span class="text-3xl font-bold text-white">
                                     {{ (mentor.full_name or mentor.username)[0].upper() }}
                                 </span>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -37,6 +41,30 @@
                                 <i class="fas fa-building text-gray-400"></i>
                                 <p class="text-gray-700 font-medium">{{ mentor.company or 'Not specified' }}</p>
                             </div>
+                        </div>
+                        
+                        <!-- Social Media Links -->
+                        <div class="flex justify-center gap-3 mb-6">
+                            {% if mentor.facebook_url %}
+                            <a href="{{ mentor.facebook_url }}" target="_blank" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            {% endif %}
+                            {% if mentor.instagram_url %}
+                            <a href="{{ mentor.instagram_url }}" target="_blank" class="w-10 h-10 bg-pink-600 text-white rounded-full flex items-center justify-center hover:bg-pink-700 transition-colors">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            {% endif %}
+                            {% if mentor.youtube_url %}
+                            <a href="{{ mentor.youtube_url }}" target="_blank" class="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
+                                <i class="fab fa-youtube"></i>
+                            </a>
+                            {% endif %}
+                            {% if mentor.linkedin_url %}
+                            <a href="{{ mentor.linkedin_url }}" target="_blank" class="w-10 h-10 bg-blue-700 text-white rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            {% endif %}
                         </div>
                         
                         <!-- Verification Badge -->
@@ -61,153 +89,210 @@
                             </div>
                         </div>
                         
-                        <!-- Price -->
-                        <div class="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 mb-6">
-                            <p class="text-sm text-gray-500 mb-1">Session Rate</p>
-                            <p class="text-3xl font-bold text-primary">₹{{ mentor.price or '0' }}</p>
-                            <p class="text-xs text-gray-500">per 1-hour session</p>
-                        </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="space-y-3">
-                            <a href="{{ url_for('explore') }}" 
-                               class="block w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-lg transition-all text-center flex items-center justify-center gap-2">
-                                <i class="fas fa-calendar-check"></i>
-                                Book Session
-                            </a>
-                            <button onclick="shareProfile()"
-                               class="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
-                                <i class="fas fa-share-alt"></i>
-                                Share Profile
-                            </button>
-                        </div>
+                        <!-- Share Button -->
+                        <button onclick="shareProfile()"
+                               class="w-full py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2 mb-6">
+                            <i class="fas fa-share-alt"></i>
+                            Share Profile
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Right Column - Details -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Professional Information -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                
+                <!-- Work Experience Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-6">
+                    <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <i class="fas fa-briefcase text-primary"></i>
-                        Professional Information
-                    </h2>
+                        Work Experience
+                    </h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Left Column Info -->
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Domain</p>
-                                <p class="font-medium text-gray-900">{{ mentor.domain or 'Not specified' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Experience</p>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-clock text-gray-400"></i>
-                                    <p class="font-medium text-gray-900">{{ mentor.experience or 'Not specified' }}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Price</p>
-                                <p class="font-medium text-gray-900">₹{{ mentor.price or '0' }} / session</p>
-                            </div>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Current Role</p>
+                            <p class="font-medium text-gray-900">{{ mentor.job_title or 'Not specified' }}</p>
+                            <p class="text-gray-600">{{ mentor.company or 'Not specified' }}</p>
                         </div>
                         
-                        <!-- Right Column Info -->
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Availability</p>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-calendar-check text-gray-400"></i>
-                                    <p class="font-medium text-gray-900">{{ mentor.availability or 'Flexible' }}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Company</p>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-building text-gray-400"></i>
-                                    <p class="font-medium text-gray-900">{{ mentor.company or 'Not specified' }}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Verification</p>
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1.5"></i>
-                                    Verified Account
-                                </span>
-                            </div>
+                        {% if mentor.previous_company %}
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Previous Company</p>
+                            <p class="font-medium text-gray-900">{{ mentor.previous_company }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Experience</p>
+                            <p class="font-medium text-gray-900">{{ mentor.experience or 'Not specified' }}</p>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Skills Section -->
                 {% if mentor.skills %}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-6">
+                    <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <i class="fas fa-tools text-primary"></i>
-                        Skills & Expertise
-                    </h2>
+                        Skills
+                    </h3>
                     
                     <div class="flex flex-wrap gap-2">
                         {% for skill in mentor.skills.split(',') %}
-                        <span class="px-4 py-2 bg-gray-50 text-gray-800 rounded-lg text-sm font-medium border border-gray-200 hover:border-primary transition-colors">
+                        <span class="px-3 py-1.5 bg-gray-50 text-gray-800 rounded-lg text-sm font-medium border border-gray-200">
                             {{ skill.strip() }}
                         </span>
                         {% endfor %}
                     </div>
                 </div>
                 {% endif %}
+            </div>
 
-                <!-- About/Bio Section -->
-                {% if mentor.bio %}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <!-- Right Column - Main Content -->
+            <div class="lg:col-span-2">
+                <!-- About Me Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <i class="fas fa-user text-primary"></i>
-                        About
+                        About Me
                     </h2>
                     
                     <div class="prose prose-sm max-w-none">
-                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ mentor.bio }}</p>
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ mentor.bio or 'No bio available.' }}</p>
                     </div>
                 </div>
-                {% endif %}
-
-                <!-- Services -->
-                {% if mentor.services %}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                
+                <!-- Products/Services Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <i class="fas fa-handshake text-primary"></i>
-                        Services Offered
+                        <i class="fas fa-box text-primary"></i>
+                        Products & Services
                     </h2>
                     
-                    <div class="bg-gray-50 rounded-xl p-5">
-                        <p class="text-gray-700 leading-relaxed">{{ mentor.services }}</p>
+                    <!-- Product Type Tabs -->
+                    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                        <button onclick="filterProducts('all')" class="px-4 py-2 bg-primary text-white rounded-lg whitespace-nowrap">All</button>
+                        {% for type_name, type_products in product_types.items() %}
+                        <button onclick="filterProducts('{{ type_name }}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg whitespace-nowrap">
+                            {{ type_name }} ({{ type_products|length }})
+                        </button>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Products Grid -->
+                    <div class="space-y-4">
+                        {% for product in products %}
+                        <div class="border border-gray-200 rounded-xl p-5 product-card hover:border-primary transition-colors" data-type="{{ product.product_type }}">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    {% if product.tag %}
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full 
+                                        {% if product.tag == 'Best Seller' %}bg-yellow-100 text-yellow-800
+                                        {% elif product.tag == 'Recommended' %}bg-green-100 text-green-800
+                                        {% elif product.tag == 'Popular' %}bg-purple-100 text-purple-800{% endif %}">
+                                        {{ product.tag }}
+                                    </span>
+                                    {% endif %}
+                                    <h3 class="font-bold text-lg mt-2">{{ product.name }}</h3>
+                                </div>
+                                <span class="text-2xl font-bold text-primary">₹{{ product.price }}</span>
+                            </div>
+                            
+                            <p class="text-gray-600 mb-4">{{ product.description }}</p>
+                            
+                            <!-- Duration (only for time-based products) -->
+                            {% if product.product_type in ['1:1 call', 'Webinar'] %}
+                            <p class="text-gray-700 mb-3"><i class="far fa-clock"></i> {{ product.duration or 'Flexible' }}</p>
+                            {% endif %}
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">{{ product.product_type }}</span>
+                                <a href="/{{ mentor.username }}/{{ product.id }}" 
+                                   class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium">
+                                    {% if product.product_type == 'Digital Product' %}
+                                    Purchase Now
+                                    {% else %}
+                                    Book Now
+                                    {% endif %}
+                                </a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8 border border-dashed border-gray-300 rounded-xl">
+                            <i class="fas fa-box-open text-gray-400 text-3xl mb-3"></i>
+                            <p class="text-gray-500">No products available yet.</p>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-                {% endif %}
-
-                <!-- Quick Stats -->
-                <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white">
-                    <h2 class="text-xl font-bold mb-6">Mentor Stats</h2>
+                
+                <!-- Stats Section -->
+                <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white mb-6">
+                    <h2 class="text-xl font-bold mb-6">Mentor Performance</h2>
                     
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div class="text-center">
-                            <p class="text-3xl font-bold">4.9</p>
+                            <p class="text-3xl font-bold">{{ "%.1f"|format(mentor.rating or 4.9) }}</p>
                             <p class="text-sm opacity-90">Rating</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-3xl font-bold">94%</p>
+                            <p class="text-3xl font-bold">{{ mentor.success_rate or 95 }}%</p>
                             <p class="text-sm opacity-90">Success Rate</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-3xl font-bold">24</p>
+                            <p class="text-3xl font-bold">{{ mentor.review_count or 24 }}</p>
                             <p class="text-sm opacity-90">Reviews</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-3xl font-bold">98%</p>
+                            <p class="text-3xl font-bold">{{ mentor.response_rate or 98 }}%</p>
                             <p class="text-sm opacity-90">Response Rate</p>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Reviews Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-star text-yellow-500"></i>
+                        Reviews & Ratings
+                    </h2>
+                    
+                    <!-- Overall Rating -->
+                    <div class="flex items-center mb-8">
+                        <div class="text-4xl font-bold mr-6">{{ "%.1f"|format(mentor.rating or 4.9) }}</div>
+                        <div>
+                            <div class="flex items-center mb-2">
+                                {% for i in range(5) %}
+                                <i class="fas fa-star {% if i < (mentor.rating or 4.9)|int %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <p class="text-gray-600">Based on {{ mentor.review_count or 24 }} reviews</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviews List -->
+                    <div class="space-y-6">
+                        {% for review in reviews %}
+                        <div class="border-b border-gray-200 pb-6">
+                            <div class="flex justify-between mb-3">
+                                <div>
+                                    <span class="font-semibold">{{ review.learner.username if review.learner else 'Anonymous' }}</span>
+                                    <div class="flex items-center mt-1">
+                                        {% for i in range(review.rating) %}
+                                        <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <span class="text-gray-500 text-sm">{{ review.created_at.strftime('%b %d, %Y') if review.created_at else 'Recently' }}</span>
+                            </div>
+                            <p class="text-gray-700">{{ review.comment }}</p>
+                            {% if review.product %}
+                            <p class="text-sm text-gray-500 mt-2">For: {{ review.product.name }}</p>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-comment-alt text-gray-400 text-3xl mb-3"></i>
+                            <p class="text-gray-500">No reviews yet. Be the first to review!</p>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -273,6 +358,17 @@ function fallbackCopy(url) {
             
             alert('Profile link copied to clipboard!');
         });
+}
+
+function filterProducts(type) {
+    const products = document.querySelectorAll('.product-card');
+    products.forEach(product => {
+        if (type === 'all' || product.dataset.type === type) {
+            product.style.display = 'block';
+        } else {
+            product.style.display = 'none';
+        }
+    });
 }
 
 // Add fade-in animation
