@@ -410,6 +410,19 @@ def add_sample_mentors():
 def index():
     return render_template('index.html')
 
+# --- Static file handlers to prevent conflicts with dynamic routes ---
+@app.route('/favicon.ico')
+def favicon():
+    return '', 404  # Return 404 or serve actual favicon if available
+
+@app.route('/robots.txt')
+def robots():
+    return '', 404
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return '', 404
+
 @app.route('/explore', methods=['GET', 'POST'])
 def explore():
     recommendations = []
@@ -443,7 +456,7 @@ def explore():
                          top_mentors=top_mentors)
 
 # Username-based profile routes
-@app.route('/<username>')
+@app.route('/mentor/<username>')
 def mentor_public_profile(username):
     mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
     
@@ -474,7 +487,7 @@ def mentor_public_profile(username):
                          reviews=reviews,
                          total_sessions=total_sessions)
 
-@app.route('/<username>/<int:product_id>')
+@app.route('/mentor/<username>/<int:product_id>')
 def product_detail(username, product_id):
     mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
     product = Product.query.filter_by(id=product_id, mentor_id=mentor.id, is_active=True).first_or_404()
