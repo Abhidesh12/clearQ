@@ -277,6 +277,7 @@ def debug_user(user_id):
     
     result += "</table>"
     return result
+
 @app.route('/force-db-reset')
 def force_db_reset():
     """FORCE reset database - DANGER: This will DELETE ALL DATA!"""
@@ -304,6 +305,7 @@ def force_db_reset():
         """
     except Exception as e:
         return f"<h1>❌ Error:</h1><pre>{str(e)}</pre>"
+
 @app.route('/check-data')
 def check_data():
     """Check what data exists in database"""
@@ -336,6 +338,28 @@ def check_data():
         result += "<p>No mentors found. You need to register as a mentor first.</p>"
         
     return result
+
+@app.route('/check-username/<username>')
+def check_username(username):
+    """Check if a username exists"""
+    user = User.query.filter_by(username=username).first()
+    
+    if user:
+        return f"""
+        <h1>User '{username}' Found</h1>
+        <p>ID: {user.id}</p>
+        <p>Email: {user.email}</p>
+        <p>Role: {user.role}</p>
+        <p>Verified: {user.is_verified}</p>
+        <p><a href='/mentor/{username}'>Go to profile: /mentor/{username}</a></p>
+        <p><a href='/{username}'>Test old URL: /{username}</a></p>
+        """
+    else:
+        return f"""
+        <h1>User '{username}' Not Found</h1>
+        <p>No user with username '{username}' exists in the database.</p>
+        <p><a href='/check-data'>See all users</a></p>
+        """
 
 @app.route('/add-sample-mentors')
 def add_sample_mentors():
@@ -514,6 +538,17 @@ def add_sample_mentors():
 def index():
     return render_template('index.html')
 
+# --- BACKWARD COMPATIBILITY for old /username URLs ---
+@app.route('/<username>')
+def redirect_old_profile(username):
+    """Redirect old /username URLs to new /mentor/username URLs"""
+    # Check if it's a file extension we should ignore
+    if '.' in username and username.split('.')[-1] in ['ico', 'png', 'jpg', 'css', 'js', 'json']:
+        return '', 404
+    
+    # Redirect to new mentor profile URL
+    return redirect(url_for('mentor_public_profile', username=username))
+
 # --- Static file handlers to prevent conflicts with dynamic routes ---
 @app.route('/favicon.ico')
 def favicon():
@@ -570,7 +605,7 @@ def mentor_public_profile(username):
         return f"""
         <h1>User '{username}' not found</h1>
         <p><a href='/explore'>Back to Explore</a></p>
-        <p>Debug: <a href='/debug-user/2'>Check user ID 2</a></p>
+        <p>Debug: <a href='/check-username/{username}'>Check username</a></p>
         """, 404
     
     if mentor.role != 'mentor':
@@ -1376,6 +1411,3 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
