@@ -231,7 +231,52 @@ def reset_database():
         return f"<h1>Error resetting database:</h1><p>{str(e)}</p>"
 
 # --- DEBUG ROUTES ---
-
+@app.route('/debug-user/<int:user_id>')
+def debug_user(user_id):
+    """Debug a specific user"""
+    user = User.query.get(user_id)
+    
+    if not user:
+        return f"<h1>User ID {user_id} not found</h1>"
+    
+    result = f"""
+    <h1>Debug User ID {user_id}</h1>
+    <table border="1">
+        <tr><td>ID</td><td>{user.id}</td></tr>
+        <tr><td>Username</td><td>{user.username}</td></tr>
+        <tr><td>Email</td><td>{user.email}</td></tr>
+        <tr><td>Role</td><td>{user.role}</td></tr>
+        <tr><td>Full Name</td><td>{user.full_name or 'N/A'}</td></tr>
+        <tr><td>Domain</td><td>{user.domain or 'N/A'}</td></tr>
+        <tr><td>Company</td><td>{user.company or 'N/A'}</td></tr>
+        <tr><td>Verified</td><td>{user.is_verified}</td></tr>
+        <tr><td>Created At</td><td>{user.created_at}</td></tr>
+    </table>
+    
+    <h2>Profile URL</h2>
+    <p><a href="/mentor/{user.username}">/mentor/{user.username}</a></p>
+    
+    <h2>All Users</h2>
+    <table border="1">
+        <tr>
+            <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Verified</th>
+        </tr>
+    """
+    
+    all_users = User.query.all()
+    for u in all_users:
+        result += f"""
+        <tr>
+            <td>{u.id}</td>
+            <td>{u.username}</td>
+            <td>{u.email}</td>
+            <td>{u.role}</td>
+            <td>{u.is_verified}</td>
+        </tr>
+        """
+    
+    result += "</table>"
+    return result
 @app.route('/force-db-reset')
 def force_db_reset():
     """FORCE reset database - DANGER: This will DELETE ALL DATA!"""
@@ -1315,4 +1360,5 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
