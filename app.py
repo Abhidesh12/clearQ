@@ -562,7 +562,23 @@ def explore():
 # Username-based profile routes
 @app.route('/mentor/<username>')
 def mentor_public_profile(username):
-    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    # Try to find the user
+    mentor = User.query.filter_by(username=username).first()
+    
+    # If not found or not a mentor
+    if not mentor:
+        return f"""
+        <h1>User '{username}' not found</h1>
+        <p><a href='/explore'>Back to Explore</a></p>
+        <p>Debug: <a href='/debug-user/2'>Check user ID 2</a></p>
+        """, 404
+    
+    if mentor.role != 'mentor':
+        return f"""
+        <h1>User '{username}' is not a mentor</h1>
+        <p>Role: {mentor.role}</p>
+        <p><a href='/explore'>Back to Explore</a></p>
+        """, 404
     
     # Increment profile views
     mentor.profile_views = (mentor.profile_views or 0) + 1
@@ -1360,5 +1376,6 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
