@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
@@ -22,10 +23,36 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
     'sqlite:///' + os.path.join(basedir, 'clearq.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# File upload configuration
+app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads', 'profile_images')
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Helper function for file uploads
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def save_profile_image(file, user_id):
+    if file and file.filename != '' and allowed_file(file.filename):
+        # Create unique filename
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"user_{user_id}_{timestamp}.{ext}"
+        
+        # Ensure upload folder exists
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        return f'uploads/profile_images/{filename}'
+    return None
 
 # --- MODELS ---
 
@@ -43,16 +70,16 @@ class User(UserMixin, db.Model):
     job_title = db.Column(db.String(100), nullable=True)
     domain = db.Column(db.String(100), nullable=True)  # e.g., Data Science, SDE
     company = db.Column(db.String(100), nullable=True)
-    previous_company = db.Column(db.String(100), nullable=True)  # New field
+    previous_company = db.Column(db.String(100), nullable=True)
     experience = db.Column(db.String(50), nullable=True)
     skills = db.Column(db.Text, nullable=True)
-    services = db.Column(db.Text, nullable=True)  # Resume Review, Mock Interview
+    services = db.Column(db.Text, nullable=True)  # Old field - keep for backward compatibility
     bio = db.Column(db.Text, nullable=True)
-    price = db.Column(db.Integer, default=0, nullable=True)
+    price = db.Column(db.Integer, default=0, nullable=True)  # Default price
     availability = db.Column(db.String(50), nullable=True)
     is_verified = db.Column(db.Boolean, default=False)
     
-    # New fields for enhanced profile
+    # Profile fields
     profile_image = db.Column(db.String(500), nullable=True)
     facebook_url = db.Column(db.String(200), nullable=True)
     instagram_url = db.Column(db.String(200), nullable=True)
@@ -70,6 +97,18 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class Service(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Integer, nullable=False)
+    duration = db.Column(db.String(50), nullable=True)  # e.g., "30 mins", "1 hour"
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    mentor = db.relationship('User', backref='mentor_services')
+
 class Enrollment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -86,10 +125,16 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)  # Link to specific service
     service_name = db.Column(db.String(100))
     slot_time = db.Column(db.String(50))
     status = db.Column(db.String(20), default='Pending')  # Pending, Paid, Completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+    price = db.Column(db.Integer, nullable=True)  # Price at time of booking
+
+    mentor = db.relationship('User', foreign_keys=[mentor_id])
+    learner = db.relationship('User', foreign_keys=[learner_id])
+    service = db.relationship('Service')
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -483,7 +528,58 @@ def add_sample_mentors():
     
     db.session.commit()
     
-    # Add sample products for these mentors
+    # Add sample services for these mentors
+    sample_services = [
+        {
+            'mentor_username': 'john_doe',
+            'name': 'Resume Review',
+            'description': 'Detailed feedback on your data science resume with ATS optimization tips',
+            'price': 500,
+            'duration': '24-hour delivery'
+        },
+        {
+            'mentor_username': 'john_doe',
+            'name': 'Mock Interview',
+            'description': '1-hour technical mock interview with detailed feedback',
+            'price': 1500,
+            'duration': '1 hour'
+        },
+        {
+            'mentor_username': 'john_doe',
+            'name': 'Career Guidance Session',
+            'description': '30-min career path discussion for aspiring data scientists',
+            'price': 800,
+            'duration': '30 mins'
+        },
+        {
+            'mentor_username': 'jane_smith',
+            'name': 'Product Case Study Review',
+            'description': 'In-depth review of your product case studies',
+            'price': 1200,
+            'duration': '45 mins'
+        },
+        {
+            'mentor_username': 'jane_smith',
+            'name': 'Product Manager Mock Interview',
+            'description': 'Full PM interview simulation with behavioral and case questions',
+            'price': 1800,
+            'duration': '1 hour'
+        }
+    ]
+    
+    for service_data in sample_services:
+        mentor = User.query.filter_by(username=service_data['mentor_username']).first()
+        if mentor and not Service.query.filter_by(mentor_id=mentor.id, name=service_data['name']).first():
+            service = Service(
+                mentor_id=mentor.id,
+                name=service_data['name'],
+                description=service_data['description'],
+                price=service_data['price'],
+                duration=service_data['duration']
+            )
+            db.session.add(service)
+    
+    # Add sample products for backward compatibility
     sample_products = [
         {
             'mentor_username': 'john_doe',
@@ -493,24 +589,6 @@ def add_sample_mentors():
             'duration': '24-hour delivery',
             'price': 500,
             'tag': 'Best Seller'
-        },
-        {
-            'mentor_username': 'john_doe',
-            'name': 'Mock Interview',
-            'description': '1-hour technical mock interview with detailed feedback',
-            'product_type': '1:1 call',
-            'duration': '1 hour',
-            'price': 1500,
-            'tag': 'Popular'
-        },
-        {
-            'mentor_username': 'jane_smith',
-            'name': 'Product Case Study Review',
-            'description': 'In-depth review of your product case studies',
-            'product_type': '1:1 call',
-            'duration': '45 mins',
-            'price': 1200,
-            'tag': 'Recommended'
         }
     ]
     
@@ -530,7 +608,7 @@ def add_sample_mentors():
     
     db.session.commit()
     
-    return f"Added {added_count} sample mentors with products! <a href='/explore'>Go to Explore</a>"
+    return f"Added {added_count} sample mentors with services! <a href='/explore'>Go to Explore</a>"
 
 # --- ROUTES ---
 
@@ -619,7 +697,10 @@ def mentor_public_profile(username):
     mentor.profile_views = (mentor.profile_views or 0) + 1
     db.session.commit()
     
-    # Get mentor's products
+    # Get mentor's services (NEW)
+    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
+    
+    # Get mentor's products (for backward compatibility)
     products = Product.query.filter_by(mentor_id=mentor.id, is_active=True).all()
     
     # Get reviews
@@ -637,6 +718,7 @@ def mentor_public_profile(username):
     
     return render_template('mentor_public_profile.html',
                          mentor=mentor,
+                         services=services,  # Pass services to template
                          products=products,
                          product_types=product_types,
                          reviews=reviews,
@@ -871,6 +953,35 @@ def process_enrollment_payment(enrollment_id):
     
     return jsonify({'success': True, 'message': 'Payment completed successfully'})
 
+# Book a service
+@app.route('/book-service/<int:service_id>', methods=['POST'])
+@login_required
+def book_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    mentor = User.query.get(service.mentor_id)
+    
+    if current_user.role == 'mentor':
+        flash('Mentors cannot book their own services')
+        return redirect(url_for('mentor_public_profile', username=mentor.username))
+    
+    slot = request.form.get('slot')
+    
+    # Create booking
+    booking = Booking(
+        mentor_id=service.mentor_id,
+        learner_id=current_user.id,
+        service_id=service.id,
+        service_name=service.name,
+        slot_time=slot,
+        price=service.price,
+        status='Pending'
+    )
+    db.session.add(booking)
+    db.session.commit()
+    
+    flash(f'Booking created for {service.name}! Please complete payment of ₹{service.price}.')
+    return redirect(url_for('dashboard'))
+
 # Product booking/purchase
 @app.route('/book-product/<int:product_id>', methods=['POST'])
 @login_required
@@ -933,7 +1044,6 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Use the original dashboard.html template
     if current_user.role == 'admin':
         pending_mentors = User.query.filter_by(role='mentor', is_verified=False).all()
         total_users = User.query.count()
@@ -951,7 +1061,7 @@ def dashboard():
                 'learner_name': learner.username if learner else 'Unknown',
                 'service_name': booking.service_name,
                 'slot_time': booking.slot_time,
-                'amount': mentor.price if mentor else 0,
+                'amount': booking.price or (mentor.price if mentor else 0),
                 'status': booking.status,
                 'created_at': booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A'
             })
@@ -973,11 +1083,15 @@ def dashboard():
                 'booking': booking,
                 'learner': learner
             })
+        
+        # Get services count
+        services_count = Service.query.filter_by(mentor_id=current_user.id, is_active=True).count()
+        
         # Add additional mentor stats
         total_bookings = len(my_bookings)
         pending_bookings = len([b for b in my_bookings if b.status == 'Pending'])
         completed_bookings = len([b for b in my_bookings if b.status == 'Completed'])
-        revenue = current_user.price * completed_bookings if current_user.price else 0
+        revenue = sum([b.price or current_user.price for b in my_bookings if b.status == 'Paid'])
         
         return render_template('dashboard.html', 
                              bookings=bookings_with_learners, 
@@ -985,7 +1099,8 @@ def dashboard():
                              total_bookings=total_bookings,
                              pending_bookings=pending_bookings,
                              completed_bookings=completed_bookings,
-                             revenue=revenue)
+                             revenue=revenue,
+                             services_count=services_count)
         
     else:  # Learner
         my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
@@ -1078,6 +1193,68 @@ def mentor_products():
     products = Product.query.filter_by(mentor_id=current_user.id).all()
     return render_template('mentor_products.html', products=products)
 
+# Service management for mentors
+@app.route('/mentor/manage-services', methods=['GET', 'POST'])
+@login_required
+def manage_services():
+    if current_user.role != 'mentor':
+        flash('Only mentors can access this page')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add':
+            name = request.form.get('name')
+            description = request.form.get('description')
+            price = request.form.get('price')
+            duration = request.form.get('duration')
+            
+            service = Service(
+                mentor_id=current_user.id,
+                name=name,
+                description=description,
+                price=int(price) if price else 0,
+                duration=duration
+            )
+            db.session.add(service)
+            db.session.commit()
+            flash('Service added successfully!')
+            
+        elif action == 'update':
+            service_id = request.form.get('service_id')
+            service = Service.query.filter_by(id=service_id, mentor_id=current_user.id).first()
+            if service:
+                service.name = request.form.get('name')
+                service.description = request.form.get('description')
+                service.price = int(request.form.get('price')) if request.form.get('price') else 0
+                service.duration = request.form.get('duration')
+                db.session.commit()
+                flash('Service updated successfully!')
+                
+        elif action == 'delete':
+            service_id = request.form.get('service_id')
+            service = Service.query.filter_by(id=service_id, mentor_id=current_user.id).first()
+            if service:
+                service.is_active = False
+                db.session.commit()
+                flash('Service deactivated!')
+        
+        elif action == 'activate':
+            service_id = request.form.get('service_id')
+            service = Service.query.filter_by(id=service_id, mentor_id=current_user.id).first()
+            if service:
+                service.is_active = True
+                db.session.commit()
+                flash('Service activated!')
+        
+        return redirect(url_for('manage_services'))
+    
+    # Get all services for this mentor
+    services = Service.query.filter_by(mentor_id=current_user.id).order_by(Service.created_at.desc()).all()
+    
+    return render_template('manage_services.html', services=services)
+
 # New routes for mentor dashboard sections
 @app.route('/mentor/bookings')
 @login_required
@@ -1141,7 +1318,7 @@ def mentor_payouts():
         status='Paid'
     ).all()
     
-    total_earnings = current_user.price * len(completed_bookings) if current_user.price else 0
+    total_earnings = sum([b.price or current_user.price for b in completed_bookings])
     pending_payout = total_earnings * 0.8  # Assuming 20% platform fee
     
     payout_history = [
@@ -1161,6 +1338,14 @@ def mentor_profile():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            file = request.files['profile_image']
+            if file and file.filename != '':
+                image_path = save_profile_image(file, current_user.id)
+                if image_path:
+                    current_user.profile_image = image_path
+        
         # Update mentor profile with all new fields
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
@@ -1244,6 +1429,14 @@ def learner_profile():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            file = request.files['profile_image']
+            if file and file.filename != '':
+                image_path = save_profile_image(file, current_user.id)
+                if image_path:
+                    current_user.profile_image = image_path
+        
         # Update learner profile
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
@@ -1298,9 +1491,7 @@ def admin_analytics():
     completed_bookings = Booking.query.filter_by(status='Paid').all()
     revenue = 0
     for booking in completed_bookings:
-        mentor = User.query.get(booking.mentor_id)
-        if mentor and mentor.price:
-            revenue += mentor.price
+        revenue += booking.price or 0
     
     # Monthly growth (simplified)
     monthly_data = [
@@ -1391,12 +1582,18 @@ with app.app_context():
         else:
             print(f"Database exists with {len(tables)} tables")
             
-            # Check if User table has the previous_company column
+            # Check if Service table exists
+            if 'service' not in tables:
+                print("Creating Service table...")
+                Service.__table__.create(db.engine)
+                print("Service table created")
+                
+            # Check for other new columns
             columns = inspector.get_columns('user')
             column_names = [col['name'] for col in columns]
-            if 'previous_company' not in column_names:
-                print("WARNING: Database schema is outdated. Missing 'previous_company' column.")
-                print("Please visit /reset-db to recreate database with current schema.")
+            if 'profile_image' not in column_names:
+                print("WARNING: Database schema is outdated. Some columns may be missing.")
+                print("Please visit /force-db-reset to recreate database with current schema.")
             else:
                 print("Database schema is up to date.")
                 
