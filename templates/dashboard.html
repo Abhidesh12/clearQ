@@ -6,25 +6,25 @@
 
     {% if type == 'learner' %}
         <!-- Learner Quick Access -->
-        <div class="mb-8 bg-white rounded-lg shadow p-6">
+        <div class="mb-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 class="text-xl font-semibold mb-4">Quick Access</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <a href="{{ url_for('explore') }}" class="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                <a href="{{ url_for('explore') }}" class="flex flex-col items-center p-4 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors">
                     <i class="fas fa-search text-2xl text-indigo-600 mb-2"></i>
                     <span class="font-medium text-indigo-800">Find Mentors</span>
                     <span class="text-sm text-indigo-600 text-center mt-1">Browse available mentors</span>
                 </a>
-                <a href="{{ url_for('learner_enrollments') }}" class="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <a href="{{ url_for('learner_enrollments') }}" class="flex flex-col items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
                     <i class="fas fa-graduation-cap text-2xl text-green-600 mb-2"></i>
                     <span class="font-medium text-green-800">My Enrollments</span>
                     <span class="text-sm text-green-600 text-center mt-1">View program enrollments</span>
                 </a>
-                <a href="{{ url_for('saved_mentors') }}" class="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                <a href="{{ url_for('saved_mentors') }}" class="flex flex-col items-center p-4 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors">
                     <i class="fas fa-bookmark text-2xl text-yellow-600 mb-2"></i>
                     <span class="font-medium text-yellow-800">Saved Mentors</span>
                     <span class="text-sm text-yellow-600 text-center mt-1">Your favorite mentors</span>
                 </a>
-                <a href="{{ url_for('learner_profile') }}" class="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <a href="{{ url_for('learner_profile') }}" class="flex flex-col items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors">
                     <i class="fas fa-user text-2xl text-purple-600 mb-2"></i>
                     <span class="font-medium text-purple-800">My Profile</span>
                     <span class="text-sm text-purple-600 text-center mt-1">Update your information</span>
@@ -33,7 +33,7 @@
         </div>
 
         <h2 class="text-xl font-semibold mb-4">Your Upcoming Sessions</h2>
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -75,20 +75,20 @@
                             </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">₹{{ item.mentor.price }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">₹{{ item.booking.price or item.mentor.price }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if item.booking.status == 'Paid' %}
                             <button onclick="window.open('https://meet.google.com/new', '_blank')" 
-                                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                    class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
                                 Join Meeting
                             </button>
                             {% else %}
-                            <button onclick="if(confirm('Pay ₹{{ item.mentor.price }}?')) { 
+                            <button onclick="if(confirm('Pay ₹{{ item.booking.price or item.mentor.price }}?')) { 
                                 fetch('/process-payment/{{ item.booking.id }}', {method: 'POST'})
                                 .then(() => location.reload());
                             }" 
-                                    class="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700">
-                                Pay ₹{{ item.mentor.price }}
+                                    class="px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm">
+                                Pay ₹{{ item.booking.price or item.mentor.price }}
                             </button>
                             {% endif %}
                         </td>
@@ -115,10 +115,9 @@
         <!-- Enrolled Programs Section -->
         <div class="mt-12">
             <h2 class="text-xl font-semibold mb-4">Your Enrolled Programs</h2>
-            {% if current_user.enrollments %}
+            {% if enrollment %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for enrollment in current_user.enrollments %}
-                <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                     <div class="flex justify-between items-start mb-4">
                         <h3 class="font-bold text-lg text-gray-900">{{ enrollment.program_name|replace('_', ' ')|title }}</h3>
                         {% if enrollment.status == 'active' %}
@@ -135,7 +134,7 @@
                     <div class="space-y-2 text-sm text-gray-600 mb-4">
                         {% if enrollment.additional_data %}
                             {% set data = enrollment.additional_data|from_json %}
-                            <p><span class="font-medium">Enrolled:</span> {{ enrollment.enrollment_date.strftime('%b %d, %Y') }}</p>
+                            <p><span class="font-medium">Enrolled:</span> {{ enrollment.enrollment_date.strftime('%b %d, %Y') if enrollment.enrollment_date else 'N/A' }}</p>
                             {% if data.phone %}<p><span class="font-medium">Phone:</span> {{ data.phone }}</p>{% endif %}
                             {% if data.education %}<p><span class="font-medium">Education:</span> {{ data.education }}</p>{% endif %}
                         {% endif %}
@@ -147,7 +146,7 @@
                             fetch('/process-enrollment-payment/{{ enrollment.id }}', {method: 'POST'})
                             .then(() => location.reload());
                         }" 
-                                class="w-full px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
+                                class="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
                             Complete Payment (₹{{ enrollment.payment_amount }})
                         </button>
                         {% else %}
@@ -155,12 +154,11 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endfor %}
             </div>
             {% else %}
-            <div class="bg-white rounded-lg shadow p-8 text-center">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
                 <p class="text-gray-500 mb-4">You haven't enrolled in any programs yet.</p>
-                <a href="{{ url_for('enroll') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                <a href="{{ url_for('enroll') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -172,30 +170,30 @@
 
     {% elif type == 'mentor' %}
         <!-- Mentor Quick Access -->
-        <div class="mb-8 bg-white rounded-lg shadow p-6">
+        <div class="mb-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 class="text-xl font-semibold mb-4">Mentor Tools</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <a href="{{ url_for('mentor_bookings') }}" class="flex flex-col items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <a href="{{ url_for('mentor_bookings') }}" class="flex flex-col items-center p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
                     <i class="fas fa-calendar-check text-xl text-blue-600 mb-2"></i>
                     <span class="font-medium text-blue-800 text-sm text-center">Bookings</span>
                 </a>
-                <a href="{{ url_for('mentor_services') }}" class="flex flex-col items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <a href="{{ url_for('manage_services') }}" class="flex flex-col items-center p-3 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
                     <i class="fas fa-concierge-bell text-xl text-green-600 mb-2"></i>
-                    <span class="font-medium text-green-800 text-sm text-center">Services</span>
+                    <span class="font-medium text-green-800 text-sm text-center">Services ({{ services_count or 0 }})</span>
                 </a>
-                <a href="{{ url_for('mentor_calendar') }}" class="flex flex-col items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                <a href="{{ url_for('mentor_calendar') }}" class="flex flex-col items-center p-3 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors">
                     <i class="fas fa-calendar-alt text-xl text-purple-600 mb-2"></i>
                     <span class="font-medium text-purple-800 text-sm text-center">Calendar</span>
                 </a>
-                <a href="{{ url_for('mentor_payouts') }}" class="flex flex-col items-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                <a href="{{ url_for('mentor_payouts') }}" class="flex flex-col items-center p-3 bg-yellow-50 rounded-xl hover:bg-yellow-100 transition-colors">
                     <i class="fas fa-wallet text-xl text-yellow-600 mb-2"></i>
                     <span class="font-medium text-yellow-800 text-sm text-center">Payouts</span>
                 </a>
-                <a href="{{ url_for('mentor_profile') }}" class="flex flex-col items-center p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                <a href="{{ url_for('mentor_profile') }}" class="flex flex-col items-center p-3 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors">
                     <i class="fas fa-user-edit text-xl text-indigo-600 mb-2"></i>
                     <span class="font-medium text-indigo-800 text-sm text-center">Profile</span>
                 </a>
-                <a href="{{ url_for('mentor_settings') }}" class="flex flex-col items-center p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                <a href="{{ url_for('mentor_settings') }}" class="flex flex-col items-center p-3 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
                     <i class="fas fa-cog text-xl text-red-600 mb-2"></i>
                     <span class="font-medium text-red-800 text-sm text-center">Settings</span>
                 </a>
@@ -204,31 +202,33 @@
 
         <!-- Mentor Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-indigo-50 p-6 rounded-lg">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                 <h3 class="font-bold text-lg text-indigo-800">Total Earnings</h3>
-                <p class="text-3xl font-bold text-gray-900">₹{{ revenue if revenue else current_user.price * completed_bookings if completed_bookings else 0 }}</p>
-                <p class="text-sm text-indigo-600 mt-2">{{ total_bookings if total_bookings else bookings|length }} sessions × ₹{{ current_user.price }}/session</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">₹{{ revenue if revenue else 0 }}</p>
+                <p class="text-sm text-indigo-600 mt-2">{{ total_bookings if total_bookings else bookings|length }} sessions</p>
             </div>
-            <div class="bg-green-50 p-6 rounded-lg">
-                <h3 class="font-bold text-lg text-green-800">Total Sessions</h3>
-                <p class="text-3xl font-bold text-gray-900">{{ total_bookings if total_bookings else bookings|length }}</p>
-                <p class="text-sm text-green-600 mt-2">Bookings completed</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="font-bold text-lg text-green-800">Active Services</h3>
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ services_count or 0 }}</p>
+                <p class="text-sm text-green-600 mt-2">
+                    <a href="{{ url_for('manage_services') }}" class="hover:underline">Manage Services →</a>
+                </p>
             </div>
-            <div class="bg-blue-50 p-6 rounded-lg">
-                <h3 class="font-bold text-lg text-blue-800">Pending</h3>
-                <p class="text-3xl font-bold text-gray-900">{{ pending_bookings if pending_bookings else 0 }}</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="font-bold text-lg text-blue-800">Pending Sessions</h3>
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_bookings if pending_bookings else 0 }}</p>
                 <p class="text-sm text-blue-600 mt-2">Awaiting payment</p>
             </div>
-            <div class="bg-purple-50 p-6 rounded-lg">
-                <h3 class="font-bold text-lg text-purple-800">Your Rate</h3>
-                <p class="text-3xl font-bold text-gray-900">₹{{ current_user.price }}</p>
-                <p class="text-sm text-purple-600 mt-2">Per session</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="font-bold text-lg text-purple-800">Profile Views</h3>
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ current_user.profile_views or 0 }}</p>
+                <p class="text-sm text-purple-600 mt-2">Total views</p>
             </div>
         </div>
         
         <!-- Mentor Profile Status -->
         {% if not current_user.is_verified %}
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-8">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -247,7 +247,7 @@
         
         <!-- Upcoming Appointments -->
         <h2 class="text-xl font-semibold mb-4">Your Appointments</h2>
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -255,7 +255,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Earnings</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
@@ -289,16 +289,16 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            ₹{{ current_user.price }}
+                            ₹{{ item.booking.price or current_user.price }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             {% if item.booking.status == 'Paid' %}
                             <button onclick="window.open('https://meet.google.com/new', '_blank')" 
-                                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                    class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                 Start Meeting
                             </button>
                             {% else %}
-                            <span class="px-3 py-1 bg-gray-200 text-gray-600 rounded">
+                            <span class="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-sm">
                                 Waiting for payment
                             </span>
                             {% endif %}
@@ -326,7 +326,7 @@
         </div>
         
         <!-- Quick Profile Info -->
-        <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold mb-4">Your Profile Info</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
