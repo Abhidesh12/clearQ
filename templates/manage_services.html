@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Services - ClearQ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-section, .services-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .service-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .service-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .service-price {
+            font-size: 20px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .service-description {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .service-meta {
+            display: flex;
+            gap: 15px;
+            color: #888;
+            font-size: 14px;
+        }
+        .service-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            background: #f0f0f0;
+        }
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Manage Your Services</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('add-service')">➕ Add New Service</div>
+            <div class="tab" onclick="showTab('my-services')">📋 My Services ({{ services|length }})</div>
+        </div>
+        
+        <!-- Add Service Tab -->
+        <div id="add-service" class="tab-content active">
+            <div class="form-section">
+                <h2>Add New Service</h2>
+                <form method="POST" onsubmit="return validateServiceForm()">
+                    <input type="hidden" name="action" value="add">
+                    
+                    <div class="form-group">
+                        <label for="name">Service Name *</label>
+                        <input type="text" id="name" name="name" required 
+                               placeholder="e.g., Resume Review, Mock Interview, Career Consultation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea id="description" name="description" required 
+                                  placeholder="Describe what the service includes, what learners will get, etc."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="price">Price (₹) *</label>
+                        <input type="number" id="price" name="price" required min="0" step="100"
+                               placeholder="e.g., 1500">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duration *</label>
+                        <select id="duration" name="duration" required>
+                            <option value="">Select duration</option>
+                            <option value="30 mins">30 minutes</option>
+                            <option value="45 mins">45 minutes</option>
+                            <option value="1 hour">1 hour</option>
+                            <option value="1.5 hours">1.5 hours</option>
+                            <option value="2 hours">2 hours</option>
+                            <option value="Custom">Custom duration</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">➕ Add Service</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- My Services Tab -->
+        <div id="my-services" class="tab-content">
+            <div class="services-section">
+                <h2>Your Services</h2>
+                
+                {% if services %}
+                    {% for service in services %}
+                        <div class="service-card" id="service-{{ service.id }}">
+                            <div class="service-header">
+                                <div>
+                                    <span class="service-name">{{ service.name }}</span>
+                                    <span class="status-badge {% if service.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                        {{ 'Active' if service.is_active else 'Inactive' }}
+                                    </span>
+                                </div>
+                                <div class="service-price">₹{{ service.price }}</div>
+                            </div>
+                            
+                            <div class="service-description">
+                                {{ service.description }}
+                            </div>
+                            
+                            <div class="service-meta">
+                                <span>⏰ {{ service.duration }}</span>
+                                <span>📅 Added: {{ service.created_at.strftime('%b %d, %Y') if service.created_at else 'N/A' }}</span>
+                            </div>
+                            
+                            <div class="service-actions">
+                                <button class="btn btn-warning" onclick="showEditForm({{ service.id }})">✏️ Edit</button>
+                                
+                                {% if service.is_active %}
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="service_id" value="{{ service.id }}">
+                                        <button type="submit" class="btn btn-danger" 
+                                                onclick="return confirm('Are you sure you want to deactivate this service?')">
+                                            🚫 Deactivate
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="activate">
+                                        <input type="hidden" name="service_id" value="{{ service.id }}">
+                                        <button type="submit" class="btn btn-success">
+                                            ✅ Activate
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Edit Form (Hidden by default) -->
+                            <div id="edit-form-{{ service.id }}" class="edit-form">
+                                <h3>Edit Service</h3>
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="update">
+                                    <input type="hidden" name="service_id" value="{{ service.id }}">
+                                    
+                                    <div class="form-group">
+                                        <label>Service Name</label>
+                                        <input type="text" name="name" value="{{ service.name }}" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Description</label>
+                                        <textarea name="description" required>{{ service.description }}</textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Price (₹)</label>
+                                        <input type="number" name="price" value="{{ service.price }}" required min="0">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Duration</label>
+                                        <select name="duration" required>
+                                            <option value="30 mins" {% if service.duration == '30 mins' %}selected{% endif %}>30 minutes</option>
+                                            <option value="45 mins" {% if service.duration == '45 mins' %}selected{% endif %}>45 minutes</option>
+                                            <option value="1 hour" {% if service.duration == '1 hour' %}selected{% endif %}>1 hour</option>
+                                            <option value="1.5 hours" {% if service.duration == '1.5 hours' %}selected{% endif %}>1.5 hours</option>
+                                            <option value="2 hours" {% if service.duration == '2 hours' %}selected{% endif %}>2 hours</option>
+                                            <option value="Custom" {% if service.duration == 'Custom' %}selected{% endif %}>Custom duration</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px;">
+                                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                                        <button type="button" class="btn" onclick="hideEditForm({{ service.id }})">❌ Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div>📭</div>
+                        <h3>No services added yet</h3>
+                        <p>Add your first service using the "Add New Service" tab above!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+    </div>
+    
+    <script>
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function showEditForm(serviceId) {
+            // Hide all edit forms first
+            document.querySelectorAll('.edit-form').forEach(form => {
+                form.style.display = 'none';
+            });
+            
+            // Show the selected edit form
+            const editForm = document.getElementById(`edit-form-${serviceId}`);
+            editForm.style.display = 'block';
+            
+            // Scroll to the form
+            editForm.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function hideEditForm(serviceId) {
+            const editForm = document.getElementById(`edit-form-${serviceId}`);
+            editForm.style.display = 'none';
+        }
+        
+        function validateServiceForm() {
+            const price = document.getElementById('price').value;
+            if (price < 0) {
+                alert('Price cannot be negative');
+                return false;
+            }
+            return true;
+        }
+        
+        // Flash message handling
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                setTimeout(() => {
+                    alert("{{ messages[0] }}");
+                }, 100);
+            {% endif %}
+        {% endwith %}
+    </script>
+</body>
+</html>
