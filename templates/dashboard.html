@@ -400,6 +400,77 @@
                     </div>
                 </div>
 
+                <!-- SHARE PROFILE SECTION - Added based on reference image -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-2">Share Your Profile</h3>
+                            <p class="text-blue-100 mb-4">
+                                Share your mentor profile link to get more bookings and grow your network
+                            </p>
+                            
+                            <!-- Profile Link -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm text-blue-200 mb-1">Your Profile Link</div>
+                                        <div class="flex items-center">
+                                            <div class="bg-white/20 px-3 py-2 rounded-l-lg flex-1 overflow-hidden">
+                                                <span class="text-white font-mono text-sm truncate" id="profileLink">
+                                                    {{ request.host_url }}mentor/{{ current_user.username|lower }}-{{ current_user.id }}
+                                                </span>
+                                            </div>
+                                            <button onclick="copyProfileLink()" 
+                                                    class="bg-white text-blue-600 px-4 py-2 rounded-r-lg font-medium hover:bg-gray-100 transition-colors">
+                                                Copy
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- QR Code -->
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-white p-2 rounded-lg">
+                                            <div class="w-16 h-16 flex items-center justify-center">
+                                                <!-- QR Code placeholder - In production, generate actual QR -->
+                                                <div class="text-blue-600">
+                                                    <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M1 1h10v10H1V1zm2 2h6v6H3V3zm12 0h8v8h-8V3zm2 2h4v4h-4V5zM1 13h10v10H1V13zm2 2h6v6H3v-6zm12-2h8v8h-8v-8zm2 2h4v4h-4v-4z"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center text-xs text-blue-200 mt-1">QR Code</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Share Buttons -->
+                            <div class="flex flex-wrap gap-3 mt-6">
+                                <button onclick="shareViaWhatsApp()" 
+                                        class="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                    <i class="fab fa-whatsapp"></i>
+                                    WhatsApp
+                                </button>
+                                <button onclick="shareViaLinkedIn()" 
+                                        class="flex items-center gap-2 px-4 py-2.5 bg-[#0077B5] text-white rounded-lg hover:bg-[#006699] transition-colors">
+                                    <i class="fab fa-linkedin-in"></i>
+                                    LinkedIn
+                                </button>
+                                <button onclick="shareViaTwitter()" 
+                                        class="flex items-center gap-2 px-4 py-2.5 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#0d8bd9] transition-colors">
+                                    <i class="fab fa-twitter"></i>
+                                    Twitter
+                                </button>
+                                <button onclick="copyEmbedCode()" 
+                                        class="flex items-center gap-2 px-4 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors">
+                                    <i class="fas fa-code"></i>
+                                    Embed Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Upcoming Appointments -->
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
@@ -558,12 +629,75 @@
                                 </div>
                             </a>
                         </div>
+                        
+                        <!-- Additional Share Section in Quick Actions -->
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Promote Your Profile</h4>
+                            <div class="space-y-2">
+                                <button onclick="downloadProfileCard()" 
+                                        class="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-download text-blue-600 text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">Download Profile Card</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-gray-400"></i>
+                                </button>
+                                <button onclick="showShareAnalytics()" 
+                                        class="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-chart-line text-purple-600 text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">Share Analytics</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-gray-400"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             {% endif %}
         </div>
     </main>
+</div>
+
+<!-- Share Analytics Modal -->
+<div id="shareAnalyticsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-gray-900">Share Analytics</h3>
+            <button onclick="closeShareAnalytics()" class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <div class="text-2xl font-bold text-gray-900 text-center">{{ current_user.profile_views or 0 }}</div>
+                <div class="text-center text-sm text-gray-600 mt-1">Profile Views</div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div class="text-lg font-bold text-gray-900 text-center">0</div>
+                    <div class="text-center text-xs text-gray-600 mt-1">Via Link</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div class="text-lg font-bold text-gray-900 text-center">0</div>
+                    <div class="text-center text-xs text-gray-600 mt-1">Via QR Code</div>
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-600 text-center">Start sharing your profile to see analytics</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -595,6 +729,94 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
         closeMobileMenu();
     }
+});
+
+// Share Profile Functionality
+const profileLink = "{{ request.host_url }}mentor/{{ current_user.username|lower }}-{{ current_user.id }}";
+const profileTitle = "{{ current_user.full_name or current_user.username }} - ClearQ Mentor";
+const profileDescription = "{{ current_user.bio[:100] if current_user.bio else 'Check out my mentor profile on ClearQ' }}";
+
+function copyProfileLink() {
+    navigator.clipboard.writeText(profileLink).then(() => {
+        // Show success message
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('bg-green-600');
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600');
+        }, 2000);
+    });
+}
+
+function shareViaWhatsApp() {
+    const text = `Check out my mentor profile on ClearQ: ${profileLink}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+}
+
+function shareViaLinkedIn() {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(profileLink)}`;
+    window.open(url, '_blank');
+}
+
+function shareViaTwitter() {
+    const text = `Check out my mentor profile on ClearQ! ${profileLink}`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+}
+
+function copyEmbedCode() {
+    const embedCode = `<div class="clearq-mentor-card">
+    <iframe src="${profileLink}/embed" width="300" height="400" frameborder="0"></iframe>
+</div>`;
+    
+    navigator.clipboard.writeText(embedCode).then(() => {
+        alert('Embed code copied to clipboard!');
+    });
+}
+
+function downloadProfileCard() {
+    // In production, this would generate and download a profile card image
+    alert('Profile card download feature coming soon!');
+    // For now, we'll just show a message
+    // const canvas = document.createElement('canvas');
+    // const ctx = canvas.getContext('2d');
+    // ... generate profile card ...
+}
+
+function showShareAnalytics() {
+    document.getElementById('shareAnalyticsModal').classList.remove('hidden');
+}
+
+function closeShareAnalytics() {
+    document.getElementById('shareAnalyticsModal').classList.add('hidden');
+}
+
+// If Web Share API is available, use it
+if (navigator.share) {
+    // Add a share button that uses the Web Share API
+    function shareProfile() {
+        navigator.share({
+            title: profileTitle,
+            text: profileDescription,
+            url: profileLink
+        });
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for all share buttons
+    document.querySelectorAll('[onclick*="shareVia"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (navigator.share) {
+                e.preventDefault();
+                shareProfile();
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
