@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="service-page">
+    <!-- Service header with dynamic title -->
+    <h1>{{ service.name }} with {{ mentor.full_name }}</h1>
+    
+    <!-- Dynamic content based on service -->
+    <div class="service-description">
+        {{ service.detailed_description|safe }}
+    </div>
+    
+    <!-- Booking form (same for all services) -->
+    <form method="POST" action="{{ url_for('book_service', service_id=service.id) }}">
+        <!-- Time slot selection -->
+        <!-- Notes field -->
+        <!-- Submit button -->
+    </form>
+    
+    <!-- Reviews section -->
+    <!-- Mentor info -->
+    <!-- Other services from this mentor -->
+</div>
+{% endblock %}
