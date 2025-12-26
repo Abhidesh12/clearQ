@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import re
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -54,6 +55,33 @@ def save_profile_image(file, user_id):
         return f'uploads/profile_images/{filename}'
     return None
 
+# Helper function to generate URL-friendly slugs
+def generate_slug(text):
+    """Generate a URL-friendly slug from text"""
+    slug = text.lower()
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[-\s]+', '-', slug)
+    return slug.strip('-')
+
+# Helper function to get available time slots
+def get_available_slots(mentor_id):
+    """Get available time slots for a mentor"""
+    # Get booked slots
+    booked_slots = [b.slot_time for b in Booking.query.filter_by(mentor_id=mentor_id).all()]
+    
+    # Generate standard time slots
+    all_slots = [
+        "9:00 AM", "10:00 AM", "11:00 AM", 
+        "12:00 PM", "1:00 PM", "2:00 PM", 
+        "3:00 PM", "4:00 PM", "5:00 PM", 
+        "6:00 PM", "7:00 PM", "8:00 PM"
+    ]
+    
+    # Filter out booked slots
+    available_slots = [s for s in all_slots if s not in booked_slots]
+    
+    return available_slots
+
 # --- MODELS ---
 
 class User(UserMixin, db.Model):
@@ -101,7 +129,9 @@ class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), nullable=False)  # URL-friendly version of name
     description = db.Column(db.Text, nullable=True)
+    detailed_description = db.Column(db.Text, nullable=True)  # More detailed description for service page
     price = db.Column(db.Integer, nullable=False)
     duration = db.Column(db.String(50), nullable=True)  # e.g., "30 mins", "1 hour"
     is_active = db.Column(db.Boolean, default=True)
@@ -131,6 +161,7 @@ class Booking(db.Model):
     status = db.Column(db.String(20), default='Pending')  # Pending, Paid, Completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     price = db.Column(db.Integer, nullable=True)  # Price at time of booking
+    notes = db.Column(db.Text, nullable=True)  # Additional notes for the booking
 
     mentor = db.relationship('User', foreign_keys=[mentor_id])
     learner = db.relationship('User', foreign_keys=[learner_id])
@@ -155,12 +186,14 @@ class Review(db.Model):
     mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)  # Review for a service
     rating = db.Column(db.Integer, nullable=False)  # 1-5
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     learner = db.relationship('User', foreign_keys=[learner_id])
     product = db.relationship('Product')
+    service = db.relationship('Service')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -528,40 +561,45 @@ def add_sample_mentors():
     
     db.session.commit()
     
-    # Add sample services for these mentors
+    # Add sample services for these mentors with detailed descriptions
     sample_services = [
         {
             'mentor_username': 'john_doe',
             'name': 'Resume Review',
-            'description': 'Detailed feedback on your data science resume with ATS optimization tips',
+            'description': 'Detailed feedback on your data science resume',
+            'detailed_description': 'Get expert feedback on your data science resume with ATS optimization tips. I\'ll review your resume for technical content, formatting, and ensure it passes through Applicant Tracking Systems used by top tech companies.',
             'price': 500,
             'duration': '24-hour delivery'
         },
         {
             'mentor_username': 'john_doe',
             'name': 'Mock Interview',
-            'description': '1-hour technical mock interview with detailed feedback',
+            'description': '1-hour technical mock interview',
+            'detailed_description': 'Practice technical interviews with realistic data science questions. Includes coding problems, statistics questions, and ML system design. Receive detailed feedback on your problem-solving approach and communication skills.',
             'price': 1500,
             'duration': '1 hour'
         },
         {
             'mentor_username': 'john_doe',
             'name': 'Career Guidance Session',
-            'description': '30-min career path discussion for aspiring data scientists',
+            'description': '30-min career path discussion',
+            'detailed_description': 'Personalized career guidance for aspiring data scientists. We\'ll discuss your career goals, skill gaps, and create a roadmap to land your dream job at FAANG companies.',
             'price': 800,
             'duration': '30 mins'
         },
         {
             'mentor_username': 'jane_smith',
             'name': 'Product Case Study Review',
-            'description': 'In-depth review of your product case studies',
+            'description': 'In-depth review of product case studies',
+            'detailed_description': 'Detailed feedback on your product management case studies. I\'ll help you structure your answers, improve your frameworks, and prepare for PM interviews at top tech companies.',
             'price': 1200,
             'duration': '45 mins'
         },
         {
             'mentor_username': 'jane_smith',
             'name': 'Product Manager Mock Interview',
-            'description': 'Full PM interview simulation with behavioral and case questions',
+            'description': 'Full PM interview simulation',
+            'detailed_description': 'Complete product manager interview simulation including behavioral questions, product design, strategy questions, and execution discussions. Perfect for FAANG PM interviews.',
             'price': 1800,
             'duration': '1 hour'
         }
@@ -573,7 +611,9 @@ def add_sample_mentors():
             service = Service(
                 mentor_id=mentor.id,
                 name=service_data['name'],
+                slug=generate_slug(service_data['name']),
                 description=service_data['description'],
+                detailed_description=service_data['detailed_description'],
                 price=service_data['price'],
                 duration=service_data['duration']
             )
@@ -741,6 +781,102 @@ def mentor_public_profile(username):
                          reviews=reviews,
                          total_sessions=total_sessions)
 
+# SINGLE TEMPLATE APPROACH: Service detail route for ALL services
+@app.route('/mentor/<username>/service/<service_slug>')
+def service_detail(username, service_slug):
+    """Single service detail page for ALL services using one template"""
+    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    service = Service.query.filter_by(mentor_id=mentor.id, slug=service_slug, is_active=True).first_or_404()
+    
+    # Get reviews for this service
+    reviews = Review.query.filter_by(service_id=service.id).all()
+    
+    # Calculate average rating for this service
+    avg_rating = 0
+    if reviews:
+        avg_rating = sum([r.rating for r in reviews]) / len(reviews)
+    
+    # Get available slots
+    available_slots = get_available_slots(mentor.id)
+    
+    # Get other services from the same mentor
+    other_services = Service.query.filter_by(
+        mentor_id=mentor.id, 
+        is_active=True
+    ).filter(Service.id != service.id).limit(3).all()
+    
+    # Service type detection for template (optional - for showing different icons/styles)
+    service_type = 'general'
+    service_name_lower = service.name.lower()
+    
+    if 'resume' in service_name_lower or 'cv' in service_name_lower:
+        service_type = 'resume'
+    elif 'interview' in service_name_lower or 'mock' in service_name_lower:
+        service_type = 'interview'
+    elif 'career' in service_name_lower or 'guidance' in service_name_lower:
+        service_type = 'career'
+    elif 'portfolio' in service_name_lower:
+        service_type = 'portfolio'
+    elif 'coding' in service_name_lower or 'technical' in service_name_lower:
+        service_type = 'coding'
+    elif 'system' in service_name_lower or 'design' in service_name_lower:
+        service_type = 'system'
+    
+    return render_template('service_detail.html',
+                         mentor=mentor,
+                         service=service,
+                         reviews=reviews,
+                         avg_rating=avg_rating,
+                         available_slots=available_slots,
+                         other_services=other_services,
+                         service_type=service_type)
+
+# Special redirect routes for common service types (optional, for better URLs)
+@app.route('/mentor/<username>/resume-review')
+def redirect_resume_review(username):
+    """Redirect to resume-review service if exists"""
+    return redirect_to_service(username, 'resume')
+
+@app.route('/mentor/<username>/mock-interview')
+def redirect_mock_interview(username):
+    """Redirect to mock-interview service if exists"""
+    return redirect_to_service(username, 'interview')
+
+@app.route('/mentor/<username>/career-guidance')
+def redirect_career_guidance(username):
+    """Redirect to career-guidance service if exists"""
+    return redirect_to_service(username, 'career')
+
+def redirect_to_service(username, service_type):
+    """Helper function to redirect to appropriate service"""
+    mentor = User.query.filter_by(username=username, role='mentor').first()
+    
+    if not mentor:
+        flash('Mentor not found')
+        return redirect(url_for('explore'))
+    
+    # Find service based on type
+    service = None
+    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
+    
+    for s in services:
+        service_name_lower = s.name.lower()
+        if service_type == 'resume' and ('resume' in service_name_lower or 'cv' in service_name_lower):
+            service = s
+            break
+        elif service_type == 'interview' and ('interview' in service_name_lower or 'mock' in service_name_lower):
+            service = s
+            break
+        elif service_type == 'career' and ('career' in service_name_lower or 'guidance' in service_name_lower):
+            service = s
+            break
+    
+    if service:
+        return redirect(url_for('service_detail', username=username, service_slug=service.slug))
+    else:
+        flash(f'{service_type.title()} service not available with this mentor')
+        return redirect(url_for('mentor_public_profile', username=username))
+
 @app.route('/mentor/<username>/<int:product_id>')
 def product_detail(username, product_id):
     mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
@@ -752,9 +888,7 @@ def product_detail(username, product_id):
     # For time-based products, get available slots
     available_slots = []
     if product.product_type in ['1:1 call', 'Webinar']:
-        booked_slots = [b.slot_time for b in Booking.query.filter_by(mentor_id=mentor.id).all()]
-        all_slots = ["10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "5:00 PM", "6:00 PM"]
-        available_slots = [s for s in all_slots if s not in booked_slots]
+        available_slots = get_available_slots(mentor.id)
     
     return render_template('product_detail.html',
                          mentor=mentor,
@@ -970,7 +1104,7 @@ def process_enrollment_payment(enrollment_id):
     
     return jsonify({'success': True, 'message': 'Payment completed successfully'})
 
-# Book a service
+# Book a service from service detail page
 @app.route('/book-service/<int:service_id>', methods=['POST'])
 @login_required
 def book_service(service_id):
@@ -979,9 +1113,14 @@ def book_service(service_id):
     
     if current_user.role == 'mentor':
         flash('Mentors cannot book their own services')
-        return redirect(url_for('mentor_public_profile', username=mentor.username))
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
     
     slot = request.form.get('slot')
+    notes = request.form.get('notes', '')
+    
+    if not slot:
+        flash('Please select a time slot')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
     
     # Create booking
     booking = Booking(
@@ -991,6 +1130,7 @@ def book_service(service_id):
         service_name=service.name,
         slot_time=slot,
         price=service.price,
+        notes=notes,
         status='Pending'
     )
     db.session.add(booking)
@@ -1224,13 +1364,16 @@ def manage_services():
         if action == 'add':
             name = request.form.get('name')
             description = request.form.get('description')
+            detailed_description = request.form.get('detailed_description')
             price = request.form.get('price')
             duration = request.form.get('duration')
             
             service = Service(
                 mentor_id=current_user.id,
                 name=name,
+                slug=generate_slug(name),
                 description=description,
+                detailed_description=detailed_description,
                 price=int(price) if price else 0,
                 duration=duration
             )
@@ -1243,7 +1386,9 @@ def manage_services():
             service = Service.query.filter_by(id=service_id, mentor_id=current_user.id).first()
             if service:
                 service.name = request.form.get('name')
+                service.slug = generate_slug(request.form.get('name'))
                 service.description = request.form.get('description')
+                service.detailed_description = request.form.get('detailed_description')
                 service.price = int(request.form.get('price')) if request.form.get('price') else 0
                 service.duration = request.form.get('duration')
                 db.session.commit()
