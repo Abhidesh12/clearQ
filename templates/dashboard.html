@@ -425,9 +425,9 @@
                                     </div>
                                     <div class="flex items-center bg-white rounded-lg border border-gray-300 overflow-hidden">
                                         <div class="px-4 py-3 flex-1 overflow-hidden">
-                                            <span class="text-gray-900 font-mono text-sm truncate block" id="profileLink">
-                                                {{ request.host_url }}mentor/{{ current_user.username|lower }}-{{ current_user.id }}
-                                            </span>
+                                           <span class="text-gray-900 font-mono text-sm truncate block" id="profileLink">
+    {{ request.host_url }}mentor/{{ current_user.username }}
+</span>
                                         </div>
                                         <button onclick="copyProfileLink()" 
                                                 class="px-4 py-3 bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
@@ -669,7 +669,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Elegant Share Profile Functionality
-const profileLink = "{{ request.host_url }}mentor/{{ current_user.username|lower }}-{{ current_user.id }}";
+const profileLink = "{{ request.host_url }}mentor/{{ current_user.username }}";
 const profileTitle = "{{ current_user.full_name or current_user.username }} - ClearQ Mentor";
 
 function copyProfileLink() {
@@ -750,3 +750,4 @@ function shareProfile() {
 }
 </script>
 {% endblock %}
+
