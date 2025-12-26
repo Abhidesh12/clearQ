@@ -3,115 +3,246 @@
 
 {% block content %}
 <style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
     .animate-fadeInUp {
-        animation: fadeInUp 0.5s ease-out;
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .animate-fadeIn {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .animate-slideInRight {
+        animation: slideInRight 0.5s ease-out;
     }
     
     @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(30px);
         }
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .floating-share {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 40;
+    }
+    
+    @media (max-width: 768px) {
+        .floating-share {
+            bottom: 16px;
+            right: 16px;
+        }
+    }
+    
+    .service-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .service-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .avatar-glow {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stat-card {
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        backdrop-filter: blur(10px);
+    }
+    
+    .time-slot {
+        transition: all 0.2s ease;
+    }
+    
+    .time-slot.selected {
+        background: var(--primary-gradient);
+        color: white;
+        border-color: transparent;
+    }
+    
+    .skill-tag {
+        background: linear-gradient(135deg, #f6f8ff, #ebf0ff);
+        transition: all 0.3s ease;
+    }
+    
+    .skill-tag:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #e6ebff, #d6e0ff);
+    }
 </style>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Floating Share Button -->
+    <div class="floating-share animate-fadeIn">
+        <div class="relative group">
+            <button id="shareButton" class="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                </svg>
+            </button>
+            <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block animate-fadeIn">
+                <div class="bg-white rounded-lg shadow-xl p-2 flex items-center space-x-2">
+                    <span class="text-sm font-medium text-gray-700 whitespace-nowrap">Share profile</span>
+                </div>
+                <div class="w-3 h-3 bg-white transform rotate-45 absolute -bottom-1 right-6"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
-    <div class="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 py-3">
-            <div class="flex items-center">
-                <button onclick="history.back()" 
-                        class="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    <span class="font-medium">Back</span>
-                </button>
-                <div class="ml-4">
-                    <h1 class="text-lg font-semibold text-gray-900">Mentor Profile</h1>
+    <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button onclick="history.back()" 
+                            class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-all duration-200 group">
+                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                        </div>
+                        <span class="font-medium hidden sm:block">Back</span>
+                    </button>
+                    <div class="ml-4">
+                        <h1 class="text-lg font-semibold text-gray-900">Mentor Profile</h1>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    {% if current_user.is_authenticated and current_user.role == 'learner' %}
+                    <button onclick="scrollToBooking()" 
+                            class="hidden sm:inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        Book Session
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Profile Header -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6 animate-fadeInUp">
-            <div class="flex flex-col md:flex-row md:items-center gap-6">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-100 p-6 sm:p-8 mb-8 animate-fadeInUp">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100/50 to-purple-100/50 rounded-full -translate-y-32 translate-x-32"></div>
+            
+            <div class="relative flex flex-col md:flex-row items-start gap-8">
                 <!-- Avatar -->
                 <div class="flex-shrink-0">
-                    <div class="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden">
-                        {% if mentor.profile_image %}
-                        <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
-                             alt="{{ mentor.full_name or mentor.username }}" 
-                             class="w-full h-full object-cover">
-                        {% else %}
-                        <span class="text-2xl font-bold text-white">
-                            {{ (mentor.full_name or mentor.username)[0].upper() }}
-                        </span>
+                    <div class="relative">
+                        <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden avatar-glow">
+                            {% if mentor.profile_image %}
+                            <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
+                                 alt="{{ mentor.full_name or mentor.username }}" 
+                                 class="w-full h-full object-cover">
+                            {% else %}
+                            <span class="text-3xl sm:text-4xl font-bold text-white">
+                                {{ (mentor.full_name or mentor.username)[0].upper() }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if mentor.is_verified %}
+                        <div class="absolute -bottom-2 -right-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full p-1.5 shadow-lg">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
                 
                 <!-- Info -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
                         <div class="min-w-0">
-                            <h1 class="text-xl font-bold text-gray-900 mb-1">
-                                {{ mentor.full_name or mentor.username }}
-                            </h1>
-                            <div class="flex flex-wrap items-center gap-3 text-gray-600 text-sm">
+                            <div class="flex flex-wrap items-center gap-3 mb-2">
+                                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                                    {{ mentor.full_name or mentor.username }}
+                                </h1>
+                                {% if mentor.domain %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 border border-blue-200">
+                                    {{ mentor.domain }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-4 text-gray-600 mb-4">
                                 {% if mentor.job_title %}
-                                <div class="flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                     </svg>
-                                    {{ mentor.job_title }}
+                                    <span class="text-sm sm:text-base">{{ mentor.job_title }}</span>
                                 </div>
                                 {% endif %}
+                                
                                 {% if mentor.company %}
-                                <div class="flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                     </svg>
-                                    {{ mentor.company }}
+                                    <span class="text-sm sm:text-base">{{ mentor.company }}</span>
                                 </div>
                                 {% endif %}
                             </div>
                             
-                            {% if mentor.domain %}
-                            <div class="mt-3">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                    {{ mentor.domain }}
-                                </span>
+                            <!-- Stats -->
+                            <div class="flex flex-wrap gap-4 sm:gap-6">
+                                <div class="stat-card rounded-xl p-4 min-w-[100px]">
+                                    <div class="text-2xl font-bold text-gray-900 mb-1">{{ mentor.rating or '4.9' }}</div>
+                                    <div class="flex items-center gap-1">
+                                        {% for i in range(5) %}
+                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Rating</div>
+                                </div>
+                                
+                                <div class="stat-card rounded-xl p-4 min-w-[100px]">
+                                    <div class="text-2xl font-bold text-gray-900 mb-1">{{ mentor.experience or '5+' }}</div>
+                                    <div class="text-xs text-gray-500">Years Experience</div>
+                                </div>
+                                
+                                <div class="stat-card rounded-xl p-4 min-w-[100px]">
+                                    <div class="text-2xl font-bold text-gray-900 mb-1">{{ mentor.success_rate or 95 }}%</div>
+                                    <div class="text-xs text-gray-500">Success Rate</div>
+                                </div>
                             </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Stats -->
-                        <div class="flex flex-wrap gap-4">
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-gray-900">{{ mentor.rating or '4.9' }}</div>
-                                <div class="text-xs text-gray-500">Rating</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-gray-900">{{ mentor.experience or '5+' }}</div>
-                                <div class="text-xs text-gray-500">Exp</div>
-                            </div>
-                            {% if mentor.is_verified %}
-                            <div class="flex items-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                    Verified
-                                </span>
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -119,20 +250,32 @@
         </div>
 
         <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Left Column - About & Skills -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-8">
                 <!-- About -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6 animate-fadeInUp">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">About</h2>
-                    <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ mentor.bio or 'No bio available.' }}</p>
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 animate-fadeInUp">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900">About Mentor</h2>
+                    </div>
+                    
+                    <div class="prose max-w-none">
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg">
+                            {{ mentor.bio or 'No bio available.' }}
+                        </p>
+                    </div>
                     
                     {% if mentor.skills %}
-                    <div class="mt-6 pt-6 border-t border-gray-100">
-                        <h3 class="text-base font-medium text-gray-900 mb-3">Skills & Expertise</h3>
-                        <div class="flex flex-wrap gap-2">
+                    <div class="mt-8 pt-8 border-t border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Skills & Expertise</h3>
+                        <div class="flex flex-wrap gap-3">
                             {% for skill in mentor.skills.split(',') %}
-                            <span class="px-3 py-1.5 bg-gray-50 text-gray-800 rounded-lg text-sm font-medium border border-gray-200">
+                            <span class="skill-tag px-4 py-2 rounded-full text-sm font-medium text-blue-700 border border-blue-200">
                                 {{ skill.strip() }}
                             </span>
                             {% endfor %}
@@ -142,64 +285,104 @@
                 </div>
 
                 <!-- Services -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6 animate-fadeInUp">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-lg font-semibold text-gray-900">Services</h2>
-                        <span class="text-sm text-blue-600 font-medium">
-                            {{ services|length if services else mentor.services.split(',')|length if mentor.services else 0 }} available
+                <div id="services-section" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 animate-fadeInUp">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-900">Available Services</h2>
+                        </div>
+                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700">
+                            {{ services|length if services else mentor.services.split(',')|length if mentor.services else 0 }} Services
                         </span>
                     </div>
                     
                     {% if services %}
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         {% for service in services %}
-                        <div class="border border-gray-200 rounded-xl p-5 hover:border-blue-300 transition-colors">
-                            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div class="service-card rounded-2xl p-6 border border-gray-100">
+                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                 <div class="flex-1">
-                                    <div class="flex items-start gap-3">
-                                        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                             </svg>
                                         </div>
-                                        <div>
-                                            <h3 class="font-semibold text-gray-900">{{ service.name }}</h3>
-                                            <p class="text-gray-600 text-sm mt-1">{{ service.description }}</p>
-                                            <div class="flex items-center gap-3 mt-2">
-                                                <span class="text-sm text-gray-500">{{ service.duration }}</span>
+                                        <div class="flex-1">
+                                            <div class="flex flex-wrap items-center gap-3 mb-2">
+                                                <h3 class="text-lg font-semibold text-gray-900">{{ service.name }}</h3>
                                                 {% if service.is_active %}
-                                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Available</span>
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-50 to-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Available
+                                                </span>
                                                 {% else %}
-                                                <span class="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded-full">Unavailable</span>
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    Unavailable
+                                                </span>
                                                 {% endif %}
+                                            </div>
+                                            <p class="text-gray-600 mb-3">{{ service.description }}</p>
+                                            <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                                <span class="flex items-center gap-1.5">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    {{ service.duration }}
+                                                </span>
+                                                <span class="flex items-center gap-1.5">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                                    </svg>
+                                                    Secure Booking
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div class="flex flex-col items-end">
-                                    <div class="text-xl font-bold text-gray-900 mb-2">₹{{ service.price }}</div>
-                                    {% if current_user.is_authenticated and current_user.role == 'learner' %}
-                                    <form method="POST" action="{{ url_for('book_service', service_id=service.id) }}" class="w-full md:w-auto">
-                                        <select name="slot" class="w-full mb-2 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" required>
-                                            <option value="">Select time</option>
-                                            <option value="10:00 AM">10:00 AM</option>
-                                            <option value="11:00 AM">11:00 AM</option>
-                                            <option value="2:00 PM">2:00 PM</option>
-                                            <option value="3:00 PM">3:00 PM</option>
-                                            <option value="5:00 PM">5:00 PM</option>
-                                            <option value="6:00 PM">6:00 PM</option>
+                                <div class="lg:text-right">
+                                    <div class="text-2xl font-bold text-gray-900 mb-2">₹{{ service.price }}</div>
+                                    {% if current_user.is_authenticated and current_user.role == 'learner' and service.is_active %}
+                                    <div class="flex flex-col gap-2 min-w-[200px]">
+                                        <select name="slot" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                                            <option value="">Select time slot</option>
+                                            <option value="10:00 AM">10:00 AM - 11:00 AM</option>
+                                            <option value="11:00 AM">11:00 AM - 12:00 PM</option>
+                                            <option value="2:00 PM">2:00 PM - 3:00 PM</option>
+                                            <option value="3:00 PM">3:00 PM - 4:00 PM</option>
+                                            <option value="5:00 PM">5:00 PM - 6:00 PM</option>
+                                            <option value="6:00 PM">6:00 PM - 7:00 PM</option>
                                         </select>
-                                        <button type="submit" 
-                                                class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                            Book Now
-                                        </button>
-                                    </form>
-                                    {% elif not current_user.is_authenticated %}
+                                        <form method="POST" action="{{ url_for('book_service', service_id=service.id) }}" class="w-full">
+                                            <input type="hidden" name="slot" id="slot-{{ service.id }}">
+                                            <button type="submit" onclick="return validateSlot('{{ service.id }}')" 
+                                                    class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                </svg>
+                                                Book Now
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% elif not current_user.is_authenticated and service.is_active %}
                                     <a href="{{ url_for('login') }}" 
-                                       class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm text-center">
+                                       class="inline-flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                        </svg>
                                         Login to Book
                                     </a>
+                                    {% elif not service.is_active %}
+                                    <button disabled class="w-full px-6 py-3 bg-gray-100 text-gray-400 font-medium rounded-xl cursor-not-allowed">
+                                        Currently Unavailable
+                                    </button>
                                     {% endif %}
                                 </div>
                             </div>
@@ -207,51 +390,63 @@
                         {% endfor %}
                     </div>
                     {% elif mentor.services %}
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         {% for service_name in mentor.services.split(',') %}
                             {% set service = service_name.strip() %}
                             {% if service %}
-                            <div class="border border-gray-200 rounded-xl p-5 hover:border-blue-300 transition-colors">
-                                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                            <div class="service-card rounded-2xl p-6 border border-gray-100">
+                                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                     <div class="flex-1">
-                                        <div class="flex items-start gap-3">
-                                            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <div class="flex items-start gap-4">
+                                            <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h3 class="font-semibold text-gray-900">{{ service }}</h3>
-                                                <p class="text-gray-600 text-sm mt-1">Professional consultation service</p>
-                                                <div class="mt-2">
-                                                    <span class="text-sm text-gray-500">Standard session</span>
+                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ service }}</h3>
+                                                <p class="text-gray-600 mb-3">Professional one-on-one consultation and guidance session</p>
+                                                <div class="flex items-center gap-1.5 text-sm text-gray-500">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    <span>60 minute session</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="flex flex-col items-end">
-                                        <div class="text-xl font-bold text-gray-900 mb-2">₹{{ mentor.price }}</div>
+                                    <div class="lg:text-right">
+                                        <div class="text-2xl font-bold text-gray-900 mb-2">₹{{ mentor.price }}</div>
                                         {% if current_user.is_authenticated and current_user.role == 'learner' %}
-                                        <form method="POST" action="{{ url_for('book_product', product_id=0) }}" class="w-full md:w-auto">
-                                            <input type="hidden" name="service_name" value="{{ service }}">
-                                            <select name="slot" class="w-full mb-2 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" required>
-                                                <option value="">Select time</option>
-                                                <option value="10:00 AM">10:00 AM</option>
-                                                <option value="11:00 AM">11:00 AM</option>
-                                                <option value="2:00 PM">2:00 PM</option>
-                                                <option value="3:00 PM">3:00 PM</option>
-                                                <option value="5:00 PM">5:00 PM</option>
-                                                <option value="6:00 PM">6:00 PM</option>
+                                        <div class="flex flex-col gap-2 min-w-[200px]">
+                                            <select name="slot" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                                                <option value="">Select time slot</option>
+                                                <option value="10:00 AM">10:00 AM - 11:00 AM</option>
+                                                <option value="11:00 AM">11:00 AM - 12:00 PM</option>
+                                                <option value="2:00 PM">2:00 PM - 3:00 PM</option>
+                                                <option value="3:00 PM">3:00 PM - 4:00 PM</option>
+                                                <option value="5:00 PM">5:00 PM - 6:00 PM</option>
+                                                <option value="6:00 PM">6:00 PM - 7:00 PM</option>
                                             </select>
-                                            <button type="submit" 
-                                                    class="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                                Book Session
-                                            </button>
-                                        </form>
+                                            <form method="POST" action="{{ url_for('book_product', product_id=0) }}" class="w-full">
+                                                <input type="hidden" name="service_name" value="{{ service }}">
+                                                <input type="hidden" name="slot" id="slot-basic-{{ loop.index }}">
+                                                <button type="submit" onclick="return validateBasicSlot('{{ loop.index }}')" 
+                                                        class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                    </svg>
+                                                    Book Session
+                                                </button>
+                                            </form>
+                                        </div>
                                         {% elif not current_user.is_authenticated %}
                                         <a href="{{ url_for('login') }}" 
-                                           class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm text-center">
+                                           class="inline-flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                            </svg>
                                             Login to Book
                                         </a>
                                         {% endif %}
@@ -262,26 +457,36 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <p class="text-gray-500">No services available</p>
+                    <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-2xl">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Services Available</h3>
+                        <p class="text-gray-500 max-w-sm mx-auto">This mentor hasn't added any services yet. Check back later!</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Right Column - Quick Actions -->
-            <div class="space-y-6">
+            <!-- Right Column - Quick Actions & Info -->
+            <div class="space-y-8">
                 <!-- Quick Booking -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6 animate-fadeInUp lg:sticky lg:top-24">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Booking</h3>
+                <div id="quick-booking" class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-6 animate-slideInRight lg:sticky lg:top-24">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Quick Booking</h3>
+                    </div>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Select Service</label>
-                            <select id="quick-service" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <select id="quick-service" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white">
                                 <option value="">Choose a service</option>
                                 {% if services %}
                                     {% for service in services %}
@@ -296,62 +501,117 @@
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Time Slot</label>
-                            <div class="grid grid-cols-2 gap-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Available Time Slots</label>
+                            <div class="grid grid-cols-2 gap-3">
                                 {% for time in ['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM', '6:00 PM'] %}
-                                <button onclick="selectTime('{{ time }}')" 
-                                        class="p-3 text-center border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-sm">
+                                <button type="button" onclick="selectQuickTime('{{ time }}', this)" 
+                                        class="time-slot p-3 text-center border border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-sm font-medium">
                                     {{ time }}
                                 </button>
                                 {% endfor %}
                             </div>
                         </div>
                         
-                        <div class="pt-4 border-t border-gray-200">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-gray-600">Estimated price</span>
-                                <span id="price-display" class="text-xl font-bold text-gray-900">₹0</span>
+                        <div class="pt-6 border-t border-gray-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600 font-medium">Estimated Price</span>
+                                <div class="flex items-baseline">
+                                    <span id="price-display" class="text-3xl font-bold text-gray-900">₹0</span>
+                                </div>
                             </div>
+                            <div class="text-xs text-gray-500 mb-6">All prices include GST</div>
                             
                             <button onclick="quickBook()" 
-                                    class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3 group">
+                                <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                 </svg>
-                                Book Now
+                                Book Instantly
                             </button>
+                            
+                            <div class="mt-4 text-center">
+                                <p class="text-xs text-gray-500 flex items-center justify-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                    Secure booking • 24/7 support • Free rescheduling
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Contact Info -->
-                <div class="bg-white rounded-xl border border-gray-200 p-6 animate-fadeInUp">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact & Info</h3>
+                <!-- Contact & Info -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-slideInRight">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">Contact & Info</h3>
+                    </div>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-5">
                         {% if mentor.linkedin_url %}
                         <a href="{{ mentor.linkedin_url }}" target="_blank" 
-                           class="flex items-center gap-3 p-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                           class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-5 h-5 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">LinkedIn</div>
+                                <div class="text-sm text-gray-500">Professional Profile</div>
+                            </div>
+                            <svg class="w-4 h-4 ml-auto text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                             </svg>
-                            <span class="text-sm">LinkedIn Profile</span>
                         </a>
                         {% endif %}
                         
-                        <div class="pt-3 border-t border-gray-100">
-                            <div class="text-sm text-gray-600 mb-1">Response Time</div>
-                            <div class="font-medium text-gray-900">Usually within 2 hours</div>
+                        <div class="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-sm font-medium text-gray-700">Response Time</div>
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            </div>
+                            <div class="font-bold text-gray-900">Usually within 2 hours</div>
                         </div>
                         
-                        <div>
-                            <div class="text-sm text-gray-600 mb-1">Success Rate</div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-500 h-2 rounded-full" style="width: {{ mentor.success_rate or 95 }}%"></div>
-                                </div>
-                                <span class="text-sm font-medium">{{ mentor.success_rate or 95 }}%</span>
+                        <div class="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="text-sm font-medium text-gray-700">Success Rate</div>
+                                <div class="text-sm font-bold text-gray-900">{{ mentor.success_rate or 95 }}%</div>
                             </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-1000" 
+                                     style="width: {{ mentor.success_rate or 95 }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-200">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Why Choose This Mentor?</h4>
+                            <ul class="space-y-2">
+                                <li class="flex items-center gap-2 text-sm text-gray-600">
+                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Industry expert with {{ mentor.experience or '5+' }} years experience
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-gray-600">
+                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Personalized 1-on-1 sessions
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-gray-600">
+                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Practical, real-world insights
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -360,45 +620,170 @@
     </div>
 </div>
 
-<script>
-let selectedTime = null;
-let selectedPrice = 0;
+<!-- Share Modal -->
+<div id="shareModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 hidden animate-fadeIn">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full transform transition-all duration-300 scale-95">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-gray-900">Share Profile</h3>
+            <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl">
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    {% if mentor.profile_image %}
+                    <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
+                         alt="{{ mentor.full_name or mentor.username }}" 
+                         class="w-full h-full object-cover rounded-lg">
+                    {% else %}
+                    <span class="text-xl font-bold text-white">
+                        {{ (mentor.full_name or mentor.username)[0].upper() }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-gray-900 truncate">{{ mentor.full_name or mentor.username }}</div>
+                    <div class="text-sm text-gray-500 truncate">{{ mentor.job_title or '' }}</div>
+                </div>
+            </div>
+            
+            <div class="relative">
+                <input type="text" id="shareLink" 
+                       value="{{ request.host_url }}mentor/{{ (mentor.full_name or mentor.username)|replace(' ', '-')|lower }}?id={{ mentor.id }}" 
+                       readonly
+                       class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button onclick="copyShareLink()" 
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    Copy
+                </button>
+            </div>
+            
+            <div class="flex justify-center space-x-4 pt-4">
+                <a href="https://twitter.com/intent/tweet?text=Check out {{ mentor.full_name or mentor.username }} on ClearQ Mentors&url={{ request.host_url }}mentor/{{ (mentor.full_name or mentor.username)|replace(' ', '-')|lower }}?id={{ mentor.id }}"
+                   target="_blank"
+                   class="w-12 h-12 rounded-full bg-[#1DA1F2] flex items-center justify-center hover:scale-110 transition-transform">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                    </svg>
+                </a>
+                <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.host_url }}mentor/{{ (mentor.full_name or mentor.username)|replace(' ', '-')|lower }}?id={{ mentor.id }}&title={{ mentor.full_name or mentor.username }} - ClearQ Mentor"
+                   target="_blank"
+                   class="w-12 h-12 rounded-full bg-[#0077B5] flex items-center justify-center hover:scale-110 transition-transform">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                </a>
+                <a href="https://wa.me/?text=Check out {{ mentor.full_name or mentor.username }} on ClearQ Mentors: {{ request.host_url }}mentor/{{ (mentor.full_name or mentor.username)|replace(' ', '-')|lower }}?id={{ mentor.id }}"
+                   target="_blank"
+                   class="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center hover:scale-110 transition-transform">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.999-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.897 6.994c-.004 5.45-4.437 9.88-9.885 9.88zm8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.892 0-3.18-1.24-6.162-3.495-8.411"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
-function selectTime(time) {
-    selectedTime = time;
+<script>
+let selectedQuickTime = null;
+let selectedQuickPrice = 0;
+let selectedServiceId = null;
+
+function scrollToBooking() {
+    document.getElementById('quick-booking').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
+
+// Share functionality
+document.getElementById('shareButton').addEventListener('click', function() {
+    if (navigator.share) {
+        // Use Web Share API if available
+        navigator.share({
+            title: '{{ mentor.full_name or mentor.username }} - ClearQ Mentor',
+            text: 'Check out this amazing mentor on ClearQ!',
+            url: window.location.href
+        });
+    } else {
+        // Fallback to custom modal
+        document.getElementById('shareModal').classList.remove('hidden');
+        document.getElementById('shareModal').classList.add('flex');
+        setTimeout(() => {
+            document.getElementById('shareModal').querySelector('.transform').classList.remove('scale-95');
+        }, 10);
+    }
+});
+
+function closeShareModal() {
+    document.getElementById('shareModal').querySelector('.transform').classList.add('scale-95');
+    setTimeout(() => {
+        document.getElementById('shareModal').classList.add('hidden');
+        document.getElementById('shareModal').classList.remove('flex');
+    }, 300);
+}
+
+function copyShareLink() {
+    const shareInput = document.getElementById('shareLink');
+    shareInput.select();
+    shareInput.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    
+    // Show success feedback
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Copied!';
+    button.classList.add('bg-green-600');
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('bg-green-600');
+    }, 2000);
+}
+
+// Quick booking functionality
+function selectQuickTime(time, element) {
+    selectedQuickTime = time;
     
     // Update UI
-    document.querySelectorAll('[onclick*="selectTime"]').forEach(btn => {
+    document.querySelectorAll('.time-slot').forEach(btn => {
+        btn.classList.remove('selected');
         btn.classList.remove('border-blue-500', 'bg-blue-50');
         btn.classList.add('border-gray-300');
     });
     
-    event.target.classList.remove('border-gray-300');
-    event.target.classList.add('border-blue-500', 'bg-blue-50');
+    element.classList.add('selected');
+    element.classList.remove('border-gray-300');
 }
 
 // Update price when service is selected
 document.getElementById('quick-service').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
+    selectedServiceId = this.value;
+    
     if (selectedOption.value) {
-        selectedPrice = selectedOption.dataset.price || {{ mentor.price or 0 }};
-        document.getElementById('price-display').textContent = '₹' + selectedPrice;
+        selectedQuickPrice = selectedOption.dataset.price || {{ mentor.price or 0 }};
+        document.getElementById('price-display').textContent = '₹' + selectedQuickPrice;
     } else {
-        selectedPrice = 0;
+        selectedQuickPrice = 0;
         document.getElementById('price-display').textContent = '₹0';
     }
 });
 
 function quickBook() {
     const serviceSelect = document.getElementById('quick-service');
-    const selectedService = serviceSelect.value;
     
-    if (!selectedService) {
+    if (!selectedServiceId) {
         alert('Please select a service');
+        serviceSelect.focus();
         return;
     }
     
-    if (!selectedTime) {
+    if (!selectedQuickTime) {
         alert('Please select a time slot');
         return;
     }
@@ -416,53 +801,118 @@ function quickBook() {
     }
     
     // Show confirmation
+    showBookingConfirmation();
+}
+
+function showBookingConfirmation() {
+    const serviceSelect = document.getElementById('quick-service');
+    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+    
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn';
     modal.innerHTML = `
-        <div class="bg-white rounded-xl p-6 max-w-md w-full">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-semibold text-gray-900">Confirm Booking</h3>
-                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                <h3 class="text-lg font-bold text-gray-900">Confirm Booking</h3>
+                <button onclick="this.closest('.fixed').remove()" 
+                        class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
             
-            <div class="space-y-3 mb-6">
-                <div class="flex justify-between">
+            <div class="space-y-4 mb-6">
+                <div class="flex justify-between items-center">
                     <span class="text-gray-600">Service:</span>
-                    <span class="font-medium">${serviceSelect.options[serviceSelect.selectedIndex].text}</span>
+                    <span class="font-semibold text-gray-900">${selectedOption.text.split(' - ')[0]}</span>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Time:</span>
-                    <span class="font-medium">${selectedTime}</span>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Time Slot:</span>
+                    <span class="font-semibold text-gray-900">${selectedQuickTime}</span>
                 </div>
-                <div class="flex justify-between border-t pt-3">
-                    <span class="text-gray-600">Total:</span>
-                    <span class="text-xl font-bold text-gray-900">₹${selectedPrice}</span>
+                <div class="flex justify-between items-center border-t pt-4">
+                    <span class="text-gray-600">Total Amount:</span>
+                    <span class="text-2xl font-bold text-gray-900">₹${selectedQuickPrice}</span>
                 </div>
             </div>
             
             <div class="flex gap-3">
                 <button onclick="this.closest('.fixed').remove()" 
-                        class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>
-                <button onclick="processBooking()" 
-                        class="flex-1 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">
-                    Confirm
+                <button onclick="processQuickBooking()" 
+                        class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transition-all">
+                    Confirm & Pay
                 </button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
+    
+    setTimeout(() => {
+        modal.querySelector('.transform').classList.remove('scale-95');
+    }, 10);
 }
 
-function processBooking() {
-    // In a real app, this would submit the form
-    alert('Booking confirmed! You will receive a confirmation email.');
-    document.querySelector('.fixed').remove();
+function processQuickBooking() {
+    // In a real app, this would submit to the server
+    // For now, show success message
+    const modal = document.querySelector('.fixed');
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
+                <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+            <p class="text-gray-600 mb-6">You will receive a confirmation email with session details.</p>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transition-all">
+                Close
+            </button>
+        </div>
+    `;
 }
+
+// Service booking validation
+function validateSlot(serviceId) {
+    const select = document.querySelector(`select[name="slot"]`);
+    if (!select.value) {
+        alert('Please select a time slot');
+        select.focus();
+        return false;
+    }
+    document.getElementById(`slot-${serviceId}`).value = select.value;
+    return true;
+}
+
+function validateBasicSlot(index) {
+    const select = document.querySelector(`select[name="slot"]`);
+    if (!select.value) {
+        alert('Please select a time slot');
+        select.focus();
+        return false;
+    }
+    document.getElementById(`slot-basic-${index}`).value = select.value;
+    return true;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Add parallax effect to header
+    window.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        const header = document.querySelector('.sticky');
+        if (scrolled > 50) {
+            header.style.backdropFilter = 'blur(20px)';
+        } else {
+            header.style.backdropFilter = 'blur(8px)';
+        }
+    });
+});
 </script>
 {% endblock %}
