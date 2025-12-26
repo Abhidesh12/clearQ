@@ -672,6 +672,23 @@ def explore():
                          query=query,
                          top_mentors=top_mentors)
 
+# Handle URLs with username-ID format (for backward compatibility with old share links)
+@app.route('/mentor/<username>-<int:id>')
+def mentor_profile_with_id(username, id):
+    """
+    Handle URLs with both username and ID like /mentor/username-id
+    This supports old share links while redirecting to clean URLs
+    """
+    # Check if user exists with this username and ID
+    user = User.query.filter_by(username=username, id=id).first()
+    
+    if user:
+        # User exists, redirect to clean username-only URL
+        return redirect(url_for('mentor_public_profile', username=username))
+    else:
+        # User not found with this combination, try username only
+        return redirect(url_for('mentor_public_profile', username=username))
+
 # Username-based profile routes
 @app.route('/mentor/<username>')
 def mentor_public_profile(username):
