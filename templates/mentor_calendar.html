@@ -1,23 +1,389 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>My Calendar</h2>
-    <div class="card">
-        <div class="card-body">
-            <h5>Booked Slots</h5>
-            {% if booked_slots %}
-            <ul class="list-group">
-                {% for slot in booked_slots %}
-                <li class="list-group-item">
-                    <strong>{{ slot.time }}</strong> - {{ slot.service }} with {{ slot.learner }}
-                </li>
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button onclick="history.back()" class="p-2 mr-2 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900">My Calendar</h1>
+                        <p class="text-xs text-gray-600">
+                            {{ booked_slots|length }} booked slot{{ 's' if booked_slots|length != 1 }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <!-- Today Button -->
+                    <button onclick="showToday()" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                        Today
+                    </button>
+                    
+                    <!-- Add Slot Button -->
+                    <button onclick="openAddSlot()" class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-4">
+        <!-- Week Navigation -->
+        <div class="mb-4 bg-white rounded-xl border border-gray-200 p-3">
+            <div class="flex items-center justify-between mb-3">
+                <button onclick="prevWeek()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                
+                <div class="text-center">
+                    <div class="font-semibold text-gray-900" id="current-week">This Week</div>
+                    <div class="text-xs text-gray-600" id="week-dates">Mon 1 - Sun 7</div>
+                </div>
+                
+                <button onclick="nextWeek()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Day Tabs -->
+            <div class="flex space-x-1 overflow-x-auto pb-2">
+                {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                <button class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg transition-colors 
+                    {% if loop.index == current_day_index %}bg-indigo-100 text-indigo-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                    {{ day }}
+                    <span class="block text-xs font-normal mt-0.5">{{ loop.index }}</span>
+                </button>
                 {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted">No bookings scheduled.</p>
-            {% endif %}
+            </div>
+        </div>
+        
+        <!-- Time Slots Grid -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+            <div class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+                {% if booked_slots %}
+                    <!-- Morning Section -->
+                    <div class="p-4">
+                        <div class="flex items-center mb-3">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                            <span class="text-sm font-semibold text-gray-700">Morning</span>
+                        </div>
+                        {% for slot in booked_slots if 'AM' in slot.time %}
+                        <div class="ml-4 mb-2">
+                            <div class="flex items-start p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <div class="flex-shrink-0 w-12">
+                                    <div class="text-sm font-bold text-blue-700">{{ slot.time }}</div>
+                                    <div class="text-xs text-blue-600 mt-1">1h</div>
+                                </div>
+                                <div class="flex-1 ml-3">
+                                    <div class="font-medium text-gray-900">{{ slot.service }}</div>
+                                    <div class="text-sm text-gray-600 mt-1">with {{ slot.learner }}</div>
+                                </div>
+                                <button onclick="viewSlotDetails('{{ slot.id }}')" class="ml-2 p-1.5 hover:bg-blue-100 rounded-lg">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Afternoon Section -->
+                    <div class="p-4 border-t border-gray-100">
+                        <div class="flex items-center mb-3">
+                            <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                            <span class="text-sm font-semibold text-gray-700">Afternoon</span>
+                        </div>
+                        {% for slot in booked_slots if 'PM' in slot.time and not '12' in slot.time and not '01' in slot.time and not '02' in slot.time %}
+                        <div class="ml-4 mb-2">
+                            <div class="flex items-start p-3 bg-orange-50 rounded-lg border border-orange-100">
+                                <div class="flex-shrink-0 w-12">
+                                    <div class="text-sm font-bold text-orange-700">{{ slot.time }}</div>
+                                    <div class="text-xs text-orange-600 mt-1">1h</div>
+                                </div>
+                                <div class="flex-1 ml-3">
+                                    <div class="font-medium text-gray-900">{{ slot.service }}</div>
+                                    <div class="text-sm text-gray-600 mt-1">with {{ slot.learner }}</div>
+                                </div>
+                                <button onclick="viewSlotDetails('{{ slot.id }}')" class="ml-2 p-1.5 hover:bg-orange-100 rounded-lg">
+                                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Evening Section -->
+                    <div class="p-4 border-t border-gray-100">
+                        <div class="flex items-center mb-3">
+                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                            <span class="text-sm font-semibold text-gray-700">Evening</span>
+                        </div>
+                        {% for slot in booked_slots if 'PM' in slot.time and '06' in slot.time or '07' in slot.time or '08' in slot.time or '09' in slot.time or '10' in slot.time or '11' in slot.time %}
+                        <div class="ml-4 mb-2">
+                            <div class="flex items-start p-3 bg-purple-50 rounded-lg border border-purple-100">
+                                <div class="flex-shrink-0 w-12">
+                                    <div class="text-sm font-bold text-purple-700">{{ slot.time }}</div>
+                                    <div class="text-xs text-purple-600 mt-1">1h</div>
+                                </div>
+                                <div class="flex-1 ml-3">
+                                    <div class="font-medium text-gray-900">{{ slot.service }}</div>
+                                    <div class="text-sm text-gray-600 mt-1">with {{ slot.learner }}</div>
+                                </div>
+                                <button onclick="viewSlotDetails('{{ slot.id }}')" class="ml-2 p-1.5 hover:bg-purple-100 rounded-lg">
+                                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                {% else %}
+                <!-- Empty State -->
+                <div class="p-8 text-center">
+                    <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No bookings scheduled</h3>
+                    <p class="text-gray-600 mb-6 max-w-sm mx-auto">
+                        Your booked time slots will appear here. Add your availability to get booked by learners.
+                    </p>
+                    <button onclick="openAddSlot()" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all inline-flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add Availability
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        {% if booked_slots %}
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-white rounded-xl border border-gray-200 p-3">
+                <div class="text-xs text-gray-600">This Week</div>
+                <div class="text-lg font-bold text-gray-900">{{ booked_slots|length }}</div>
+                <div class="text-xs text-gray-500">sessions</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-3">
+                <div class="text-xs text-gray-600">Today</div>
+                <div class="text-lg font-bold text-gray-900">0</div>
+                <div class="text-xs text-gray-500">sessions</div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions Footer -->
+        <div class="flex space-x-3">
+            <button onclick="exportCalendar()" class="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-medium rounded-lg hover:from-gray-900 hover:to-black transition-all flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
         </div>
     </div>
 </div>
+
+<!-- Add Slot Modal -->
+<div id="add-slot-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden overflow-y-auto">
+    <div class="min-h-screen px-4 py-6 flex items-center justify-center">
+        <div class="bg-white rounded-2xl w-full max-w-md mx-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Add Time Slot</h3>
+                    <button onclick="closeAddSlot()" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option>09:00 AM</option>
+                                <option>10:00 AM</option>
+                                <option>11:00 AM</option>
+                                <option>12:00 PM</option>
+                                <option>01:00 PM</option>
+                                <option>02:00 PM</option>
+                                <option>03:00 PM</option>
+                                <option>04:00 PM</option>
+                                <option>05:00 PM</option>
+                                <option>06:00 PM</option>
+                                <option>07:00 PM</option>
+                                <option>08:00 PM</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option>10:00 AM</option>
+                                <option>11:00 AM</option>
+                                <option>12:00 PM</option>
+                                <option>01:00 PM</option>
+                                <option>02:00 PM</option>
+                                <option>03:00 PM</option>
+                                <option>04:00 PM</option>
+                                <option>05:00 PM</option>
+                                <option>06:00 PM</option>
+                                <option>07:00 PM</option>
+                                <option>08:00 PM</option>
+                                <option>09:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Service</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>Select service</option>
+                            <option>Resume Review</option>
+                            <option>Mock Interview</option>
+                            <option>Career Consultation</option>
+                            <option>Portfolio Review</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex space-x-3">
+                    <button onclick="closeAddSlot()" class="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="saveSlot()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-medium rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all">
+                        Add Slot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal functions
+function openAddSlot() {
+    document.getElementById('add-slot-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAddSlot() {
+    document.getElementById('add-slot-modal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+document.getElementById('add-slot-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddSlot();
+    }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (!document.getElementById('add-slot-modal').classList.contains('hidden')) {
+            closeAddSlot();
+        }
+    }
+});
+
+// Calendar navigation
+function showToday() {
+    // Scroll to current day/time
+    const today = new Date().getDay();
+    const dayButtons = document.querySelectorAll('.flex-shrink-0');
+    dayButtons[today - 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+}
+
+function prevWeek() {
+    // Implementation for previous week
+    console.log('Previous week');
+}
+
+function nextWeek() {
+    // Implementation for next week
+    console.log('Next week');
+}
+
+// Slot details
+function viewSlotDetails(slotId) {
+    // In a real app, fetch slot details
+    alert(`Viewing details for slot ${slotId}`);
+}
+
+// Export calendar
+function exportCalendar() {
+    // In a real app, implement calendar export
+    alert('Exporting calendar data...');
+}
+
+// Save slot
+function saveSlot() {
+    // In a real app, save slot to backend
+    alert('Time slot added successfully!');
+    closeAddSlot();
+}
+
+// Initialize today's date
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    const options = { month: 'short', day: 'numeric' };
+    const weekDates = `${weekStart.toLocaleDateString('en-US', options)} - ${weekEnd.toLocaleDateString('en-US', options)}`;
+    
+    document.getElementById('week-dates').textContent = weekDates;
+    
+    // Highlight current day
+    const todayIndex = new Date().getDay();
+    if (todayIndex >= 1 && todayIndex <= 7) {
+        const dayButtons = document.querySelectorAll('.flex-shrink-0');
+        if (dayButtons[todayIndex - 1]) {
+            dayButtons[todayIndex - 1].classList.add('bg-indigo-100', 'text-indigo-700');
+        }
+    }
+});
+</script>
 {% endblock %}
