@@ -1755,21 +1755,33 @@ def mentorship_program():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        remember = 'remember' in request.form
+        
+        # Validate input
+        if not email or not password:
+            flash('Please fill in all fields', 'error')
+            return render_template('login.html')
+        
+        # Find user by email
         user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password):
-            login_user(user)
-            flash('Login successful!')
+        if user and check_password_hash(user.password, password):
+            login_user(user, remember=remember)
+            flash('Logged in successfully!', 'success')
             
-            # Check if email is verified
-            if not user.is_email_verified:
-                flash('Please verify your email address for full access.', 'warning')
-            
-            return redirect(url_for('dashboard'))
-        flash('Invalid credentials')
+            # Redirect to next page if provided
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
+        else:
+            flash('Invalid email or password', 'error')
+            return render_template('login.html')
+    
     return render_template('login.html')
 
 @app.route('/logout')
@@ -2625,3 +2637,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
