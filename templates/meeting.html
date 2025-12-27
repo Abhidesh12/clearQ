@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Meeting Room - ClearQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Meeting Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-video me-2"></i>ClearQ Meeting
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#meetingNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="meetingNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">
+                            <i class="far fa-clock me-1"></i>
+                            <span id="current-time">{{ datetime.now().strftime('%H:%M') }}</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('dashboard') }}" class="nav-link">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Meeting Info Card -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="card-title">
+                            <i class="fas fa-users me-2"></i>{{ booking.service_name }}
+                        </h4>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <p class="mb-1">
+                                    <i class="fas fa-calendar me-2"></i>
+                                    <strong>Date:</strong> 
+                                    {{ booking.booking_date.strftime('%B %d, %Y') if booking.booking_date else 'Not scheduled' }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <strong>Time:</strong> {{ booking.slot_time or 'Flexible' }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    <strong>Mentor:</strong> 
+                                    {{ booking.mentor.full_name if booking.mentor else 'Unknown' }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-user-graduate me-2"></i>
+                                    <strong>Learner:</strong> 
+                                    {{ booking.learner.full_name if booking.learner else 'Unknown' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group" role="group">
+                            {% if current_user.id == booking.mentor_id or current_user.role == 'admin' %}
+                            <button type="button" class="btn btn-success" id="start-meeting-btn">
+                                <i class="fas fa-play me-2"></i>Start Meeting
+                            </button>
+                            {% endif %}
+                            <a href="{{ booking.meeting_link }}" target="_blank" 
+                               class="btn btn-primary" id="join-meeting-btn">
+                                <i class="fas fa-external-link-alt me-2"></i>Join Meeting
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Meeting Container -->
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-video me-2"></i>Meeting Room
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="meeting-container" class="p-4 text-center" style="min-height: 400px; background-color: #1a1a1a;">
+                            {% if booking.meeting_link %}
+                            <div class="meeting-placeholder">
+                                <div class="mb-4">
+                                    <i class="fas fa-video fa-4x text-light mb-3"></i>
+                                    <h4 class="text-light">Meeting Ready</h4>
+                                </div>
+                                
+                                <div class="meeting-details bg-dark p-4 rounded text-start text-light mb-4">
+                                    <h5><i class="fas fa-link me-2"></i>Meeting Details</h5>
+                                    <hr class="bg-light">
+                                    <p><strong>Platform:</strong> {{ booking.meeting_platform|title }}</p>
+                                    {% if booking.meeting_id %}
+                                    <p><strong>Meeting ID:</strong> {{ booking.meeting_id }}</p>
+                                    {% endif %}
+                                    {% if booking.meeting_password %}
+                                    <p><strong>Password:</strong> {{ booking.meeting_password }}</p>
+                                    {% endif %}
+                                    <p><strong>Link:</strong> 
+                                        <a href="{{ booking.meeting_link }}" class="text-info" target="_blank">
+                                            {{ booking.meeting_link[:50] }}...
+                                        </a>
+                                    </p>
+                                </div>
+                                
+                                <div class="d-grid gap-2 col-md-6 mx-auto">
+                                    <a href="{{ booking.meeting_link }}" target="_blank" 
+                                       class="btn btn-success btn-lg">
+                                        <i class="fas fa-external-link-alt me-2"></i>Open Meeting in New Tab
+                                    </a>
+                                    <button type="button" class="btn btn-outline-light" 
+                                            onclick="copyMeetingLink()">
+                                        <i class="fas fa-copy me-2"></i>Copy Meeting Link
+                                    </button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="meeting-placeholder">
+                                <div class="mb-4">
+                                    <i class="fas fa-video-slash fa-4x text-secondary mb-3"></i>
+                                    <h4 class="text-light">Meeting Not Started</h4>
+                                    <p class="text-muted">The meeting link will be generated when the mentor starts the session.</p>
+                                </div>
+                                
+                                {% if current_user.id == booking.mentor_id %}
+                                <button type="button" class="btn btn-primary btn-lg" id="generate-meeting-btn">
+                                    <i class="fas fa-plus-circle me-2"></i>Generate Meeting Link
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Meeting Notes -->
+                <div class="card shadow mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sticky-note me-2"></i>Session Notes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if booking.meeting_notes %}
+                        <div class="notes-content">
+                            {{ booking.meeting_notes|safe }}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No notes added yet.</p>
+                        {% endif %}
+                        
+                        {% if current_user.id == booking.mentor_id %}
+                        <form id="notes-form" class="mt-3">
+                            <div class="mb-3">
+                                <label for="meetingNotes" class="form-label">Add Notes</label>
+                                <textarea class="form-control" id="meetingNotes" rows="3" 
+                                          placeholder="Add session notes here..."></textarea>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" onclick="saveNotes()">
+                                <i class="fas fa-save me-2"></i>Save Notes
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Session Controls -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>Session Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if current_user.id == booking.mentor_id and not booking.is_session_completed %}
+                            <button type="button" class="btn btn-success" id="complete-session-btn">
+                                <i class="fas fa-check-circle me-2"></i>Mark as Completed
+                            </button>
+                            {% endif %}
+                            
+                            {% if booking.is_session_completed %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Session Completed</strong>
+                                {% if booking.session_rating %}
+                                <div class="mt-2">
+                                    <strong>Rating:</strong> 
+                                    {% for i in range(5) %}
+                                        {% if i < booking.session_rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                        <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Participants -->
+                <div class="card shadow mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Participants
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="participant-list">
+                            <!-- Mentor -->
+                            <div class="participant-item d-flex align-items-center mb-3">
+                                <div class="avatar me-3">
+                                    {% if booking.mentor and booking.mentor.profile_image %}
+                                    <img src="{{ url_for('static', filename=booking.mentor.profile_image) }}" 
+                                         class="rounded-circle" width="40" height="40" alt="Mentor">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="participant-info">
+                                    <h6 class="mb-0">{{ booking.mentor.full_name if booking.mentor else 'Mentor' }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-crown text-warning me-1"></i>Mentor
+                                    </small>
+                                </div>
+                                <div class="status ms-auto">
+                                    <span class="badge bg-success">Online</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Learner -->
+                            <div class="participant-item d-flex align-items-center">
+                                <div class="avatar me-3">
+                                    {% if booking.learner and booking.learner.profile_image %}
+                                    <img src="{{ url_for('static', filename=booking.learner.profile_image) }}" 
+                                         class="rounded-circle" width="40" height="40" alt="Learner">
+                                    {% else %}
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user-graduate"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="participant-info">
+                                    <h6 class="mb-0">{{ booking.learner.full_name if booking.learner else 'Learner' }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-graduation-cap text-info me-1"></i>Learner
+                                    </small>
+                                </div>
+                                <div class="status ms-auto">
+                                    <span class="badge bg-success">Online</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Meeting Information -->
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Meeting Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-shield-alt text-success me-2"></i>
+                                <small>Secure end-to-end encrypted</small>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-microphone text-primary me-2"></i>
+                                <small>Audio enabled by default</small>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-video text-primary me-2"></i>
+                                <small>Video optional</small>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-comments text-info me-2"></i>
+                                <small>Chat available</small>
+                            </li>
+                            <li>
+                                <i class="fas fa-clock text-warning me-2"></i>
+                                <small>Duration: {{ booking.service.duration if booking.service else '1 hour' }}</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('current-time').textContent = timeString;
+}
+
+setInterval(updateTime, 60000); // Update every minute
+
+// Copy meeting link to clipboard
+function copyMeetingLink() {
+    const meetingLink = "{{ booking.meeting_link }}";
+    navigator.clipboard.writeText(meetingLink).then(function() {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050;';
+        alert.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Meeting link copied to clipboard!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            alert.remove();
+        }, 3000);
+    });
+}
+
+// Generate meeting link (for mentors)
+document.getElementById('generate-meeting-btn')?.addEventListener('click', function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    
+    fetch("{{ url_for('start_meeting', booking_id=booking.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to generate meeting link: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Generate Meeting Link';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Generate Meeting Link';
+    });
+});
+
+// Complete session (for mentors)
+document.getElementById('complete-session-btn')?.addEventListener('click', function() {
+    if (confirm('Are you sure you want to mark this session as completed?')) {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Completing...';
+        
+        fetch("{{ url_for('complete_session', booking_id=booking.id) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Failed to complete session: ' + data.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Mark as Completed';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Mark as Completed';
+        });
+    }
+});
+
+// Save notes
+function saveNotes() {
+    const notes = document.getElementById('meetingNotes').value;
+    
+    // In a real implementation, you would save this via an API call
+    alert('Notes saved! (This is a demo - notes would be saved to database in production)');
+}
+
+// Start meeting button
+document.getElementById('start-meeting-btn')?.addEventListener('click', function() {
+    if (!"{{ booking.meeting_link }}") {
+        document.getElementById('generate-meeting-btn')?.click();
+    } else {
+        window.open("{{ booking.meeting_link }}", '_blank');
+    }
+});
+
+// Join meeting button
+document.getElementById('join-meeting-btn')?.addEventListener('click', function(e) {
+    if (!"{{ booking.meeting_link }}") {
+        e.preventDefault();
+        alert('Meeting link not available yet. Please wait for the mentor to start the meeting.');
+    }
+});
+</script>
+
+<style>
+body {
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.card {
+    border-radius: 10px;
+    border: none;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+#meeting-container {
+    border-radius: 0 0 10px 10px;
+}
+
+.meeting-placeholder {
+    color: #fff;
+}
+
+.meeting-details {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.participant-item {
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: background-color 0.2s;
+}
+
+.participant-item:hover {
+    background-color: #e9ecef;
+}
+
+.avatar img {
+    object-fit: cover;
+}
+
+.btn-primary {
+    background-color: #4a6baf;
+    border-color: #4a6baf;
+}
+
+.btn-primary:hover {
+    background-color: #3a5a9f;
+    border-color: #3a5a9f;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.badge {
