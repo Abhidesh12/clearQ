@@ -22,12 +22,12 @@
         <!-- Tab Navigation -->
         <div class="max-w-2xl mx-auto mb-8">
             <div class="flex rounded-xl bg-gray-100 p-1">
-                <button onclick="switchTab('learner')" 
+                <button type="button" onclick="switchTab('learner')" 
                         id="btn-learner" 
                         class="flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base">
                     <i class="fas fa-user-graduate mr-2"></i>Join as Learner
                 </button>
-                <button onclick="switchTab('mentor')" 
+                <button type="button" onclick="switchTab('mentor')" 
                         id="btn-mentor" 
                         class="flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base">
                     <i class="fas fa-chalkboard-teacher mr-2"></i>Become a Mentor
@@ -67,7 +67,6 @@
     <form id="learner-form" method="POST" action="{{ url_for('register') }}" 
           class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal active">
         <input type="hidden" name="role" id="role-input" value="learner">
-        {{ form.hidden_tag() }}
         
         <div class="mb-8 text-center">
             <h2 class="text-2xl font-bold text-dark mb-2">Create Learner Account</h2>
@@ -82,16 +81,12 @@
                 </label>
                 <div class="relative">
                     <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    {{ form.username(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all",
-                        placeholder="Choose a username") }}
+                    <input type="text" 
+                           name="username" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Choose a username"
+                           required>
                 </div>
-                {% if form.username.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.username.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
             </div>
             
             <!-- Email -->
@@ -101,16 +96,12 @@
                 </label>
                 <div class="relative">
                     <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    {{ form.email(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all",
-                        placeholder="your.email@example.com") }}
+                    <input type="email" 
+                           name="email" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="your.email@example.com"
+                           required>
                 </div>
-                {% if form.email.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.email.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
             </div>
             
             <!-- Password -->
@@ -120,16 +111,13 @@
                 </label>
                 <div class="relative">
                     <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    {{ form.password(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all",
-                        placeholder="Create a strong password") }}
+                    <input type="password" 
+                           name="password" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Create a strong password"
+                           minlength="8"
+                           required>
                 </div>
-                {% if form.password.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.password.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
             </div>
             
             <!-- Confirm Password -->
@@ -139,16 +127,12 @@
                 </label>
                 <div class="relative">
                     <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    {{ form.confirm_password(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all",
-                        placeholder="Confirm your password") }}
+                    <input type="password" 
+                           name="confirm_password" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                           placeholder="Confirm your password"
+                           required>
                 </div>
-                {% if form.confirm_password.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.confirm_password.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
             </div>
         </div>
 
@@ -165,7 +149,6 @@
     <form id="mentor-form" method="POST" action="{{ url_for('register') }}" 
           class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal hidden">
         <input type="hidden" name="role" value="mentor">
-        {{ form.hidden_tag() }}
         
         <div class="mb-8 text-center">
             <div class="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center mx-auto mb-4">
@@ -192,30 +175,22 @@
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Full Name <span class="text-red-500">*</span>
                     </label>
-                    {{ form.full_name(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                        placeholder="Jane Doe") }}
-                    {% if form.full_name.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.full_name.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <input type="text" 
+                           name="full_name" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                           placeholder="Jane Doe"
+                           required>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Username <span class="text-red-500">*</span>
                     </label>
-                    {{ form.username(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                        placeholder="jane_doe") }}
-                    {% if form.username.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.username.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <input type="text" 
+                           name="username" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                           placeholder="jane_doe"
+                           required>
                 </div>
             </div>
             
@@ -227,16 +202,12 @@
                     </label>
                     <div class="relative">
                         <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        {{ form.email(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                            placeholder="jane@example.com") }}
+                        <input type="email" 
+                               name="email" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="jane@example.com"
+                               required>
                     </div>
-                    {% if form.email.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.email.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
                 
                 <div class="form-group">
@@ -245,15 +216,10 @@
                     </label>
                     <div class="relative">
                         <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        {{ form.phone(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                            placeholder="+91 98765 43210") }}
-                        {% if form.phone.errors %}
-                            <div class="mt-1 text-sm text-red-600">
-                                {% for error in form.phone.errors %}
-                                    <p>{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="tel" 
+                               name="phone" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="+91 98765 43210">
                     </div>
                 </div>
             </div>
@@ -264,30 +230,22 @@
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Current Job Title <span class="text-red-500">*</span>
                     </label>
-                    {{ form.job_title(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                        placeholder="Senior Product Manager") }}
-                    {% if form.job_title.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.job_title.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <input type="text" 
+                           name="job_title" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                           placeholder="Senior Product Manager"
+                           required>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Company <span class="text-red-500">*</span>
                     </label>
-                    {{ form.company(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                        placeholder="Google, Amazon, etc.") }}
-                    {% if form.company.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.company.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <input type="text" 
+                           name="company" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                           placeholder="Google, Amazon, etc."
+                           required>
                 </div>
             </div>
 
@@ -297,28 +255,36 @@
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Primary Domain <span class="text-red-500">*</span>
                     </label>
-                    {{ form.domain(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base") }}
-                    {% if form.domain.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.domain.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <select name="domain" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                            required>
+                        <option value="">Select Domain</option>
+                        <option value="tech">Technology</option>
+                        <option value="business">Business</option>
+                        <option value="design">Design</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="data_science">Data Science</option>
+                        <option value="product_management">Product Management</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="education">Education</option>
+                        <option value="other">Other</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Years of Experience <span class="text-red-500">*</span>
                     </label>
-                    {{ form.experience(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base") }}
-                    {% if form.experience.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.experience.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    <select name="experience" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                            required>
+                        <option value="">Select Experience</option>
+                        <option value="0-2">0-2 years</option>
+                        <option value="3-5">3-5 years</option>
+                        <option value="6-10">6-10 years</option>
+                        <option value="10+">10+ years</option>
+                    </select>
                 </div>
             </div>
 
@@ -340,15 +306,8 @@
                         </button>
                     </div>
                     <div id="skills-container" class="flex flex-wrap gap-2 mb-2"></div>
-                    {{ form.skills(id="skills-hidden", type="hidden") }}
+                    <input type="hidden" id="skills-hidden" name="skills">
                     <p class="text-xs md:text-sm text-gray-500 mt-2">Add up to 10 skills. These will be displayed on your profile.</p>
-                    {% if form.skills.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.skills.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -370,8 +329,13 @@
                             </label>
                             <div class="relative mt-2">
                                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                {{ form.resume_review_price(id="resume-review-price", class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100",
-                                    min="0", placeholder="500", disabled=True) }}
+                                <input type="number" 
+                                       name="resume_review_price" 
+                                       id="resume-review-price" 
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
+                                       min="0" 
+                                       placeholder="500" 
+                                       disabled>
                             </div>
                         </div>
                         
@@ -386,8 +350,13 @@
                             </label>
                             <div class="relative mt-2">
                                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                {{ form.mock_interview_price(id="mock-interview-price", class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100",
-                                    min="0", placeholder="800", disabled=True) }}
+                                <input type="number" 
+                                       name="mock_interview_price" 
+                                       id="mock-interview-price" 
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
+                                       min="0" 
+                                       placeholder="800" 
+                                       disabled>
                             </div>
                         </div>
                         
@@ -402,8 +371,13 @@
                             </label>
                             <div class="relative mt-2">
                                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                {{ form.career_guidance_price(id="career-guidance-price", class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100",
-                                    min="0", placeholder="600", disabled=True) }}
+                                <input type="number" 
+                                       name="career_guidance_price" 
+                                       id="career-guidance-price" 
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
+                                       min="0" 
+                                       placeholder="600" 
+                                       disabled>
                             </div>
                         </div>
                         
@@ -418,8 +392,13 @@
                             </label>
                             <div class="relative mt-2">
                                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                {{ form.skill_training_price(id="skill-training-price", class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100",
-                                    min="0", placeholder="1000", disabled=True) }}
+                                <input type="number" 
+                                       name="skill_training_price" 
+                                       id="skill-training-price" 
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
+                                       min="0" 
+                                       placeholder="1000" 
+                                       disabled>
                             </div>
                         </div>
                     </div>
@@ -430,54 +409,27 @@
             <!-- Availability Section -->
             <div class="form-group">
                 <label class="form-label block text-sm font-semibold text-gray-700 mb-4">
-                    Availability Schedule <span class="text-red-500">*</span>
+                    Availability Schedule
                 </label>
                 <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
-                                Preferred Days
-                            </label>
-                            <div class="flex flex-wrap gap-2">
-                                {% for day in form.available_days %}
-                                <label class="inline-flex items-center">
-                                    {{ day }}
-                                    <span class="ml-2 text-sm">{{ day.label.text }}</span>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
-                                Time Slot (24-hour format)
-                            </label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="text-xs text-gray-600 mb-1 block">Start Time</label>
-                                    {{ form.start_time(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm") }}
-                                </div>
-                                <div>
-                                    <label class="text-xs text-gray-600 mb-1 block">End Time</label>
-                                    {{ form.end_time(class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm") }}
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                            Availability (e.g., "Weekdays 6-9 PM, Weekends 10 AM - 6 PM")
+                        </label>
+                        <input type="text" 
+                               name="availability" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="Weekdays 6-9 PM, Weekends 10 AM - 6 PM">
                     </div>
                     
                     <div>
                         <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                             Available From Date <span class="text-red-500">*</span>
                         </label>
-                        {{ form.available_from(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                            required=True) }}
-                        {% if form.available_from.errors %}
-                            <div class="mt-1 text-sm text-red-600">
-                                {% for error in form.available_from.errors %}
-                                    <p>{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="date" 
+                               name="available_from" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               required>
                     </div>
                 </div>
             </div>
@@ -487,19 +439,61 @@
                 <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Professional Bio <span class="text-red-500">*</span>
                 </label>
-                {{ form.bio(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                    rows="4", placeholder="Tell us about your experience, achievements, and what makes you a great mentor...") }}
+                <textarea name="bio" 
+                          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                          rows="4" 
+                          placeholder="Tell us about your experience, achievements, and what makes you a great mentor..."
+                          minlength="100"
+                          required></textarea>
                 <div class="flex justify-between items-center mt-2">
                     <p class="text-xs md:text-sm text-gray-500">Minimum 100 characters</p>
                     <span id="bio-counter" class="text-xs text-gray-500">0/100</span>
                 </div>
-                {% if form.bio.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.bio.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
+            </div>
+
+            <!-- Price -->
+            <div class="form-group">
+                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    Base Price per Session (₹) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
+                    <input type="number" 
+                           name="price" 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                           min="0" 
+                           placeholder="500"
+                           required>
+                </div>
+            </div>
+
+            <!-- Social Media Links -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="form-group">
+                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                        LinkedIn Profile URL
+                    </label>
+                    <div class="relative">
+                        <i class="fab fa-linkedin absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="url" 
+                               name="linkedin_url" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="https://linkedin.com/in/username">
                     </div>
-                {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                        Twitter/X Profile URL
+                    </label>
+                    <div class="relative">
+                        <i class="fab fa-twitter absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="url" 
+                               name="twitter_url" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="https://twitter.com/username">
+                    </div>
+                </div>
             </div>
 
             <!-- Password -->
@@ -510,16 +504,13 @@
                     </label>
                     <div class="relative">
                         <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        {{ form.password(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                            placeholder="Create a strong password") }}
+                        <input type="password" 
+                               name="password" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="Create a strong password"
+                               minlength="8"
+                               required>
                     </div>
-                    {% if form.password.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.password.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
                 
                 <div class="form-group">
@@ -528,36 +519,29 @@
                     </label>
                     <div class="relative">
                         <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        {{ form.confirm_password(class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base",
-                            placeholder="Confirm your password") }}
+                        <input type="password" 
+                               name="confirm_password" 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
+                               placeholder="Confirm your password"
+                               required>
                     </div>
-                    {% if form.confirm_password.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.confirm_password.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
             </div>
 
             <!-- Terms & Conditions -->
             <div class="form-group">
                 <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl">
-                    {{ form.terms(id="terms", class="mt-1 rounded text-primary focus:ring-primary") }}
+                    <input type="checkbox" 
+                           name="terms" 
+                           id="terms" 
+                           class="mt-1 rounded text-primary focus:ring-primary"
+                           required>
                     <label for="terms" class="text-xs md:text-sm text-gray-700">
                         I agree to the <a href="#" class="text-primary font-semibold hover:underline">Terms of Service</a> 
                         and <a href="#" class="text-primary font-semibold hover:underline">Privacy Policy</a>. 
                         I understand that my profile will be reviewed and I may need to provide verification.
                     </label>
                 </div>
-                {% if form.terms.errors %}
-                    <div class="mt-1 text-sm text-red-600">
-                        {% for error in form.terms.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
             </div>
         </div>
 
@@ -687,8 +671,9 @@
     
     if (bioTextarea && bioCounter) {
         bioTextarea.addEventListener('input', function() {
-            bioCounter.textContent = `${this.value.length}/100`;
-            if (this.value.length < 100) {
+            const charCount = this.value.length;
+            bioCounter.textContent = `${charCount}/100`;
+            if (charCount < 100) {
                 bioCounter.classList.add('text-red-500');
                 bioCounter.classList.remove('text-green-500');
             } else {
@@ -696,6 +681,9 @@
                 bioCounter.classList.add('text-green-500');
             }
         });
+        
+        // Initialize counter
+        bioCounter.textContent = `${bioTextarea.value.length}/100`;
     }
     
     // Set minimum date for availability to today
@@ -789,10 +777,10 @@
             });
         }
         
-        // Availability date validation
-        const availableFrom = form.querySelector('input[name="available_from"]').value;
-        if (!availableFrom) {
-            alert('Please select an availability start date.');
+        // Price validation
+        const price = form.querySelector('input[name="price"]').value;
+        if (!price || price <= 0) {
+            alert('Please enter a valid base price.');
             isValid = false;
         }
         
