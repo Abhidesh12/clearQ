@@ -1,976 +1,482 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Manage Services - ClearQ</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Reset & Base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --primary-light: #6366f1;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --dark: #1f2937;
-            --gray-800: #374151;
-            --gray-700: #4b5563;
-            --gray-600: #6b7280;
-            --gray-500: #9ca3af;
-            --gray-400: #d1d5db;
-            --gray-300: #e5e7eb;
-            --gray-200: #f3f4f6;
-            --gray-100: #f9fafb;
-            --white: #ffffff;
-            --radius-sm: 6px;
-            --radius: 8px;
-            --radius-lg: 12px;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --transition: all 0.2s ease;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--gray-100);
-            color: var(--gray-800);
-            line-height: 1.5;
-            font-size: 14px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        /* Header - Mobile Optimized */
-        .app-header {
-            background: var(--white);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--gray-300);
-            backdrop-filter: blur(8px);
-            background: rgba(255, 255, 255, 0.95);
-        }
-        
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-        }
-        
-        .brand-logo {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-weight: 600;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .brand-text {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .brand-text h1 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.3;
-        }
-        
-        .brand-text span {
-            font-size: 11px;
-            color: var(--gray-600);
-            display: block;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        /* Mobile Menu Button */
-        .mobile-menu-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius);
-            background: var(--gray-100);
-            border: 1px solid var(--gray-300);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-700);
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        /* Mobile Navigation */
-        .mobile-nav {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            background: var(--white);
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            display: none;
-            z-index: 99;
-            border-top: 1px solid var(--gray-300);
-        }
-        
-        .mobile-nav.active {
-            display: block;
-            animation: slideDown 0.2s ease;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Main Container */
-        .container {
-            padding: 16px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        /* Page Header */
-        .page-header {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .page-header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 4px;
-            line-height: 1.3;
-        }
-        
-        .page-header p {
-            font-size: 13px;
-            color: var(--gray-600);
-            line-height: 1.4;
-        }
-        
-        /* Stats Grid - Mobile Optimized */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 14px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--gray-300);
-            position: relative;
-            overflow: hidden;
-            min-height: 70px;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
-        }
-        
-        .stat-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .stat-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .icon-service { background: var(--primary); }
-        .icon-active { background: var(--secondary); }
-        .icon-revenue { background: var(--warning); }
-        .icon-bookings { background: var(--info); }
-        
-        .stat-text h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--dark);
-            line-height: 1.2;
-            margin-bottom: 2px;
-        }
-        
-        .stat-text p {
-            font-size: 11px;
-            color: var(--gray-600);
-            font-weight: 500;
-        }
-        
-        /* Main Content Layout */
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        /* Add Service Form - Mobile Optimized */
-        .add-service-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--gray-300);
-            position: sticky;
-            top: 72px;
-            z-index: 10;
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        
-        .card-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            line-height: 1.3;
-        }
-        
-        .card-subtitle {
-            font-size: 12px;
-            color: var(--gray-600);
-        }
-        
-        /* Form Styles - Mobile Optimized */
-        .form-group {
-            margin-bottom: 16px;
-        }
-        
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--gray-700);
-            margin-bottom: 6px;
-        }
-        
-        .form-input, .form-textarea, .form-select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1.5px solid var(--gray-300);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            color: var(--gray-800);
-            background: var(--white);
-            font-family: 'Inter', sans-serif;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-        
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-            line-height: 1.5;
-        }
-        
-        /* Services List - Mobile Optimized */
-        .services-list-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--gray-300);
-            max-height: 400px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .services-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        
-        .services-header h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-        
-        .services-count {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .services-list {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        /* Service Item - Mobile Optimized */
-        .service-item {
-            background: var(--gray-100);
-            border: 1.5px solid transparent;
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            min-height: 70px;
-        }
-        
-        .service-item.active {
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
-            border-color: var(--primary);
-        }
-        
-        .status-badge {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        
-        .status-active {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--secondary);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        
-        .status-inactive {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        
-        .service-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 4px;
-            padding-right: 60px;
-            line-height: 1.3;
-        }
-        
-        .service-price {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 4px;
-        }
-        
-        .service-meta {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            color: var(--gray-600);
-            margin-top: 6px;
-        }
-        
-        .service-meta span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        /* Service Detail Card - Mobile Optimized */
-        .service-detail-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--gray-300);
-            min-height: 300px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-header {
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--gray-300);
-        }
-        
-        .detail-title h2 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 4px;
-            line-height: 1.3;
-        }
-        
-        .detail-title p {
-            font-size: 12px;
-            color: var(--gray-600);
-        }
-        
-        .detail-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-        
-        .detail-content {
-            flex: 1;
-        }
-        
-        .description-section {
-            margin-bottom: 20px;
-        }
-        
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .description-text {
-            font-size: 13px;
-            color: var(--gray-700);
-            line-height: 1.6;
-            padding: 12px;
-            background: var(--gray-100);
-            border-radius: var(--radius-sm);
-            border-left: 3px solid var(--primary);
-        }
-        
-        .stats-grid-small {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-item {
-            background: var(--gray-100);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 4px;
-            line-height: 1.2;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            color: var(--gray-600);
-            font-weight: 500;
-        }
-        
-        .actions-section {
-            margin-top: auto;
-        }
-        
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
-        
-        /* Button Styles - Mobile Optimized */
-        .btn {
-            padding: 10px 16px;
-            border-radius: var(--radius-sm);
-            font-weight: 500;
-            font-size: 13px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            border: none;
-            font-family: 'Inter', sans-serif;
-            white-space: nowrap;
-            min-height: 40px;
-        }
-        
-        .btn-sm {
-            padding: 8px 12px;
-            font-size: 12px;
-            min-height: 36px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--white);
-        }
-        
-        .btn-primary:active {
-            transform: translateY(1px);
-        }
-        
-        .btn-outline {
-            background: var(--white);
-            color: var(--primary);
-            border: 1.5px solid var(--primary);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
-            color: var(--white);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-            color: var(--white);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-            color: var(--white);
-        }
-        
-        /* Modal - Mobile Optimized */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 16px;
-            backdrop-filter: blur(2px);
-        }
-        
-        .modal-overlay.active {
-            display: flex;
-            animation: fadeIn 0.2s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .modal {
-            background: var(--white);
-            border-radius: var(--radius);
-            width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-            animation: slideUp 0.2s ease;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .modal-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--gray-300);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            background: var(--white);
-            z-index: 1;
-        }
-        
-        .modal-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-        
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--gray-100);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--gray-700);
-            flex-shrink: 0;
-        }
-        
-        .modal-body {
-            padding: 16px;
-        }
-        
-        .modal-footer {
-            padding: 16px;
-            border-top: 1px solid var(--gray-300);
-            display: flex;
-            gap: 10px;
-            position: sticky;
-            bottom: 0;
-            background: var(--white);
-        }
-        
-        /* Toast Notification - Mobile Optimized */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 16px;
-            right: 16px;
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            display: none;
-            align-items: center;
-            gap: 10px;
-            z-index: 1001;
-            animation: slideUp 0.2s ease;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .toast-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-        
-        .toast-success .toast-icon { background: var(--secondary); }
-        .toast-error .toast-icon { background: var(--danger); }
-        .toast-warning .toast-icon { background: var(--warning); }
-        .toast-info .toast-icon { background: var(--info); }
-        
-        .toast-content h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 2px;
-        }
-        
-        .toast-content p {
-            font-size: 12px;
-            color: var(--gray-600);
-            line-height: 1.3;
-        }
-        
-        /* Empty States */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .empty-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--gray-200);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            color: var(--gray-500);
-            font-size: 24px;
-        }
-        
-        .empty-state h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 8px;
-        }
-        
-        .empty-state p {
-            font-size: 13px;
-            color: var(--gray-600);
-            margin-bottom: 20px;
-            max-width: 280px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        /* Loading Spinner */
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--white);
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Floating Action Button */
-        .fab {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--white);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            z-index: 90;
-            transition: var(--transition);
-        }
-        
-        .fab:active {
-            transform: scale(0.95);
-        }
-        
-        /* Desktop Optimization */
-        @media (min-width: 640px) {
-            body { font-size: 15px; }
-            
-            .container { padding: 20px; }
-            
-            .page-header h1 { font-size: 24px; }
-            .page-header p { font-size: 14px; }
-            
-            .stats-grid { gap: 16px; }
-            .stat-card { padding: 16px; }
-            
-            .add-service-card,
-            .services-list-card,
-            .service-detail-card {
-                padding: 20px;
-            }
-            
-            .services-list {
-                max-height: 450px;
-            }
-            
-            .service-item { padding: 14px; }
-            
-            .action-buttons {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .toast {
-                left: auto;
-                right: 20px;
-                max-width: 320px;
-                bottom: 20px;
-            }
-        }
-        
-        @media (min-width: 768px) {
-            .mobile-menu-btn { display: none; }
-            
-            .mobile-nav {
-                position: static;
-                display: flex;
-                gap: 12px;
-                padding: 0;
-                box-shadow: none;
-                background: transparent;
-                border: none;
-                width: auto;
-            }
-            
-            .app-header { padding: 16px 24px; }
-            
-            .brand-logo { width: 40px; height: 40px; }
-            .brand-text h1 { font-size: 18px; }
-            
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 20px;
-            }
-            
-            .main-content {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 24px;
-                align-items: start;
-            }
-            
-            .services-list-card {
-                max-height: 500px;
-                grid-column: 1 / -1;
-                order: 3;
-            }
-            
-            .service-detail-card {
-                min-height: 400px;
-            }
-            
-            .fab { display: none; }
-        }
-        
-        @media (min-width: 1024px) {
-            .main-content {
-                grid-template-columns: 400px 1fr;
-            }
-            
-            .services-list-card {
-                grid-column: auto;
-                order: initial;
-            }
-            
-            .add-service-card { top: 80px; }
-            
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-        }
-        
-        /* Safe area for notch phones */
-        @supports (padding: max(0px)) {
-            .app-header,
-            .container {
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
-            }
-            
-            .fab {
-                right: max(20px, env(safe-area-inset-right));
-                bottom: max(20px, env(safe-area-inset-bottom));
-            }
-        }
-        
-        /* Performance optimizations */
-        .service-item,
-        .stat-card,
-        .btn {
-            will-change: transform;
-            backface-visibility: hidden;
-        }
-        
-        /* Scrollbar styling */
-        .services-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .services-list::-webkit-scrollbar-track {
-            background: var(--gray-100);
-            border-radius: 2px;
-        }
-        
-        .services-list::-webkit-scrollbar-thumb {
-            background: var(--gray-400);
-            border-radius: 2px;
-        }
-        
-        .services-list::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-500);
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Manage Services - ClearQ{% endblock %}
+
+{% block content %}
+<style>
+    /* Service Management Styles */
+    .service-management-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .main-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    @media (min-width: 1024px) {
+        .main-layout {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    .card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .service-list {
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    .service-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .service-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .service-list::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    .service-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: #f9fafb;
+    }
+    
+    .service-item:hover {
+        background: #f3f4f6;
+        transform: translateX(4px);
+    }
+    
+    .service-item.active {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .service-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .service-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .service-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .service-details {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .service-price {
+        font-weight: 700;
+        color: #10b981;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-input, .form-textarea, .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: white;
+    }
+    
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    
+    .btn-outline {
+        background: white;
+        color: #3b82f6;
+        border: 2px solid #3b82f6;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .empty-icon {
+        width: 64px;
+        height: 64px;
+        background: #f3f4f6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: #9ca3af;
+    }
+    
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+        animation: fadeIn 0.2s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .modal-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #6b7280;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+    
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: white;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        display: none;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 1001;
+        animation: slideInRight 0.3s ease;
+        border-left: 4px solid #10b981;
+        max-width: 400px;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .toast-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .toast-content h4 {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+    
+    .toast-content p {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .service-details-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .detail-value {
+        color: #1f2937;
+        line-height: 1.5;
+    }
+    
+    .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .fab {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        z-index: 100;
+        transition: all 0.3s;
+    }
+    
+    .fab:hover {
+        transform: scale(1.1);
+    }
+</style>
+
+<div class="service-management-container">
     <!-- Toast Notification -->
     <div id="toast" class="toast">
         <div class="toast-icon">
@@ -981,7 +487,7 @@
             <p id="toast-message"></p>
         </div>
     </div>
-
+    
     <!-- Edit Service Modal -->
     <div id="editModal" class="modal-overlay">
         <div class="modal">
@@ -1028,14 +534,14 @@
                     
                     <div class="form-group">
                         <label class="form-label">Status</label>
-                        <div style="display: flex; gap: 16px; margin-top: 8px;">
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                 <input type="radio" name="status" value="active" id="edit-status-active">
-                                <span style="font-size: 13px;">Active</span>
+                                <span>Active</span>
                             </label>
-                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                 <input type="radio" name="status" value="inactive" id="edit-status-inactive">
-                                <span style="font-size: 13px;">Inactive</span>
+                                <span>Inactive</span>
                             </label>
                         </div>
                     </div>
@@ -1049,797 +555,465 @@
             </form>
         </div>
     </div>
-
-    <!-- Header -->
-    <header class="app-header">
-        <div class="header-content">
-            <div class="brand">
-                <div class="brand-logo">
-                    <i class="fas fa-rocket"></i>
-                </div>
-                <div class="brand-text">
-                    <h1>Service Manager</h1>
-                    <span>ClearQ Dashboard</span>
-                </div>
+    
+    <!-- Page Header -->
+    <div class="page-header mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Manage Services</h1>
+        <p class="text-gray-600">Create, edit, and manage your coaching services</p>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">
+                <i class="fas fa-cube text-white"></i>
             </div>
-            
-            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
-                <i class="fas fa-bars"></i>
-            </button>
-            
-            <div class="mobile-nav" id="mobileNav">
-                <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm" style="width: 100%; margin-bottom: 8px;">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to Dashboard
-                </a>
-                <button class="btn btn-primary btn-sm" onclick="scrollToAddService()" style="width: 100%;">
-                    <i class="fas fa-plus"></i>
-                    Add Service
-                </button>
-            </div>
+            <div class="stat-number">{{ services|length }}</div>
+            <div class="stat-label">Total Services</div>
         </div>
-    </header>
-
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <i class="fas fa-check-circle text-white"></i>
+            </div>
+            <div class="stat-number">{{ services|selectattr('is_active', 'equalto', true)|list|length }}</div>
+            <div class="stat-label">Active Services</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <i class="fas fa-rupee-sign text-white"></i>
+            </div>
+            <div class="stat-number">₹{{ (services|sum(attribute='price') if services|length > 0 else 0) }}</div>
+            <div class="stat-label">Total Value</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                <i class="fas fa-calendar-check text-white"></i>
+            </div>
+            <div class="stat-number" id="total-bookings">{{ services|length * 3 }}</div>
+            <div class="stat-label">Total Bookings</div>
+        </div>
+    </div>
+    
     <!-- Main Content -->
-    <main class="container">
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1>Manage Services</h1>
-            <p>Create, edit, and manage your coaching services</p>
-        </div>
-        
-        <!-- Stats Overview -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-icon icon-service">
-                        <i class="fas fa-cube"></i>
-                    </div>
-                    <div class="stat-text">
-                        <h3>{{ services|length }}</h3>
-                        <p>Total Services</p>
-                    </div>
+    <div class="main-layout">
+        <!-- Add Service Form -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Add New Service</h2>
+                <div class="service-icon">
+                    <i class="fas fa-plus"></i>
                 </div>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-icon icon-active">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-text">
-                        <h3>{{ services|selectattr('is_active', 'equalto', true)|list|length }}</h3>
-                        <p>Active</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-icon icon-revenue">
-                        <i class="fas fa-rupee-sign"></i>
-                    </div>
-                    <div class="stat-text">
-                        <h3>₹{{ (services|sum(attribute='price') if services|length > 0 else 0) }}</h3>
-                        <p>Total Value</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-icon icon-bookings">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-text">
-                        <h3 id="total-bookings">{{ services|length * 3 }}</h3>
-                        <p>Total Bookings</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Add Service Form -->
-            <div class="add-service-card" id="addServiceCard">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div>
-                        <h3 class="card-title">Add New Service</h3>
-                        <p class="card-subtitle">Create a new service offering</p>
-                    </div>
+            <form method="POST" action="{{ url_for('manage_services') }}" id="service-form">
+                <input type="hidden" name="action" value="add">
+                
+                <div class="form-group">
+                    <label class="form-label" for="name">Service Name</label>
+                    <input type="text" id="name" name="name" class="form-input" required 
+                           placeholder="e.g., Career Consultation">
                 </div>
                 
-                <form method="POST" id="service-form" onsubmit="return validateServiceForm(event)">
-                    <input type="hidden" name="action" value="add">
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="name">Service Name</label>
-                        <input type="text" id="name" name="name" class="form-input" required 
-                               placeholder="e.g., Career Consultation">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="description">Description</label>
-                        <textarea id="description" name="description" class="form-textarea" required 
-                                  placeholder="Describe what the service includes..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="price">Price (₹)</label>
-                        <input type="number" id="price" name="price" class="form-input" required 
-                               min="0" placeholder="e.g., 2500" step="100">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="duration">Duration</label>
-                        <select id="duration" name="duration" class="form-select" required>
-                            <option value="">Select duration</option>
-                            <option value="30 mins">30 minutes</option>
-                            <option value="45 mins">45 minutes</option>
-                            <option value="1 hour">1 hour</option>
-                            <option value="1.5 hours">1.5 hours</option>
-                            <option value="2 hours">2 hours</option>
-                            <option value="Custom">Custom duration</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="submit-btn" style="width: 100%;">
-                        <i class="fas fa-plus"></i>
-                        Add Service
-                    </button>
-                </form>
+                <div class="form-group">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea id="description" name="description" class="form-textarea" required 
+                              placeholder="Describe what the service includes..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="price">Price (₹)</label>
+                    <input type="number" id="price" name="price" class="form-input" required 
+                           min="0" placeholder="e.g., 2500" step="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="duration">Duration</label>
+                    <select id="duration" name="duration" class="form-select" required>
+                        <option value="">Select duration</option>
+                        <option value="30 mins">30 minutes</option>
+                        <option value="45 mins">45 minutes</option>
+                        <option value="1 hour">1 hour</option>
+                        <option value="1.5 hours">1.5 hours</option>
+                        <option value="2 hours">2 hours</option>
+                        <option value="Custom">Custom duration</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-full">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Service
+                </button>
+            </form>
+        </div>
+        
+        <!-- Services List -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Your Services</h2>
+                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                    {{ services|length }} services
+                </span>
             </div>
             
-            <!-- Service Detail Card -->
-            <div class="service-detail-card" id="detailCard">
+            <div class="service-list">
                 {% if services %}
-                    {% set first_service = services[0] %}
-                    <div class="detail-header">
-                        <div class="detail-title">
-                            <h2>{{ first_service.name }}</h2>
-                            <p>Service details and metrics</p>
+                    {% for service in services %}
+                    <div class="service-item {% if loop.first %}active{% endif %}" 
+                         onclick="selectService({{ service.id }})"
+                         id="service-{{ service.id }}">
+                        <div class="service-icon">
+                            <i class="fas fa-briefcase"></i>
                         </div>
-                        <div class="detail-actions">
-                            <button class="btn btn-warning btn-sm" onclick="openEditModal({{ first_service.id }})">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            
-                            {% if first_service.is_active %}
-                            <form method="POST" class="action-form" id="deactivate-form-{{ first_service.id }}">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="service_id" value="{{ first_service.id }}">
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        onclick="return confirmAction('Deactivate this service?', event)">
-                                    <i class="fas fa-pause"></i>
-                                    Deactivate
-                                </button>
-                            </form>
-                            {% else %}
-                            <form method="POST" class="action-form" id="activate-form-{{ first_service.id }}">
-                                <input type="hidden" name="action" value="activate">
-                                <input type="hidden" name="service_id" value="{{ first_service.id }}">
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-play"></i>
-                                    Activate
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="detail-content">
-                        <div class="description-section">
-                            <h3 class="section-title">
-                                <i class="fas fa-align-left"></i>
-                                Description
-                            </h3>
-                            <div class="description-text">
-                                {{ first_service.description }}
-                            </div>
-                        </div>
-                        
-                        <div class="stats-grid-small">
-                            <div class="stat-item">
-                                <div class="stat-value">₹{{ first_service.price }}</div>
-                                <div class="stat-label">Price</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">{{ first_service.duration }}</div>
-                                <div class="stat-label">Duration</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">
-                                    {{ first_service.created_at.strftime('%b %d') if first_service.created_at else 'N/A' }}
-                                </div>
-                                <div class="stat-label">Created</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value" id="service-bookings-count">0</div>
-                                <div class="stat-label">Bookings</div>
-                            </div>
-                        </div>
-                        
-                        <div class="actions-section">
-                            <h3 class="section-title">
-                                <i class="fas fa-cogs"></i>
-                                Actions
-                            </h3>
-                            <div class="action-buttons">
-                                <button class="btn btn-primary" onclick="openEditModal({{ first_service.id }})">
-                                    <i class="fas fa-edit"></i>
-                                    Edit Service
-                                </button>
-                                <button class="btn btn-outline" onclick="duplicateService({{ first_service.id }})">
-                                    <i class="fas fa-copy"></i>
-                                    Duplicate
-                                </button>
+                        <div class="service-info">
+                            <div class="service-name">{{ service.name }}</div>
+                            <div class="service-details">
+                                <span class="service-price">₹{{ service.price }}</span>
+                                <span>{{ service.duration }}</span>
+                                <span class="status-badge {% if service.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                    {{ 'Active' if service.is_active else 'Inactive' }}
+                                </span>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 {% else %}
                     <div class="empty-state">
                         <div class="empty-icon">
-                            <i class="fas fa-info-circle"></i>
+                            <i class="fas fa-cube text-2xl"></i>
                         </div>
-                        <h3>No Service Selected</h3>
-                        <p>Select a service from the list or add a new one to view details</p>
-                        <button class="btn btn-primary" onclick="scrollToAddService()">
-                            <i class="fas fa-plus"></i>
-                            Add Your First Service
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Services Yet</h3>
+                        <p class="text-gray-600 mb-4">Add your first service to get started</p>
+                        <button onclick="scrollToForm()" class="btn btn-primary">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Service
                         </button>
                     </div>
                 {% endif %}
             </div>
-            
-            <!-- Services List Card -->
-            <div class="services-list-card">
-                <div class="services-header">
-                    <h3>Your Services</h3>
-                    <span class="services-count">{{ services|length }}</span>
+        </div>
+    </div>
+    
+    <!-- Service Details Section (Shown when a service is selected) -->
+    {% if services %}
+    <div id="service-details" class="card mt-6">
+        <div class="card-header">
+            <h2 class="card-title" id="selected-service-name">{{ services[0].name }}</h2>
+            <div class="action-buttons">
+                <button onclick="openEditModal({{ services[0].id }})" class="btn btn-outline">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit
+                </button>
+                {% if services[0].is_active %}
+                <form method="POST" action="{{ url_for('manage_services') }}" class="inline" onsubmit="return confirm('Are you sure you want to deactivate this service?');">
+                    <input type="hidden" name="action" value="deactivate">
+                    <input type="hidden" name="service_id" value="{{ services[0].id }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-pause mr-2"></i>
+                        Deactivate
+                    </button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('manage_services') }}" class="inline">
+                    <input type="hidden" name="action" value="activate">
+                    <input type="hidden" name="service_id" value="{{ services[0].id }}">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-play mr-2"></i>
+                        Activate
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="service-details-section">
+            <div class="detail-label">Description</div>
+            <div class="detail-value" id="selected-service-description">{{ services[0].description }}</div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <div class="detail-label">Price</div>
+                <div class="detail-value text-lg font-bold text-green-600" id="selected-service-price">₹{{ services[0].price }}</div>
+            </div>
+            <div>
+                <div class="detail-label">Duration</div>
+                <div class="detail-value" id="selected-service-duration">{{ services[0].duration }}</div>
+            </div>
+            <div>
+                <div class="detail-label">Status</div>
+                <div class="detail-value">
+                    <span class="status-badge {% if services[0].is_active %}status-active{% else %}status-inactive{% endif %}">
+                        {{ 'Active' if services[0].is_active else 'Inactive' }}
+                    </span>
                 </div>
-                
-                <div class="services-list">
-                    {% if services %}
-                        {% for service in services %}
-                        <div class="service-item {% if loop.first %}active{% endif %}" 
-                             onclick="selectService({{ service.id }})" 
-                             id="list-item-{{ service.id }}">
-                            <span class="status-badge {% if service.is_active %}status-active{% else %}status-inactive{% endif %}">
-                                {{ 'Active' if service.is_active else 'Inactive' }}
-                            </span>
-                            
-                            <div class="service-name">{{ service.name }}</div>
-                            <div class="service-price">₹{{ service.price }}</div>
-                            
-                            <div class="service-meta">
-                                <span>
-                                    <i class="fas fa-clock"></i>
-                                    {{ service.duration }}
-                                </span>
-                                <span>
-                                    <i class="fas fa-calendar"></i>
-                                    {{ service.created_at.strftime('%b %d') if service.created_at else 'N/A' }}
-                                </span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-cube"></i>
-                            </div>
-                            <h3>No Services Yet</h3>
-                            <p>Add your first service to get started</p>
-                        </div>
-                    {% endif %}
+            </div>
+            <div>
+                <div class="detail-label">Created</div>
+                <div class="detail-value" id="selected-service-created">
+                    {{ services[0].created_at.strftime('%b %d, %Y') if services[0].created_at else 'N/A' }}
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+    {% endif %}
+</div>
 
-    <!-- Floating Action Button (Mobile Only) -->
-    <button class="fab" onclick="scrollToAddService()">
-        <i class="fas fa-plus"></i>
-    </button>
+<!-- Floating Action Button for Mobile -->
+<button class="fab lg:hidden" onclick="scrollToForm()">
+    <i class="fas fa-plus"></i>
+</button>
 
-    <script>
-        // Helper function to escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            const mobileNav = document.getElementById('mobileNav');
-            mobileNav.classList.toggle('active');
-            
-            // Close on outside click
-            if (mobileNav.classList.contains('active')) {
-                setTimeout(() => {
-                    document.addEventListener('click', closeMobileMenuOnClick);
-                }, 10);
-            } else {
-                document.removeEventListener('click', closeMobileMenuOnClick);
-            }
-        }
+<script>
+// Service management functions
+function selectService(serviceId) {
+    // Remove active class from all service items
+    document.querySelectorAll('.service-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Add active class to selected service
+    const selectedItem = document.getElementById(`service-${serviceId}`);
+    if (selectedItem) {
+        selectedItem.classList.add('active');
         
-        function closeMobileMenuOnClick(e) {
-            const mobileNav = document.getElementById('mobileNav');
-            const menuBtn = document.querySelector('.mobile-menu-btn');
-            
-            if (!mobileNav.contains(e.target) && !menuBtn.contains(e.target)) {
-                mobileNav.classList.remove('active');
-                document.removeEventListener('click', closeMobileMenuOnClick);
-            }
-        }
-        
-        // Service selection
-        async function selectService(serviceId) {
-            // Update list item styling
-            document.querySelectorAll('.service-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.getElementById(`list-item-${serviceId}`).classList.add('active');
-            
-            // Show loading state
-            const detailCard = document.getElementById('detailCard');
-            detailCard.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <h3>Loading...</h3>
-                    <p>Fetching service details</p>
-                </div>
-            `;
-            
-            try {
-                // Fetch service details
-                const response = await fetch(`/api/services/${serviceId}`);
-                const data = await response.json();
-                
+        // Fetch service details via AJAX
+        fetch(`/api/services/${serviceId}`)
+            .then(response => response.json())
+            .then(data => {
                 if (data.success) {
-                    const service = data.service;
-                    
-                    // Fetch service statistics
-                    const statsResponse = await fetch(`/api/services/${serviceId}/stats`);
-                    const statsData = await statsResponse.json();
-                    const stats = statsData.stats || {};
-                    
-                    // Update detail card with real data
-                    detailCard.innerHTML = `
-                        <div class="detail-header">
-                            <div class="detail-title">
-                                <h2>${escapeHtml(service.name)}</h2>
-                                <p>Service details and metrics</p>
-                            </div>
-                            <div class="detail-actions">
-                                <button class="btn btn-warning btn-sm" onclick="openEditModal(${service.id})">
-                                    <i class="fas fa-edit"></i>
-                                    Edit
-                                </button>
-                                
-                                ${service.is_active ? `
-                                <form method="POST" class="action-form" id="deactivate-form-${service.id}">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="service_id" value="${service.id}">
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirmAction('Deactivate this service?', event)">
-                                        <i class="fas fa-pause"></i>
-                                        Deactivate
-                                    </button>
-                                </form>
-                                ` : `
-                                <form method="POST" class="action-form" id="activate-form-${service.id}">
-                                    <input type="hidden" name="action" value="activate">
-                                    <input type="hidden" name="service_id" value="${service.id}">
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="fas fa-play"></i>
-                                        Activate
-                                    </button>
-                                </form>
-                                `}
-                            </div>
-                        </div>
-                        
-                        <div class="detail-content">
-                            <div class="description-section">
-                                <h3 class="section-title">
-                                    <i class="fas fa-align-left"></i>
-                                    Description
-                                </h3>
-                                <div class="description-text">
-                                    ${escapeHtml(service.description)}
-                                </div>
-                            </div>
-                            
-                            <div class="stats-grid-small">
-                                <div class="stat-item">
-                                    <div class="stat-value">₹${service.price}</div>
-                                    <div class="stat-label">Price</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">${escapeHtml(service.duration)}</div>
-                                    <div class="stat-label">Duration</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">
-                                        ${service.created_at ? new Date(service.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
-                                    </div>
-                                    <div class="stat-label">Created</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">${stats.total_bookings || 0}</div>
-                                    <div class="stat-label">Bookings</div>
-                                </div>
-                            </div>
-                            
-                            <div class="actions-section">
-                                <h3 class="section-title">
-                                    <i class="fas fa-cogs"></i>
-                                    Actions
-                                </h3>
-                                <div class="action-buttons">
-                                    <button class="btn btn-primary" onclick="openEditModal(${service.id})">
-                                        <i class="fas fa-edit"></i>
-                                        Edit Service
-                                    </button>
-                                    <button class="btn btn-outline" onclick="duplicateService(${service.id})">
-                                        <i class="fas fa-copy"></i>
-                                        Duplicate
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Re-attach event listeners to the new forms
-                    attachFormEventListeners();
-                    
-                    showToast('Service loaded', 'success');
-                } else {
-                    showToast('Failed to load service details', 'error');
-                    detailCard.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <h3>Error Loading Service</h3>
-                            <p>Failed to load service details. Please try again.</p>
-                        </div>
-                    `;
+                    updateServiceDetails(data.service);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                detailCard.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h3>Error Loading Service</h3>
-                        <p>Failed to load service details. Please try again.</p>
-                    </div>
-                `;
+            })
+            .catch(error => {
+                console.error('Error fetching service details:', error);
                 showToast('Failed to load service details', 'error');
-            }
-        }
-        
-        // Modal functions
-        async function openEditModal(serviceId) {
-            try {
-                const response = await fetch(`/api/services/${serviceId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const service = data.service;
-                    
-                    document.getElementById('edit-service-id').value = service.id;
-                    document.getElementById('edit-name').value = service.name;
-                    document.getElementById('edit-description').value = service.description;
-                    document.getElementById('edit-price').value = service.price;
-                    document.getElementById('edit-duration').value = service.duration;
-                    
-                    if(service.is_active) {
-                        document.getElementById('edit-status-active').checked = true;
-                    } else {
-                        document.getElementById('edit-status-inactive').checked = true;
-                    }
-                    
-                    document.getElementById('editModal').classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    showToast('Failed to load service details', 'error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Failed to load service details', 'error');
-            }
-        }
-        
-        function closeModal() {
-            document.getElementById('editModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-        
-        // Form validation
-        function validateServiceForm(event) {
-            const price = document.getElementById('price').value;
-            if (price < 0) {
-                showToast('Price cannot be negative', 'error');
-                event.preventDefault();
-                return false;
-            }
-            
-            const submitBtn = document.getElementById('submit-btn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="spinner"></div>';
-            
-            // Form will submit normally
-            return true;
-        }
-        
-        async function validateEditForm(event) {
-            event.preventDefault();
-            
-            const price = document.getElementById('edit-price').value;
-            if (price < 0) {
-                showToast('Price cannot be negative', 'error');
-                return false;
-            }
-            
-            const saveBtn = document.getElementById('save-changes-btn');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<div class="spinner"></div>';
-            
-            try {
-                // Get form data
-                const formData = new FormData(document.getElementById('editForm'));
-                
-                // Submit form via fetch
-                const response = await fetch('{{ url_for("manage_services") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    closeModal();
-                    showToast('Service updated successfully', 'success');
-                    
-                    // Reload the page to show updated services
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    throw new Error('Failed to update service');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Failed to update service', 'error');
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = originalText;
-            }
-            
-            return false;
-        }
-        
-        // Toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastTitle = document.getElementById('toast-title');
-            const toastMessage = document.getElementById('toast-message');
-            
-            toast.className = `toast toast-${type}`;
-            
-            switch(type) {
-                case 'success':
-                    toastTitle.textContent = 'Success';
-                    toast.querySelector('.toast-icon').innerHTML = '<i class="fas fa-check"></i>';
-                    break;
-                case 'error':
-                    toastTitle.textContent = 'Error';
-                    toast.querySelector('.toast-icon').innerHTML = '<i class="fas fa-times"></i>';
-                    break;
-                case 'warning':
-                    toastTitle.textContent = 'Warning';
-                    toast.querySelector('.toast-icon').innerHTML = '<i class="fas fa-exclamation"></i>';
-                    break;
-                case 'info':
-                    toastTitle.textContent = 'Info';
-                    toast.querySelector('.toast-icon').innerHTML = '<i class="fas fa-info"></i>';
-                    break;
-            }
-            
-            toastMessage.textContent = message;
-            toast.style.display = 'flex';
-            
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-        
-        // Scroll to add service form
-        function scrollToAddService() {
-            document.getElementById('addServiceCard').scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
             });
-            
-            // Focus on first input
-            setTimeout(() => {
-                document.getElementById('name').focus();
-            }, 300);
-            
-            // Close mobile menu if open
-            document.getElementById('mobileNav').classList.remove('active');
+    }
+}
+
+function updateServiceDetails(service) {
+    // Update service details section
+    document.getElementById('selected-service-name').textContent = service.name;
+    document.getElementById('selected-service-description').textContent = service.description;
+    document.getElementById('selected-service-price').textContent = `₹${service.price}`;
+    document.getElementById('selected-service-duration').textContent = service.duration;
+    document.getElementById('selected-service-created').textContent = 
+        new Date(service.created_at).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    
+    // Update action buttons
+    const actionButtons = document.querySelector('#service-details .action-buttons');
+    actionButtons.innerHTML = `
+        <button onclick="openEditModal(${service.id})" class="btn btn-outline">
+            <i class="fas fa-edit mr-2"></i>
+            Edit
+        </button>
+        ${service.is_active ? 
+            `<form method="POST" action="{{ url_for('manage_services') }}" class="inline" onsubmit="return confirm('Are you sure you want to deactivate this service?');">
+                <input type="hidden" name="action" value="deactivate">
+                <input type="hidden" name="service_id" value="${service.id}">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-pause mr-2"></i>
+                    Deactivate
+                </button>
+            </form>` :
+            `<form method="POST" action="{{ url_for('manage_services') }}" class="inline">
+                <input type="hidden" name="action" value="activate">
+                <input type="hidden" name="service_id" value="${service.id}">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-play mr-2"></i>
+                    Activate
+                </button>
+            </form>`
         }
-        
-        // Duplicate service
-        async function duplicateService(serviceId) {
-            if (confirm('Duplicate this service?')) {
-                try {
-                    const response = await fetch(`/api/services/${serviceId}/duplicate`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showToast('Service duplicated successfully', 'success');
-                        // Reload page to show new service
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showToast(data.message || 'Failed to duplicate service', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showToast('Failed to duplicate service', 'error');
+    `;
+}
+
+function openEditModal(serviceId) {
+    fetch(`/api/services/${serviceId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const service = data.service;
+                
+                // Populate form fields
+                document.getElementById('edit-service-id').value = service.id;
+                document.getElementById('edit-name').value = service.name;
+                document.getElementById('edit-description').value = service.description;
+                document.getElementById('edit-price').value = service.price;
+                document.getElementById('edit-duration').value = service.duration;
+                
+                // Set status radio button
+                if (service.is_active) {
+                    document.getElementById('edit-status-active').checked = true;
+                } else {
+                    document.getElementById('edit-status-inactive').checked = true;
                 }
+                
+                // Show modal
+                document.getElementById('editModal').classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
+        })
+        .catch(error => {
+            console.error('Error fetching service details:', error);
+            showToast('Failed to load service details', 'error');
+        });
+}
+
+function closeModal() {
+    document.getElementById('editModal').classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function validateEditForm(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('editForm');
+    const formData = new FormData(form);
+    
+    // Validate price
+    const price = parseFloat(formData.get('price'));
+    if (price < 0) {
+        showToast('Price cannot be negative', 'error');
+        return false;
+    }
+    
+    // Show loading state
+    const saveBtn = document.getElementById('save-changes-btn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<div class="loading-spinner"></div>';
+    saveBtn.disabled = true;
+    
+    // Submit form via fetch
+    fetch('{{ url_for("manage_services") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            showToast('Service updated successfully', 'success');
+            
+            // Reload the page to show updated services
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message || 'Failed to update service', 'error');
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
         }
-        
-        // Confirm action
-        function confirmAction(message, event) {
-            if (!confirm(message)) {
-                event.preventDefault();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to update service', 'error');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+    
+    return false;
+}
+
+function scrollToForm() {
+    document.getElementById('name').scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+    });
+    document.getElementById('name').focus();
+}
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastTitle = document.getElementById('toast-title');
+    const toastMessage = document.getElementById('toast-message');
+    
+    // Set toast type
+    const borderColors = {
+        'success': '#10b981',
+        'error': '#ef4444',
+        'warning': '#f59e0b',
+        'info': '#3b82f6'
+    };
+    
+    const icons = {
+        'success': 'fa-check',
+        'error': 'fa-times',
+        'warning': 'fa-exclamation-triangle',
+        'info': 'fa-info-circle'
+    };
+    
+    toast.style.borderLeftColor = borderColors[type] || borderColors.success;
+    toast.querySelector('.toast-icon i').className = `fas ${icons[type] || icons.success}`;
+    
+    // Set content
+    toastTitle.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+    toastMessage.textContent = message;
+    
+    // Show toast
+    toast.style.display = 'flex';
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Close modal on outside click
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('editModal').classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Show flash messages as toast
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            setTimeout(() => {
+                showToast("{{ message }}", "{{ category }}");
+            }, 500);
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Select first service by default
+    const firstService = document.querySelector('.service-item');
+    if (firstService) {
+        const serviceId = firstService.id.replace('service-', '');
+        selectService(serviceId);
+    }
+    
+    // Validate service form
+    const serviceForm = document.getElementById('service-form');
+    if (serviceForm) {
+        serviceForm.addEventListener('submit', function(e) {
+            const price = parseFloat(document.getElementById('price').value);
+            if (price < 0) {
+                e.preventDefault();
+                showToast('Price cannot be negative', 'error');
                 return false;
             }
             return true;
-        }
-        
-        // Attach event listeners to forms
-        function attachFormEventListeners() {
-            document.querySelectorAll('.action-form').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    const submitBtn = this.querySelector('button[type="submit"]');
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<div class="spinner"></div>';
-                    
-                    // Form will submit normally
-                    return true;
-                });
-            });
-        }
-        
-        // Close modal on outside click
-        document.getElementById('editModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
         });
-        
-        // Close modal on escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('editModal').classList.contains('active')) {
-                closeModal();
-            }
-        });
-        
-        // Load service stats on page load
-        async function loadServiceStats() {
-            try {
-                const response = await fetch('/api/mentor/service-stats');
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update total bookings in stats grid
-                    const totalBookingsElement = document.getElementById('total-bookings');
-                    if (totalBookingsElement) {
-                        totalBookingsElement.textContent = data.stats.total_bookings || 0;
-                    }
-                    
-                    // Update bookings count for the first service if it exists
-                    const serviceBookingsElement = document.getElementById('service-bookings-count');
-                    if (serviceBookingsElement && data.stats.total_bookings) {
-                        serviceBookingsElement.textContent = data.stats.total_bookings;
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading service stats:', error);
-            }
-        }
-        
-        // Show flash messages from Flask
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    setTimeout(() => {
-                        showToast("{{ message }}", "{{ category }}");
-                    }, 500);
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        // Auto-focus first input
-        document.addEventListener('DOMContentLoaded', function() {
-            // If no services, update detail card
-            {% if not services %}
-                document.getElementById('detailCard').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-info-circle"></i>
-                        </div>
-                        <h3>No Service Selected</h3>
-                        <p>Select a service from the list or add a new one to view details</p>
-                        <button class="btn btn-primary" onclick="scrollToAddService()">
-                            <i class="fas fa-plus"></i>
-                            Add Your First Service
-                        </button>
-                    </div>
-                `;
-            {% endif %}
-            
-            // Close mobile menu on desktop
-            if (window.innerWidth >= 768) {
-                document.getElementById('mobileNav').classList.remove('active');
-            }
-            
-            // Attach event listeners to existing forms
-            attachFormEventListeners();
-            
-            // Load service stats
-            loadServiceStats();
-            
-            // If there's a first service, load its details
-            {% if services and services|length > 0 %}
-                // Load stats for the first service
-                setTimeout(() => {
-                    const serviceId = {{ services[0].id }};
-                    fetch(`/api/services/${serviceId}/stats`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.stats) {
-                                const serviceBookingsElement = document.getElementById('service-bookings-count');
-                                if (serviceBookingsElement) {
-                                    serviceBookingsElement.textContent = data.stats.total_bookings || 0;
-                                }
-                            }
-                        })
-                        .catch(error => console.error('Error loading service stats:', error));
-                }, 500);
-            {% endif %}
-        });
-        
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth >= 768) {
-                document.getElementById('mobileNav').classList.remove('active');
-            }
-        });
-    </script>
-</body>
-</html>
+    }
+});
+</script>
+{% endblock %}
