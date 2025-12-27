@@ -4,10 +4,15 @@ import random
 import re
 import uuid
 import secrets
+import logging
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -15,6 +20,11 @@ from sklearn.metrics.pairwise import linear_kernel
 from itsdangerous import URLSafeTimedSerializer
 import razorpay
 import requests
+from functools import wraps
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # --- FORCE FLASK TO FIND TEMPLATES ---
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -22,12 +32,30 @@ template_dir = os.path.join(basedir, 'templates')
 app = Flask(__name__, template_folder=template_dir)
 # -------------------------------------
 
-app.config['SECRET_KEY'] = 'clearq-secret-key-change-this-in-prod'
+# Security Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_SECRET_KEY'] = os.environ.get('CSRF_SECRET_KEY', secrets.token_hex(32))
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
 
 # Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
-    'sqlite:///' + os.path.join(basedir, 'clearq.db')
+    f"sqlite:///{os.path.join(basedir, 'clearq.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 300,
+    'pool_pre_ping': True,
+}
 
 # File upload configuration
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
@@ -38,22 +66,20 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your-email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your-app-password')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'your-email@gmail.com')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
 
 # Payment Gateway Configuration (Razorpay)
-app.config['RAZORPAY_KEY_ID'] = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_YOUR_KEY_ID')
-app.config['RAZORPAY_KEY_SECRET'] = os.environ.get('RAZORPAY_KEY_SECRET', 'YOUR_KEY_SECRET')
-
-# Google Meet/Calendar Integration (Optional)
-app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
-app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+app.config['RAZORPAY_KEY_ID'] = os.environ.get('RAZORPAY_KEY_ID', '')
+app.config['RAZORPAY_KEY_SECRET'] = os.environ.get('RAZORPAY_KEY_SECRET', '')
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'warning'
 
 # Initialize Razorpay
 razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.config['RAZORPAY_KEY_SECRET']))
@@ -61,51 +87,116 @@ razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.confi
 # Initialize token serializer for email verification
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
+# Custom decorators
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('Admin access required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def mentor_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'mentor':
+            flash('Mentor access required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def learner_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'learner':
+            flash('Learner access required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Helper function for file uploads
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    if '.' not in filename:
+        return False
+    ext = filename.rsplit('.', 1)[1].lower()
+    return ext in app.config['ALLOWED_EXTENSIONS']
+
+def validate_file(file):
+    """Validate uploaded file for security"""
+    if not file or file.filename == '':
+        return False, 'No file selected'
+    
+    if not allowed_file(file.filename):
+        return False, 'File type not allowed'
+    
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    
+    if size > app.config['MAX_CONTENT_LENGTH']:
+        return False, 'File too large'
+    
+    return True, 'File valid'
 
 def save_profile_image(file, user_id):
-    if file and file.filename != '' and allowed_file(file.filename):
-        # Create unique filename
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"user_{user_id}_{timestamp}.{ext}"
-        
-        # Ensure upload folder exists
-        upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_images')
-        os.makedirs(upload_path, exist_ok=True)
-        
-        filepath = os.path.join(upload_path, filename)
+    valid, message = validate_file(file)
+    if not valid:
+        return None
+    
+    # Create secure filename
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"user_{user_id}_{timestamp}.{ext}"
+    
+    # Ensure upload folder exists
+    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'profile_images')
+    os.makedirs(upload_path, exist_ok=True)
+    
+    filepath = os.path.join(upload_path, filename)
+    try:
         file.save(filepath)
-        
         return f'uploads/profile_images/{filename}'
-    return None
+    except Exception as e:
+        logger.error(f"Error saving profile image: {e}")
+        return None
 
 def save_digital_product(file, user_id, service_id):
-    if file and file.filename != '' and allowed_file(file.filename):
-        # Create unique filename
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"digital_product_{user_id}_{service_id}_{timestamp}.{ext}"
-        
-        # Ensure upload folder exists
-        upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
-        os.makedirs(upload_path, exist_ok=True)
-        
-        filepath = os.path.join(upload_path, filename)
+    valid, message = validate_file(file)
+    if not valid:
+        return None
+    
+    # Create secure filename
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"digital_product_{user_id}_{service_id}_{timestamp}.{ext}"
+    
+    # Ensure upload folder exists
+    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'digital_products')
+    os.makedirs(upload_path, exist_ok=True)
+    
+    filepath = os.path.join(upload_path, filename)
+    try:
         file.save(filepath)
-        
         return f'uploads/digital_products/{filename}'
-    return None
+    except Exception as e:
+        logger.error(f"Error saving digital product: {e}")
+        return None
 
 # Helper function to generate URL-friendly slugs
 def generate_slug(text):
     """Generate a URL-friendly slug from text"""
+    if not text:
+        return ''
+    
+    # Convert to lowercase
     slug = text.lower()
+    # Remove special characters
     slug = re.sub(r'[^\w\s-]', '', slug)
+    # Replace spaces with hyphens
     slug = re.sub(r'[-\s]+', '-', slug)
+    # Remove leading/trailing hyphens
     return slug.strip('-')
 
 # Helper function to get available dates
@@ -169,51 +260,56 @@ def get_time_slots_for_date(mentor_id, date_str):
 
 # Email helper functions
 def generate_verification_token(email):
-    return s.dumps(email, salt='email-confirm')
+    return s.dumps(email, salt='email-confirm-salt')
 
 def confirm_verification_token(token, expiration=3600):
     try:
-        email = s.loads(token, salt='email-confirm', max_age=expiration)
+        email = s.loads(token, salt='email-confirm-salt', max_age=expiration)
     except:
         return False
     return email
 
 def generate_reset_token(email):
-    return s.dumps(email, salt='password-reset')
+    return s.dumps(email, salt='password-reset-salt')
 
 def verify_reset_token(token, expiration=3600):
     try:
-        email = s.loads(token, salt='password-reset', max_age=expiration)
+        email = s.loads(token, salt='password-reset-salt', max_age=expiration)
     except:
         return False
     return email
 
 def send_email(to, subject, body, html_body=None):
-    """Send email using external service (Mailgun, SendGrid, etc.)"""
-    # In production, use a proper email service
-    # For now, we'll just print to console
+    """Send email using external service"""
+    # In production, implement actual email sending
+    logger.info(f"Email to {to}: {subject}")
+    
+    # Example with Mailgun (configure in production)
+    mailgun_api_key = os.environ.get('MAILGUN_API_KEY')
+    mailgun_domain = os.environ.get('MAILGUN_DOMAIN')
+    
+    if mailgun_api_key and mailgun_domain:
+        try:
+            response = requests.post(
+                f"https://api.mailgun.net/v3/{mailgun_domain}/messages",
+                auth=("api", mailgun_api_key),
+                data={
+                    "from": f"ClearQ <noreply@{mailgun_domain}>",
+                    "to": [to],
+                    "subject": subject,
+                    "text": body,
+                    "html": html_body
+                }
+            )
+            return response.status_code == 200
+        except Exception as e:
+            logger.error(f"Mailgun error: {e}")
+    
+    # Fallback: log to console
     print(f"\n=== EMAIL TO: {to} ===")
     print(f"SUBJECT: {subject}")
-    print(f"BODY: {body}")
-    if html_body:
-        print(f"HTML: {html_body}")
+    print(f"BODY:\n{body}")
     print("=== END EMAIL ===\n")
-    
-    # Example for Mailgun (uncomment and configure)
-    # mailgun_api_key = os.environ.get('MAILGUN_API_KEY')
-    # mailgun_domain = os.environ.get('MAILGUN_DOMAIN')
-    # if mailgun_api_key and mailgun_domain:
-    #     return requests.post(
-    #         f"https://api.mailgun.net/v3/{mailgun_domain}/messages",
-    #         auth=("api", mailgun_api_key),
-    #         data={
-    #             "from": f"ClearQ <noreply@{mailgun_domain}>",
-    #             "to": [to],
-    #             "subject": subject,
-    #             "text": body,
-    #             "html": html_body
-    #         }
-    #     )
     
     return True
 
@@ -226,6 +322,8 @@ def send_verification_email(user):
 {verification_url}
 
 If you did not create an account, please ignore this email.
+
+This link will expire in 1 hour.
 '''
     html_body = f'''
     <h3>Welcome to ClearQ!</h3>
@@ -246,6 +344,8 @@ def send_password_reset_email(user):
 {reset_url}
 
 If you did not request a password reset, please ignore this email.
+
+This link will expire in 1 hour.
 '''
     html_body = f'''
     <h3>Password Reset Request</h3>
@@ -275,32 +375,8 @@ Meeting Link: {booking.meeting_link or 'Will be provided before the session'}
 
 Thank you for choosing ClearQ!
 '''
-    html_body = f'''
-    <h3>Booking Confirmed! 🎉</h3>
-    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-        <h4>Booking Details:</h4>
-        <p><strong>Service:</strong> {booking.service_name}</p>
-        <p><strong>Mentor:</strong> {mentor.full_name if mentor else 'Unknown'}</p>
-        <p><strong>Date:</strong> {booking.booking_date.strftime("%B %d, %Y") if booking.booking_date else 'To be scheduled'}</p>
-        <p><strong>Time:</strong> {booking.slot_time}</p>
-        <p><strong>Price:</strong> ₹{booking.price or 0}</p>
-        <p><strong>Status:</strong> {booking.status}</p>
-    </div>
     
-    <div style="background-color: #e8f4fd; padding: 20px; border-radius: 10px; margin: 20px 0;">
-        <h4>Meeting Information:</h4>
-        <p><strong>Meeting Link:</strong> {booking.meeting_link or 'Will be provided before the session'}</p>
-        <p><strong>Meeting Platform:</strong> {booking.meeting_platform or 'Google Meet'}</p>
-        {booking.meeting_id and f'<p><strong>Meeting ID:</strong> {booking.meeting_id}</p>'}
-        {booking.meeting_password and f'<p><strong>Password:</strong> {booking.meeting_password}</p>'}
-    </div>
-    
-    <p>You can view and manage your bookings from your <a href="{url_for('dashboard', _external=True)}">dashboard</a>.</p>
-    
-    <p>Thank you for choosing ClearQ!</p>
-    '''
-    
-    return send_email(user.email, subject, body, html_body)
+    return send_email(user.email, subject, body)
 
 def send_digital_product_access_email(user, service):
     """Send digital product access email"""
@@ -310,46 +386,28 @@ def send_digital_product_access_email(user, service):
 Product Details:
 - Name: {service.name}
 - Description: {service.description}
-- Access Link: {service.digital_product_link or 'Download from your dashboard'}
 
 You can access this product from your dashboard at any time.
 
 Thank you for your purchase!
 '''
-    html_body = f'''
-    <h3>Digital Product Access Granted! 📦</h3>
-    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-        <h4>Product Details:</h4>
-        <p><strong>Name:</strong> {service.name}</p>
-        <p><strong>Description:</strong> {service.description}</p>
-        <p><strong>Access:</strong> {service.digital_product_link or 'Download from your dashboard'}</p>
-    </div>
     
-    <p>You can access this product from your <a href="{url_for('my_digital_products', _external=True)}">Digital Products</a> page at any time.</p>
-    
-    <a href="{url_for('my_digital_products', _external=True)}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;">Access Your Digital Products</a>
-    
-    <p>Thank you for your purchase!</p>
-    '''
-    
-    return send_email(user.email, subject, body, html_body)
+    return send_email(user.email, subject, body)
 
 # Meeting link generation
 def generate_meeting_link(booking):
-    """Generate a meeting link for the booking"""
-    # For simplicity, we'll create a unique meeting ID
-    # In production, you might integrate with Google Calendar API or Zoom API
-    meeting_id = str(uuid.uuid4())[:8]
+    """Generate a secure meeting link for the booking"""
+    # Generate a secure meeting ID
+    meeting_id = secrets.token_urlsafe(16)
     
-    # Create a simple meeting link structure
-    meeting_link = f"https://meet.google.com/new?hs=191&authuser=0"  # Generic Google Meet link
+    # Create a unique meeting link
+    # Using Jitsi Meet (open source, secure)
+    meeting_link = f"https://meet.jit.si/ClearQ-{meeting_id}"
     
-    # Alternatively, use Jitsi Meet (open source alternative)
-    # meeting_link = f"https://meet.jit.si/ClearQ-{meeting_id}"
-    
+    # Store meeting details
     booking.meeting_link = meeting_link
     booking.meeting_id = meeting_id
-    booking.meeting_platform = 'google_meet'
+    booking.meeting_platform = 'jitsi'
     
     return meeting_link
 
@@ -370,18 +428,20 @@ def create_razorpay_order(amount, receipt, notes=None):
         order = razorpay_client.order.create(data=order_data)
         return order
     except Exception as e:
-        print(f"Razorpay error: {e}")
+        logger.error(f"Razorpay error: {e}")
         return None
 
 # --- MODELS ---
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200))
+    username = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), default='learner')  # 'learner', 'mentor', 'admin'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Email verification fields
     is_email_verified = db.Column(db.Boolean, default=False)
@@ -413,8 +473,13 @@ class User(UserMixin, db.Model):
     success_rate = db.Column(db.Integer, default=95)  # percentage
     response_rate = db.Column(db.Integer, default=98)  # percentage
     rating = db.Column(db.Float, default=4.9)
-    review_count = db.Column(db.Integer, default=24)
+    review_count = db.Column(db.Integer, default=0)
     profile_views = db.Column(db.Integer, default=0)
+    
+    # Indexes
+    __table_args__ = (
+        db.Index('idx_user_role_verified', 'role', 'is_verified'),
+    )
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -423,10 +488,12 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 class Service(db.Model):
+    __tablename__ = 'services'
+    
     id = db.Column(db.Integer, primary_key=True)
-    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
-    slug = db.Column(db.String(100), nullable=False)  # URL-friendly version of name
+    slug = db.Column(db.String(100), nullable=False, index=True)  # URL-friendly version of name
     description = db.Column(db.Text, nullable=True)
     detailed_description = db.Column(db.Text, nullable=True)  # More detailed description for service page
     price = db.Column(db.Integer, nullable=False)
@@ -440,14 +507,21 @@ class Service(db.Model):
     digital_product_file = db.Column(db.String(500), nullable=True)  # Path to uploaded file
     access_after_payment = db.Column(db.Boolean, default=True)
     
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     mentor = db.relationship('User', backref='mentor_services')
+    
+    __table_args__ = (
+        db.Index('idx_service_mentor_active', 'mentor_id', 'is_active'),
+        db.UniqueConstraint('mentor_id', 'slug', name='uq_mentor_service_slug'),
+    )
 
 class Enrollment(db.Model):
+    __tablename__ = 'enrollments'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     program_name = db.Column(db.String(100), default='career_mentorship')
     enrollment_date = db.Column(db.DateTime, default=datetime.utcnow)
     payment_status = db.Column(db.String(20), default='pending')  # pending, completed, failed
@@ -458,21 +532,23 @@ class Enrollment(db.Model):
     user = db.relationship('User', backref='enrollments')
 
 class Booking(db.Model):
+    __tablename__ = 'bookings'
+    
     id = db.Column(db.Integer, primary_key=True)
-    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    learner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)
     service_name = db.Column(db.String(100))
     slot_time = db.Column(db.String(50))
-    booking_date = db.Column(db.Date, nullable=True)  # Date of booking
-    status = db.Column(db.String(20), default='Pending')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
+    booking_date = db.Column(db.Date, nullable=True, index=True)  # Date of booking
+    status = db.Column(db.String(20), default='Pending', index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     price = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     
     # Meeting fields
     meeting_link = db.Column(db.String(500), nullable=True)
-    meeting_platform = db.Column(db.String(50), nullable=True)  # 'google_meet', 'zoom', 'custom'
+    meeting_platform = db.Column(db.String(50), nullable=True)  # 'jitsi', 'zoom', 'custom'
     meeting_id = db.Column(db.String(100), nullable=True)
     meeting_password = db.Column(db.String(100), nullable=True)
     meeting_notes = db.Column(db.Text, nullable=True)
@@ -482,25 +558,33 @@ class Booking(db.Model):
     
     # Payment fields
     payment_id = db.Column(db.String(100), nullable=True)
-    payment_status = db.Column(db.String(20), default='pending')  # pending, success, failed
-    razorpay_order_id = db.Column(db.String(100), nullable=True)
+    payment_status = db.Column(db.String(20), default='pending', index=True)  # pending, success, failed
+    razorpay_order_id = db.Column(db.String(100), nullable=True, index=True)
     razorpay_payment_id = db.Column(db.String(100), nullable=True)
     razorpay_signature = db.Column(db.String(255), nullable=True)
 
     mentor = db.relationship('User', foreign_keys=[mentor_id])
     learner = db.relationship('User', foreign_keys=[learner_id])
     service = db.relationship('Service')
+    
+    __table_args__ = (
+        db.Index('idx_booking_mentor_date', 'mentor_id', 'booking_date'),
+        db.Index('idx_booking_learner_status', 'learner_id', 'status'),
+        db.Index('idx_booking_date_status', 'booking_date', 'status'),
+    )
 
 class Product(db.Model):
+    __tablename__ = 'products'
+    
     id = db.Column(db.Integer, primary_key=True)
-    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     product_type = db.Column(db.String(50), default='1:1 call')  # '1:1 call', 'Digital Product', 'Webinar', 'Combo'
     duration = db.Column(db.String(50), nullable=True)  # '30 mins', '1 hour', 'Downloadable'
     price = db.Column(db.Integer, nullable=False)
     tag = db.Column(db.String(20), nullable=True)  # 'Best Seller', 'Recommended', 'Popular'
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Digital product fields
@@ -510,11 +594,13 @@ class Product(db.Model):
     mentor = db.relationship('User', backref='products')
 
 class Review(db.Model):
+    __tablename__ = 'reviews'
+    
     id = db.Column(db.Integer, primary_key=True)
-    mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    learner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -522,22 +608,28 @@ class Review(db.Model):
     learner = db.relationship('User', foreign_keys=[learner_id])
     product = db.relationship('Product')
     service = db.relationship('Service')
+    
+    __table_args__ = (
+        db.Index('idx_review_mentor_rating', 'mentor_id', 'rating'),
+    )
 
 class Payment(db.Model):
+    __tablename__ = 'payments'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=True)
-    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollment.id'), nullable=True)
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey('bookings.id'), nullable=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.id'), nullable=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     
     amount = db.Column(db.Integer, nullable=False)  # Amount in paise
     currency = db.Column(db.String(3), default='INR')
-    razorpay_order_id = db.Column(db.String(100), nullable=True)
-    razorpay_payment_id = db.Column(db.String(100), nullable=True)
+    razorpay_order_id = db.Column(db.String(100), nullable=True, index=True)
+    razorpay_payment_id = db.Column(db.String(100), nullable=True, index=True)
     razorpay_signature = db.Column(db.String(255), nullable=True)
     
-    status = db.Column(db.String(20), default='pending')  # pending, success, failed
+    status = db.Column(db.String(20), default='pending', index=True)  # pending, success, failed
     payment_method = db.Column(db.String(50), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -548,22 +640,34 @@ class Payment(db.Model):
     enrollment = db.relationship('Enrollment')
     service = db.relationship('Service')
     product = db.relationship('Product')
+    
+    __table_args__ = (
+        db.Index('idx_payment_user_status', 'user_id', 'status'),
+        db.Index('idx_payment_created', 'created_at'),
+    )
 
 class DigitalProductAccess(db.Model):
+    __tablename__ = 'digital_product_access'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    payment_id = db.Column(db.Integer, db.ForeignKey('payment.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=True)
     access_granted_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=True)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, index=True)
     downloads_count = db.Column(db.Integer, default=0)
     
     user = db.relationship('User', backref='digital_accesses')
     service = db.relationship('Service', backref='accesses')
     product = db.relationship('Product')
     payment = db.relationship('Payment')
+    
+    __table_args__ = (
+        db.Index('idx_access_user_active', 'user_id', 'is_active'),
+        db.Index('idx_access_expires', 'expires_at'),
+    )
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -612,16 +716,15 @@ def get_ai_recommendations(user_goal):
                 
         return recommended_mentors
     except Exception as e:
-        print(f"AI Error: {e}")
+        logger.error(f"AI Error: {e}")
         return []
 
 @app.template_filter('escapejs')
 def escapejs_filter(value):
-    """Escape strings for JavaScript - similar to Django's escapejs"""
+    """Escape strings for JavaScript"""
     if value is None:
         return ''
     
-    # Basic escaping for JavaScript strings
     value = str(value)
     replacements = {
         '\\': '\\\\',
@@ -648,392 +751,495 @@ def from_json_filter(value):
     except:
         return {}
 
-# --- DATABASE RESET ROUTE (FOR DEVELOPMENT ONLY) ---
-@app.route('/reset-db')
-def reset_database():
-    """Drop and recreate all tables (DEVELOPMENT ONLY)"""
-    try:
-        db.drop_all()
-        db.create_all()
-        
-        # Create admin user
-        admin = User(
-            username='admin', 
-            email='admin@clearq.in', 
-            role='admin'
-        )
-        admin.set_password('admin123')
-        db.session.add(admin)
-        db.session.commit()
-        
-        return """
-        <h1>Database Reset Successful!</h1>
-        <p>All tables have been dropped and recreated with the current schema.</p>
-        <p><a href='/'>Go to Home</a></p>
-        <p><a href='/add-sample-mentors'>Add Sample Mentors</a></p>
-        """
-    except Exception as e:
-        return f"<h1>Error resetting database:</h1><p>{str(e)}</p>"
+# --- ERROR HANDLERS ---
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('errors/404.html'), 404
 
-# --- DEBUG ROUTES ---
-@app.route('/debug-user/<int:user_id>')
-def debug_user(user_id):
-    """Debug a specific user"""
-    user = User.query.get(user_id)
-    
-    if not user:
-        return f"<h1>User ID {user_id} not found</h1>"
-    
-    result = f"""
-    <h1>Debug User ID {user_id}</h1>
-    <table border="1">
-        <tr><td>ID</td><td>{user.id}</td></tr>
-        <tr><td>Username</td><td>{user.username}</td></tr>
-        <tr><td>Email</td><td>{user.email}</td></tr>
-        <tr><td>Role</td><td>{user.role}</td></tr>
-        <tr><td>Full Name</td><td>{user.full_name or 'N/A'}</td></tr>
-        <tr><td>Domain</td><td>{user.domain or 'N/A'}</td></tr>
-        <tr><td>Company</td><td>{user.company or 'N/A'}</td></tr>
-        <tr><td>Verified</td><td>{user.is_verified}</td></tr>
-        <tr><td>Created At</td><td>{user.created_at}</td></tr>
-    </table>
-    
-    <h2>Profile URL</h2>
-    <p><a href="/mentor/{user.username}">/mentor/{user.username}</a></p>
-    
-    <h2>All Users</h2>
-    <table border="1">
-        <tr>
-            <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Verified</th>
-        </tr>
-    """
-    
-    all_users = User.query.all()
-    for u in all_users:
-        result += f"""
-        <tr>
-            <td>{u.id}</td>
-            <td>{u.username}</td>
-            <td>{u.email}</td>
-            <td>{u.role}</td>
-            <td>{u.is_verified}</td>
-        </tr>
-        """
-    
-    result += "</table>"
-    return result
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('errors/500.html'), 500
 
-@app.route('/force-db-reset')
-def force_db_reset():
-    """FORCE reset database - DANGER: This will DELETE ALL DATA!"""
-    try:
-        print("Dropping all tables...")
-        db.drop_all()
-        print("Creating all tables with new schema...")
-        db.create_all()
-        
-        # Create admin user
-        admin = User(
-            username='admin', 
-            email='admin@clearq.in', 
-            role='admin'
-        )
-        admin.set_password('admin123')
-        db.session.add(admin)
-        db.session.commit()
-        
-        return """
-        <h1>✅ Database Reset Complete!</h1>
-        <p>All tables have been dropped and recreated with the current schema.</p>
-        <p>Missing columns like 'previous_company' have been added.</p>
-        <p><a href='/'>Go to Home</a> | <a href='/add-sample-mentors'>Add Sample Mentors</a></p>
-        """
-    except Exception as e:
-        return f"<h1>❌ Error:</h1><pre>{str(e)}</pre>"
+@app.errorhandler(403)
+def forbidden_error(error):
+    return render_template('errors/403.html'), 403
 
-@app.route('/check-data')
-def check_data():
-    """Check what data exists in database"""
-    mentors = User.query.filter_by(role='mentor').all()
-    verified_mentors = User.query.filter_by(role='mentor', is_verified=True).all()
-    
-    result = f"""
-    <h2>Database Status</h2>
-    <p>Total mentors: {len(mentors)}</p>
-    <p>Verified mentors: {len(verified_mentors)}</p>
-    <p>Total users: {User.query.count()}</p>
-    <hr>
-    """
-    
-    if mentors:
-        result += "<h3>All Mentors:</h3>"
-        for mentor in mentors:
-            result += f"""
-            <div style='border:1px solid #ccc; padding:10px; margin:10px;'>
-                <strong>{mentor.username}</strong><br>
-                Email: {mentor.email}<br>
-                Verified: {mentor.is_verified}<br>
-                Domain: {mentor.domain or 'Not set'}<br>
-                Company: {mentor.company or 'Not set'}<br>
-                Previous Company: {mentor.previous_company or 'Not set'}<br>
-                Created: {mentor.created_at}
-            </div>
-            """
-    else:
-        result += "<p>No mentors found. You need to register as a mentor first.</p>"
-        
-    return result
+@app.errorhandler(429)
+def ratelimit_error(error):
+    return render_template('errors/429.html'), 429
 
-@app.route('/check-username/<username>')
-def check_username(username):
-    """Check if a username exists"""
-    user = User.query.filter_by(username=username).first()
+# --- ROUTES ---
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/<username>')
+def redirect_old_profile(username):
+    """Redirect old /username URLs to new /mentor/username URLs"""
+    if '.' in username and username.split('.')[-1] in ['ico', 'png', 'jpg', 'css', 'js', 'json']:
+        return '', 404
+    
+    return redirect(url_for('mentor_public_profile', username=username))
+
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('favicon.ico')
+
+@app.route('/robots.txt')
+def robots():
+    return app.send_static_file('robots.txt')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return '', 404
+
+@app.route('/explore', methods=['GET', 'POST'])
+def explore():
+    recommendations = []
+    query = ""
+    
+    if request.method == 'POST':
+        query = request.form.get('goal')
+        if query:
+            try:
+                recommendations = get_ai_recommendations(query)
+            except Exception as e:
+                logger.error(f"AI error: {e}")
+                # Fallback: simple text matching
+                mentors = User.query.filter_by(role='mentor', is_verified=True).all()
+                for mentor in mentors:
+                    mentor_text = f"{mentor.domain or ''} {mentor.bio or ''} {mentor.skills or ''}".lower()
+                    if query.lower() in mentor_text:
+                        recommendations.append(mentor)
+    
+    # Get all verified mentors
+    all_mentors = User.query.filter_by(role='mentor', is_verified=True).all()
+    
+    return render_template('mentors.html', 
+                         mentors=all_mentors, 
+                         recommendations=recommendations, 
+                         query=query)
+
+@app.route('/mentor/<username>-<int:id>')
+def mentor_profile_with_id(username, id):
+    """Handle URLs with both username and ID"""
+    user = User.query.filter_by(username=username, id=id).first()
     
     if user:
-        return f"""
-        <h1>User '{username}' Found</h1>
-        <p>ID: {user.id}</p>
-        <p>Email: {user.email}</p>
-        <p>Role: {user.role}</p>
-        <p>Verified: {user.is_verified}</p>
-        <p><a href='/mentor/{username}'>Go to profile: /mentor/{username}</a></p>
-        <p><a href='/{username}'>Test old URL: /{username}</a></p>
-        """
+        return redirect(url_for('mentor_public_profile', username=username))
     else:
-        return f"""
-        <h1>User '{username}' Not Found</h1>
-        <p>No user with username '{username}' exists in the database.</p>
-        <p><a href='/check-data'>See all users</a></p>
-        """
+        return redirect(url_for('mentor_public_profile', username=username))
 
-@app.route('/add-sample-mentors')
-def add_sample_mentors():
-    """Add sample mentors for testing with enhanced data"""
+@app.route('/mentor/<username>')
+def mentor_public_profile(username):
+    mentor = User.query.filter_by(username=username).first()
     
-    sample_mentors = [
-        {
-            'username': 'john_doe',
-            'email': 'john@example.com',
-            'password': 'test123',
-            'full_name': 'John Doe',
-            'domain': 'Data Science',
-            'company': 'Google',
-            'previous_company': 'Microsoft',
-            'job_title': 'Senior Data Scientist',
-            'experience': '5 years',
-            'skills': 'Python, Machine Learning, SQL, TensorFlow, PyTorch, Data Analysis',
-            'services': 'Resume Review, Mock Interview, Career Guidance',
-            'bio': 'I help aspiring data scientists land their dream jobs at FAANG companies. With 5+ years at Google and 3 years at Microsoft, I know exactly what hiring managers look for. I\'ve conducted over 200 mock interviews and helped 50+ students get into top tech companies.',
-            'price': 1500,
-            'availability': 'Weekdays 6-9 PM',
-            'is_verified': True,
-            'rating': 4.9,
-            'review_count': 42,
-            'success_rate': 96,
-            'response_rate': 99
-        },
-        {
-            'username': 'jane_smith',
-            'email': 'jane@example.com',
-            'password': 'test123',
-            'full_name': 'Jane Smith',
-            'domain': 'Product Management',
-            'company': 'Microsoft',
-            'previous_company': 'Amazon',
-            'job_title': 'Senior Product Manager',
-            'experience': '7 years',
-            'skills': 'Product Strategy, Agile, User Research, Roadmapping, A/B Testing',
-            'services': 'Mock Interview, Product Case Studies, Career Transition',
-            'bio': 'Ex-Microsoft PM with 7+ years experience. I specialize in helping engineers transition to product management roles. I\'ve successfully mentored 30+ engineers into PM roles at top companies including Google, Meta, and Amazon.',
-            'price': 2000,
-            'availability': 'Weekends 10 AM - 6 PM',
-            'is_verified': True,
-            'rating': 4.8,
-            'review_count': 35,
-            'success_rate': 94,
-            'response_rate': 97
-        },
-        {
-            'username': 'alex_wong',
-            'email': 'alex@example.com',
-            'password': 'test123',
-            'full_name': 'Alex Wong',
-            'domain': 'Software Engineering',
-            'company': 'Amazon',
-            'previous_company': 'Google',
-            'job_title': 'Senior SDE',
-            'experience': '8 years',
-            'skills': 'Java, System Design, AWS, Distributed Systems, Microservices, Docker',
-            'services': 'Coding Interview Prep, System Design, Resume Review',
-            'bio': 'Senior SDE at Amazon with expertise in large-scale distributed systems. I help engineers crack coding interviews at top tech companies. With 8+ years of experience and 500+ mock interviews conducted, I know what it takes to succeed in technical interviews.',
-            'price': 1800,
-            'availability': 'Mon-Fri 7-10 PM',
-            'is_verified': True,
-            'rating': 4.95,
-            'review_count': 58,
-            'success_rate': 98,
-            'response_rate': 100
-        },
-        {
-            'username': 'sara_johnson',
-            'email': 'sara@example.com',
-            'password': 'test123',
-            'full_name': 'Sara Johnson',
-            'domain': 'UX Design',
-            'company': 'Meta',
-            'previous_company': 'Apple',
-            'job_title': 'Lead UX Designer',
-            'experience': '6 years',
-            'skills': 'Figma, User Research, Prototyping, Design Systems, UX Writing',
-            'services': 'Portfolio Review, Design Critique, Career Coaching',
-            'bio': 'Lead UX Designer at Meta with 6+ years of experience. I help designers build compelling portfolios and prepare for design interviews. I\'ve mentored 40+ designers who now work at companies like Google, Airbnb, and Netflix.',
-            'price': 1600,
-            'availability': 'Tue-Thu 5-9 PM',
-            'is_verified': True,
-            'rating': 4.7,
-            'review_count': 28,
-            'success_rate': 92,
-            'response_rate': 95
-        }
-    ]
+    if not mentor:
+        flash('User not found', 'danger')
+        return redirect(url_for('explore'))
     
-    added_count = 0
-    for data in sample_mentors:
-        # Check if mentor already exists
-        if not User.query.filter_by(email=data['email']).first():
-            mentor = User(
-                username=data['username'],
-                email=data['email'],
-                role='mentor',
-                full_name=data['full_name'],
-                domain=data['domain'],
-                company=data['company'],
-                previous_company=data['previous_company'],
-                job_title=data['job_title'],
-                experience=data['experience'],
-                skills=data['skills'],
-                services=data['services'],
-                bio=data['bio'],
-                price=data['price'],
-                availability=data['availability'],
-                is_verified=data['is_verified'],
-                rating=data['rating'],
-                review_count=data['review_count'],
-                success_rate=data['success_rate'],
-                response_rate=data['response_rate'],
-                is_email_verified=True  # Sample mentors have verified emails
-            )
-            mentor.set_password(data['password'])
-            db.session.add(mentor)
-            added_count += 1
+    if mentor.role != 'mentor':
+        flash('User is not a mentor', 'danger')
+        return redirect(url_for('explore'))
     
+    # Increment profile views
+    mentor.profile_views = (mentor.profile_views or 0) + 1
     db.session.commit()
     
-    # Add sample services for these mentors with detailed descriptions
-    sample_services = [
-        {
-            'mentor_username': 'john_doe',
-            'name': 'Resume Review',
-            'description': 'Detailed feedback on your data science resume',
-            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>ATS optimization check</li><li>Formatting and structure review</li><li>Content improvement suggestions</li><li>Keyword optimization for data science roles</li><li>Industry-specific best practices</li></ul>',
-            'price': 500,
-            'duration': '24-hour delivery',
-            'service_type': 'digital_product',
-            'digital_product_link': 'https://drive.google.com/sample-resume-guide',
-            'digital_product_name': 'Ultimate Data Science Resume Guide',
-            'digital_product_description': 'Complete guide with templates and examples'
-        },
-        {
-            'mentor_username': 'john_doe',
-            'name': 'Mock Interview',
-            'description': '1-hour technical mock interview',
-            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Technical questions practice</li><li>Behavioral interview preparation</li><li>Communication skills feedback</li><li>Problem-solving approach evaluation</li><li>Post-interview debrief and improvement plan</li></ul>',
-            'price': 1500,
-            'duration': '1 hour',
-            'service_type': 'consultation'
-        },
-        {
-            'mentor_username': 'john_doe',
-            'name': 'Career Guidance Session',
-            'description': '30-min career path discussion',
-            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Personalized career roadmap</li><li>Skill gap analysis</li><li>Industry insights and trends</li><li>Networking strategies</li><li>Actionable next steps</li></ul>',
-            'price': 800,
-            'duration': '30 mins',
-            'service_type': 'consultation'
-        },
-        {
-            'mentor_username': 'jane_smith',
-            'name': 'Product Case Study Review',
-            'description': 'In-depth review of product case studies',
-            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Case study structure review</li><li>Framework application guidance</li><li>Presentation skills feedback</li><li>Industry-specific insights</li><li>Mock case study practice</li></ul>',
-            'price': 1200,
-            'duration': '45 mins',
-            'service_type': 'both',
-            'digital_product_link': 'https://drive.google.com/product-case-study-templates',
-            'digital_product_name': 'Product Case Study Templates',
-            'digital_product_description': '10+ templates for product management interviews'
-        },
-    ]
+    # Get mentor's services
+    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
     
-    for service_data in sample_services:
-        mentor = User.query.filter_by(username=service_data['mentor_username']).first()
-        if mentor and not Service.query.filter_by(mentor_id=mentor.id, name=service_data['name']).first():
-            service = Service(
-                mentor_id=mentor.id,
-                name=service_data['name'],
-                slug=generate_slug(service_data['name']),
-                description=service_data['description'],
-                detailed_description=service_data['detailed_description'],
-                price=service_data['price'],
-                duration=service_data['duration'],
-                service_type=service_data.get('service_type', 'consultation'),
-                digital_product_link=service_data.get('digital_product_link'),
-                digital_product_name=service_data.get('digital_product_name'),
-                digital_product_description=service_data.get('digital_product_description')
+    # Get reviews
+    reviews = Review.query.filter_by(mentor_id=mentor.id).all()
+    
+    # Get available dates for quick booking
+    available_dates = get_available_dates(mentor.id, days_ahead=7)
+    
+    # Calculate total sessions
+    total_sessions = Booking.query.filter_by(mentor_id=mentor.id).count()
+    
+    return render_template('mentor_public_profile.html',
+                         mentor=mentor,
+                         services=services,
+                         reviews=reviews,
+                         total_sessions=total_sessions,
+                         available_dates=available_dates)
+
+@app.route('/mentor/<username>/service/<service_slug>')
+def service_detail(username, service_slug):
+    """Service detail page with date and time selection"""
+    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    service = Service.query.filter_by(mentor_id=mentor.id, slug=service_slug, is_active=True).first_or_404()
+    
+    # Get reviews for this service
+    reviews = Review.query.filter_by(service_id=service.id).all()
+    
+    # Calculate average rating
+    avg_rating = 0
+    if reviews:
+        avg_rating = sum([r.rating for r in reviews]) / len(reviews)
+    
+    # Get available dates (next 14 days)
+    available_dates = get_available_dates(mentor.id)
+    
+    # Get time slots for today (default)
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    available_slots = get_time_slots_for_date(mentor.id, today_date)
+    
+    # Get other services from the same mentor
+    other_services = Service.query.filter_by(
+        mentor_id=mentor.id, 
+        is_active=True
+    ).filter(Service.id != service.id).limit(3).all()
+    
+    # Check if user already has access to digital product
+    has_access = False
+    if current_user.is_authenticated and service.service_type in ['digital_product', 'both']:
+        access = DigitalProductAccess.query.filter_by(
+            user_id=current_user.id,
+            service_id=service.id,
+            is_active=True
+        ).first()
+        has_access = access is not None
+    
+    return render_template('service_detail.html',
+                         mentor=mentor,
+                         service=service,
+                         reviews=reviews,
+                         avg_rating=avg_rating,
+                         available_dates=available_dates,
+                         available_slots=available_slots,
+                         today_date=today_date,
+                         other_services=other_services,
+                         has_access=has_access)
+
+@app.route('/api/get-time-slots/<int:mentor_id>', methods=['POST'])
+@csrf.exempt
+def get_time_slots(mentor_id):
+    """API endpoint to get available time slots for a specific date"""
+    try:
+        data = request.get_json()
+        date_str = data.get('date')
+        
+        if not date_str:
+            return jsonify({'error': 'Date is required'}), 400
+        
+        available_slots = get_time_slots_for_date(mentor_id, date_str)
+        
+        return jsonify({
+            'success': True,
+            'slots': available_slots,
+            'date': date_str
+        })
+    except Exception as e:
+        logger.error(f"Error getting time slots: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/book-service/<int:service_id>', methods=['POST'])
+@login_required
+@csrf.exempt
+def book_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    mentor = User.query.get(service.mentor_id)
+    
+    if current_user.role == 'mentor':
+        flash('Mentors cannot book their own services', 'danger')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    # Check if it's a digital product and user already has access
+    if service.service_type == 'digital_product' and service.access_after_payment:
+        access = DigitalProductAccess.query.filter_by(
+            user_id=current_user.id,
+            service_id=service.id,
+            is_active=True
+        ).first()
+        
+        if access:
+            flash('You already have access to this digital product.', 'info')
+            return redirect(url_for('my_digital_products'))
+    
+    # For digital products without consultation, redirect to payment
+    if service.service_type == 'digital_product' and service.service_type != 'both':
+        return redirect(url_for('create_service_payment', service_id=service.id))
+    
+    # For consultation or both, proceed with booking
+    slot = request.form.get('slot')
+    date_str = request.form.get('date')
+    notes = request.form.get('notes', '')
+    
+    if not slot and service.service_type != 'digital_product':
+        flash('Please select a time slot', 'danger')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    if not date_str and service.service_type != 'digital_product':
+        flash('Please select a date', 'danger')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    # Convert date string to date object
+    booking_date = None
+    if date_str:
+        try:
+            booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Invalid date format', 'danger')
+            return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+        
+        # Check if slot is already booked
+        existing_booking = Booking.query.filter_by(
+            mentor_id=service.mentor_id,
+            booking_date=booking_date,
+            slot_time=slot
+        ).first()
+        
+        if existing_booking:
+            flash('This time slot is already booked. Please select another time.', 'danger')
+            return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    try:
+        # Create booking
+        booking = Booking(
+            mentor_id=service.mentor_id,
+            learner_id=current_user.id,
+            service_id=service.id,
+            service_name=service.name,
+            slot_time=slot,
+            booking_date=booking_date,
+            price=service.price,
+            notes=notes,
+            status='Pending Payment'
+        )
+        db.session.add(booking)
+        db.session.commit()
+        
+        # For digital products with immediate access (no payment required)
+        if service.service_type == 'digital_product' and not service.access_after_payment:
+            # Grant immediate access
+            access = DigitalProductAccess(
+                user_id=current_user.id,
+                service_id=service.id,
+                expires_at=datetime.utcnow() + timedelta(days=365)
             )
-            db.session.add(service)
+            db.session.add(access)
+            db.session.commit()
+            
+            send_digital_product_access_email(current_user, service)
+            flash(f'Digital product "{service.name}" added to your account!', 'success')
+            return redirect(url_for('my_digital_products'))
+        
+        flash(f'Booking created for {service.name}! Please complete payment.', 'success')
+        return redirect(url_for('create_payment', booking_id=booking.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating booking: {e}")
+        flash('Error creating booking. Please try again.', 'danger')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+
+@app.route('/mentorship-program')
+def mentorship_program():
+    """Main mentorship program landing page"""
+    stats = {
+        'success_rate': '95%',
+        'students_enrolled': '2000+',
+        'completion_rate': '89%'
+    }
+    return render_template('mentorship_program.html', stats=stats)
+
+@app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     
-    # Add sample products for backward compatibility
-    sample_products = [
-        {
-            'mentor_username': 'john_doe',
-            'name': 'Data Science Interview Guide',
-            'description': 'Complete guide with 100+ interview questions and solutions',
-            'product_type': 'Digital Product',
-            'duration': 'Downloadable',
-            'price': 999,
-            'tag': 'Best Seller',
-            'digital_product_link': 'https://drive.google.com/data-science-guide'
-        }
-    ]
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember = 'remember' in request.form
+        
+        # Validate input
+        if not email or not password:
+            flash('Please fill in all fields', 'danger')
+            return render_template('login.html')
+        
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            if not user.is_email_verified:
+                flash('Please verify your email before logging in.', 'warning')
+                return redirect(url_for('login'))
+            
+            login_user(user, remember=remember)
+            flash('Logged in successfully!', 'success')
+            
+            # Validate next parameter to prevent open redirect
+            next_page = request.args.get('next')
+            if next_page and not next_page.startswith('//') and '://' not in next_page:
+                return redirect(next_page)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+            return render_template('login.html')
     
-    for product_data in sample_products:
-        mentor = User.query.filter_by(username=product_data['mentor_username']).first()
-        if mentor and not Product.query.filter_by(mentor_id=mentor.id, name=product_data['name']).first():
-            product = Product(
-                mentor_id=mentor.id,
-                name=product_data['name'],
-                description=product_data['description'],
-                product_type=product_data['product_type'],
-                duration=product_data['duration'],
-                price=product_data['price'],
-                tag=product_data['tag'],
-                digital_product_link=product_data.get('digital_product_link')
-            )
-            db.session.add(product)
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.role == 'admin':
+        pending_mentors = User.query.filter_by(role='mentor', is_verified=False).all()
+        total_users = User.query.count()
+        verified_mentors = User.query.filter_by(role='mentor', is_verified=True).count()
+        total_bookings = Booking.query.count()
+        
+        # Get recent bookings with mentor names
+        recent_bookings = []
+        bookings = Booking.query.order_by(Booking.created_at.desc()).limit(5).all()
+        for booking in bookings:
+            mentor = User.query.get(booking.mentor_id)
+            learner = User.query.get(booking.learner_id)
+            recent_bookings.append({
+                'mentor_name': mentor.username if mentor else 'Unknown',
+                'learner_name': learner.username if learner else 'Unknown',
+                'service_name': booking.service_name,
+                'slot_time': booking.slot_time,
+                'amount': booking.price or (mentor.price if mentor else 0),
+                'status': booking.status,
+                'created_at': booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A'
+            })
+        
+        return render_template('admin.html',
+                             pending_mentors=pending_mentors,
+                             total_users=total_users,
+                             verified_mentors=verified_mentors,
+                             total_bookings=total_bookings,
+                             recent_bookings=recent_bookings)
     
+    elif current_user.role == 'mentor':
+        my_bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
+        
+        # Get learner names for bookings
+        bookings_with_learners = []
+        for booking in my_bookings:
+            learner = User.query.get(booking.learner_id)
+            bookings_with_learners.append({
+                'booking': booking,
+                'learner': learner
+            })
+        
+        # Get services count
+        services_count = Service.query.filter_by(mentor_id=current_user.id, is_active=True).count()
+        
+        # Calculate stats
+        total_bookings = len(my_bookings)
+        pending_bookings = len([b for b in my_bookings if b.status in ['Pending', 'Pending Payment']])
+        completed_bookings = [b for b in my_bookings if b.status == 'Completed']
+        total_earnings = sum([b.price or current_user.price for b in my_bookings if b.payment_status == 'success'])
+        total_sessions = len(completed_bookings)
+        
+        # Get upcoming bookings
+        today = datetime.now().date()
+        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status in ['Paid', 'Confirmed']]
+        
+        return render_template('dashboard.html',
+                             upcoming_bookings=upcoming_bookings[:5],
+                             type='mentor',
+                             total_bookings=total_bookings,
+                             pending_bookings=pending_bookings,
+                             completed_bookings=completed_bookings,
+                             total_earnings=total_earnings,
+                             total_sessions=total_sessions,
+                             services_count=services_count,
+                             bookings=bookings_with_learners)
+        
+    else:  # Learner
+        my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
+        bookings_with_mentors = []
+        for booking in my_bookings:
+            mentor = User.query.get(booking.mentor_id)
+            bookings_with_mentors.append({
+                'booking': booking,
+                'mentor': mentor
+            })
+        
+        # Calculate stats for template
+        completed_bookings = [b for b in my_bookings if b.status == 'Completed']
+        total_spent = sum([b.price or 0 for b in completed_bookings])
+        
+        # Get upcoming bookings
+        today = datetime.now().date()
+        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status in ['Paid', 'Confirmed']]
+        
+        # Get digital products count
+        digital_products_count = DigitalProductAccess.query.filter_by(
+            user_id=current_user.id,
+            is_active=True
+        ).count()
+        
+        # Get recommended mentors
+        recommended_mentors = User.query.filter_by(
+            role='mentor',
+            is_verified=True
+        ).limit(3).all()
+        
+        return render_template('dashboard.html',
+                             upcoming_bookings=upcoming_bookings[:5],
+                             completed_bookings=completed_bookings,
+                             total_spent=total_spent,
+                             recommended_mentors=recommended_mentors,
+                             type='learner',
+                             digital_products_count=digital_products_count,
+                             bookings=bookings_with_mentors)
+
+@app.route('/verify/<int:id>')
+@login_required
+@admin_required
+def verify_mentor(id):
+    mentor = User.query.get(id)
+    if not mentor:
+        flash('Mentor not found', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if mentor.role != 'mentor':
+        flash('User is not a mentor', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    mentor.is_verified = True
+    db.session.commit()
+    flash(f'{mentor.username} has been verified!', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reject-mentor/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_mentor(id):
+    mentor = User.query.get(id)
+    if not mentor:
+        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    
+    if mentor.role != 'mentor':
+        return jsonify({'success': False, 'message': 'User is not a mentor'}), 400
+    
+    db.session.delete(mentor)
     db.session.commit()
     
-    return f"Added {added_count} sample mentors with services! <a href='/explore'>Go to Explore</a>"
+    return jsonify({'success': True, 'message': 'Mentor application rejected'})
 
-# --- NEW FEATURE ROUTES ---
-
-# 1. EMAIL AUTHENTICATION ROUTES
+# EMAIL AUTHENTICATION ROUTES
 @app.route('/verify-email/<token>')
 @login_required
 def verify_email(token):
     try:
-        email = s.loads(token, salt='email-confirm', max_age=3600)
+        email = confirm_verification_token(token)
     except:
         flash('The verification link is invalid or has expired.', 'danger')
         return redirect(url_for('dashboard'))
@@ -1106,6 +1312,10 @@ def reset_password(token):
             flash('Passwords do not match.', 'danger')
             return render_template('reset_password.html', token=token)
         
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+            return render_template('reset_password.html', token=token)
+        
         user.set_password(password)
         user.reset_token = None
         user.reset_token_expiry = None
@@ -1116,7 +1326,7 @@ def reset_password(token):
     
     return render_template('reset_password.html', token=token)
 
-# 2. PAYMENT GATEWAY ROUTES
+# PAYMENT GATEWAY ROUTES
 @app.route('/create-payment/<int:booking_id>')
 @login_required
 def create_payment(booking_id):
@@ -1125,6 +1335,11 @@ def create_payment(booking_id):
     # Check if user is authorized
     if booking.learner_id != current_user.id:
         flash('Unauthorized access.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Check if payment already processed
+    if booking.payment_status == 'success':
+        flash('Payment already completed.', 'info')
         return redirect(url_for('dashboard'))
     
     # Create Razorpay order
@@ -1196,74 +1411,120 @@ def create_service_payment(service_id):
 
 @app.route('/payment-success', methods=['POST'])
 @login_required
+@csrf.exempt
 def payment_success():
+    """Secure payment verification and processing"""
     razorpay_payment_id = request.form.get('razorpay_payment_id')
     razorpay_order_id = request.form.get('razorpay_order_id')
     razorpay_signature = request.form.get('razorpay_signature')
     
-    # Verify payment signature
-    params_dict = {
-        'razorpay_payment_id': razorpay_payment_id,
-        'razorpay_order_id': razorpay_order_id,
-        'razorpay_signature': razorpay_signature
-    }
+    if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature]):
+        flash('Invalid payment parameters.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Find booking by order ID
+    booking = Booking.query.filter_by(razorpay_order_id=razorpay_order_id).first()
+    if not booking:
+        flash('Invalid booking reference.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Verify user authorization
+    if booking.learner_id != current_user.id:
+        flash('Unauthorized payment attempt.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Verify payment hasn't already been processed
+    if booking.payment_status == 'success':
+        flash('Payment already processed.', 'info')
+        return redirect(url_for('dashboard'))
     
     try:
+        # Verify payment signature with Razorpay
+        params_dict = {
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_signature': razorpay_signature
+        }
+        
+        # Verify signature
         razorpay_client.utility.verify_payment_signature(params_dict)
         
-        # Find booking by order ID
-        booking = Booking.query.filter_by(razorpay_order_id=razorpay_order_id).first()
+        # Fetch payment details from Razorpay to verify amount
+        payment_details = razorpay_client.payment.fetch(razorpay_payment_id)
         
-        if booking:
-            # Update booking
-            booking.razorpay_payment_id = razorpay_payment_id
-            booking.razorpay_signature = razorpay_signature
-            booking.payment_status = 'success'
-            booking.status = 'Paid'
-            
-            # Generate meeting link if it's a consultation service
-            if booking.service:
-                service = Service.query.get(booking.service_id)
-                if service and service.service_type in ['consultation', 'both']:
-                    generate_meeting_link(booking)
-            
-            # Create payment record
-            payment = Payment(
-                user_id=current_user.id,
-                booking_id=booking.id,
-                service_id=booking.service_id,
-                amount=booking.price * 100,
-                razorpay_order_id=razorpay_order_id,
-                razorpay_payment_id=razorpay_payment_id,
-                razorpay_signature=razorpay_signature,
-                status='success'
-            )
-            db.session.add(payment)
-            
-            # Grant digital product access if applicable
-            if booking.service:
-                service = Service.query.get(booking.service_id)
-                if service and service.service_type in ['digital_product', 'both'] and service.access_after_payment:
-                    access = DigitalProductAccess(
-                        user_id=current_user.id,
-                        service_id=service.id,
-                        payment_id=payment.id,
-                        expires_at=datetime.utcnow() + timedelta(days=365)
-                    )
-                    db.session.add(access)
-                    send_digital_product_access_email(current_user, service)
-            
-            db.session.commit()
-            
-            # Send booking confirmation email
-            send_booking_confirmation(current_user, booking)
-            
-            flash('Payment successful! Your booking has been confirmed.', 'success')
-            return redirect(url_for('dashboard'))
+        # Verify payment amount matches booking amount (convert to paise)
+        expected_amount_paise = int((booking.price or 0) * 100)
+        actual_amount_paise = payment_details['amount']
         
-    except Exception as e:
-        print(f"Payment verification failed: {e}")
+        if expected_amount_paise != actual_amount_paise:
+            raise ValueError(f'Payment amount mismatch. Expected: {expected_amount_paise}, Got: {actual_amount_paise}')
+        
+        # Verify payment status
+        if payment_details['status'] != 'captured':
+            raise ValueError('Payment not captured')
+        
+        # Verify currency
+        if payment_details['currency'] != 'INR':
+            raise ValueError('Invalid currency')
+        
+        # Update booking
+        booking.razorpay_payment_id = razorpay_payment_id
+        booking.razorpay_signature = razorpay_signature
+        booking.payment_status = 'success'
+        booking.status = 'Confirmed'
+        
+        # Generate meeting link if it's a consultation service
+        if booking.service:
+            service = Service.query.get(booking.service_id)
+            if service and service.service_type in ['consultation', 'both']:
+                generate_meeting_link(booking)
+        
+        # Create payment record
+        payment = Payment(
+            user_id=current_user.id,
+            booking_id=booking.id,
+            service_id=booking.service_id,
+            amount=actual_amount_paise,
+            currency='INR',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            status='success',
+            payment_method=payment_details.get('method', 'card')
+        )
+        db.session.add(payment)
+        
+        # Grant digital product access if applicable
+        if booking.service:
+            service = Service.query.get(booking.service_id)
+            if service and service.service_type in ['digital_product', 'both'] and service.access_after_payment:
+                access = DigitalProductAccess(
+                    user_id=current_user.id,
+                    service_id=service.id,
+                    payment_id=payment.id,
+                    expires_at=datetime.utcnow() + timedelta(days=365)
+                )
+                db.session.add(access)
+                send_digital_product_access_email(current_user, service)
+        
+        db.session.commit()
+        
+        # Send booking confirmation email
+        send_booking_confirmation(current_user, booking)
+        
+        flash('Payment successful! Your booking has been confirmed.', 'success')
+        return redirect(url_for('dashboard'))
+        
+    except razorpay.errors.SignatureVerificationError as e:
+        logger.error(f"Payment signature verification failed: {e}")
         flash('Payment verification failed. Please contact support.', 'danger')
+    except ValueError as e:
+        logger.error(f"Payment validation error: {e}")
+        flash(f'Payment validation error: {str(e)}', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Payment processing error: {e}")
+        flash('Error processing payment. Please contact support.', 'danger')
     
     return redirect(url_for('dashboard'))
 
@@ -1282,7 +1543,37 @@ def payment_failed():
     flash('Payment failed. Please try again.', 'danger')
     return redirect(url_for('dashboard'))
 
-# 3. MEETING LINK ROUTES
+# MEETING LINK ROUTES
+@app.route('/api/generate-meeting-link/<int:booking_id>', methods=['POST'])
+@login_required
+def api_generate_meeting_link(booking_id):
+    """API endpoint to generate meeting link for a booking"""
+    booking = Booking.query.get_or_404(booking_id)
+    
+    # Check permissions
+    if current_user.id != booking.mentor_id and current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Only generate for confirmed/paid bookings
+    if booking.status not in ['Paid', 'Confirmed']:
+        return jsonify({'success': False, 'message': 'Booking is not confirmed'}), 400
+    
+    try:
+        # Generate meeting link
+        meeting_link = generate_meeting_link(booking)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Meeting link generated successfully',
+            'meeting_link': meeting_link,
+            'meeting_id': booking.meeting_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error generating meeting link: {e}")
+        return jsonify({'success': False, 'message': f'Error generating meeting link: {str(e)}'}), 500
+
 @app.route('/meeting/<int:booking_id>')
 @login_required
 def join_meeting(booking_id):
@@ -1299,34 +1590,15 @@ def join_meeting(booking_id):
         flash('This meeting is not scheduled for today.', 'warning')
     
     # If no meeting link exists, generate one
-    if not booking.meeting_link and booking.status == 'Paid':
+    if not booking.meeting_link and booking.status in ['Paid', 'Confirmed']:
         generate_meeting_link(booking)
         db.session.commit()
     
     return render_template('meeting.html', booking=booking)
 
-@app.route('/api/start-meeting/<int:booking_id>', methods=['POST'])
-@login_required
-def start_meeting(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    
-    # Only mentor can start the meeting
-    if current_user.id != booking.mentor_id and current_user.role != 'admin':
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Generate meeting link if not exists
-    if not booking.meeting_link:
-        generate_meeting_link(booking)
-        db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'meeting_link': booking.meeting_link,
-        'meeting_id': booking.meeting_id
-    })
-
 @app.route('/complete-session/<int:booking_id>', methods=['POST'])
 @login_required
+@mentor_required
 def complete_session(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     
@@ -1340,7 +1612,7 @@ def complete_session(booking_id):
     flash('Session marked as completed!', 'success')
     return redirect(url_for('dashboard'))
 
-# 4. DIGITAL PRODUCT ROUTES
+# DIGITAL PRODUCT ROUTES
 @app.route('/my-digital-products')
 @login_required
 def my_digital_products():
@@ -1395,564 +1667,11 @@ def download_digital_product(access_id):
         flash('Product link not found.', 'danger')
         return redirect(url_for('my_digital_products'))
 
-# --- EXISTING ROUTES (UPDATED) ---
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-# --- BACKWARD COMPATIBILITY for old /username URLs ---
-@app.route('/<username>')
-def redirect_old_profile(username):
-    """Redirect old /username URLs to new /mentor/username URLs"""
-    # Check if it's a file extension we should ignore
-    if '.' in username and username.split('.')[-1] in ['ico', 'png', 'jpg', 'css', 'js', 'json']:
-        return '', 404
-    
-    # Redirect to new mentor profile URL
-    return redirect(url_for('mentor_public_profile', username=username))
-
-# --- Static file handlers to prevent conflicts with dynamic routes ---
-@app.route('/favicon.ico')
-def favicon():
-    return '', 404  # Return 404 or serve actual favicon if available
-
-@app.route('/robots.txt')
-def robots():
-    return '', 404
-
-@app.route('/sitemap.xml')
-def sitemap():
-    return '', 404
-
-@app.route('/explore', methods=['GET', 'POST'])
-def explore():
-    recommendations = []
-    query = ""
-    
-    if request.method == 'POST':
-        query = request.form.get('goal')
-        if query:
-            try:
-                recommendations = get_ai_recommendations(query)
-            except Exception as e:
-                print(f"AI error: {e}")
-                # Fallback: simple text matching
-                mentors = User.query.filter_by(role='mentor', is_verified=True).all()
-                for mentor in mentors:
-                    mentor_text = f"{mentor.domain or ''} {mentor.bio or ''} {mentor.skills or ''}".lower()
-                    if query.lower() in mentor_text:
-                        recommendations.append(mentor)
-    
-    # Get all verified mentors
-    all_mentors = User.query.filter_by(role='mentor', is_verified=True).all()
-    
-    # Get top companies mentors
-    top_companies = ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix']
-    top_mentors = [m for m in all_mentors if m.company in top_companies]
-    
-    return render_template('mentors.html', 
-                         mentors=all_mentors, 
-                         recommendations=recommendations, 
-                         query=query,
-                         top_mentors=top_mentors)
-
-# Handle URLs with username-ID format (for backward compatibility with old share links)
-@app.route('/mentor/<username>-<int:id>')
-def mentor_profile_with_id(username, id):
-    """
-    Handle URLs with both username and ID like /mentor/username-id
-    This supports old share links while redirecting to clean URLs
-    """
-    # Check if user exists with this username and ID
-    user = User.query.filter_by(username=username, id=id).first()
-    
-    if user:
-        # User exists, redirect to clean username-only URL
-        return redirect(url_for('mentor_public_profile', username=username))
-    else:
-        # User not found with this combination, try username only
-        return redirect(url_for('mentor_public_profile', username=username))
-
-# Username-based profile routes
-@app.route('/mentor/<username>')
-def mentor_public_profile(username):
-    # Try to find the user
-    mentor = User.query.filter_by(username=username).first()
-    
-    # If not found or not a mentor
-    if not mentor:
-        return f"""
-        <h1>User '{username}' not found</h1>
-        <p><a href='/explore'>Back to Explore</a></p>
-        <p>Debug: <a href='/check-username/{username}'>Check username</a></p>
-        """, 404
-    
-    if mentor.role != 'mentor':
-        return f"""
-        <h1>User '{username}' is not a mentor</h1>
-        <p>Role: {mentor.role}</p>
-        <p><a href='/explore'>Back to Explore</a></p>
-        """, 404
-    
-    # Increment profile views
-    mentor.profile_views = (mentor.profile_views or 0) + 1
-    db.session.commit()
-    
-    # Get mentor's services
-    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
-    
-    # Get mentor's products (for backward compatibility)
-    products = Product.query.filter_by(mentor_id=mentor.id, is_active=True).all()
-    
-    # Get reviews
-    reviews = Review.query.filter_by(mentor_id=mentor.id).all()
-    
-    # Get available dates for quick booking
-    available_dates = get_available_dates(mentor.id, days_ahead=7)
-    
-    # Categorize products by type
-    product_types = {}
-    for product in products:
-        if product.product_type not in product_types:
-            product_types[product.product_type] = []
-        product_types[product.product_type].append(product)
-    
-    # Calculate total sessions
-    total_sessions = Booking.query.filter_by(mentor_id=mentor.id).count()
-    
-    return render_template('mentor_public_profile.html',
-                         mentor=mentor,
-                         services=services,
-                         products=products,
-                         product_types=product_types,
-                         reviews=reviews,
-                         total_sessions=total_sessions,
-                         available_dates=available_dates)
-
-# Service detail route
-@app.route('/mentor/<username>/service/<service_slug>')
-def service_detail(username, service_slug):
-    """Service detail page with date and time selection"""
-    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
-    service = Service.query.filter_by(mentor_id=mentor.id, slug=service_slug, is_active=True).first_or_404()
-    
-    # Get reviews for this service
-    reviews = Review.query.filter_by(service_id=service.id).all()
-    
-    # Calculate average rating
-    avg_rating = 0
-    if reviews:
-        avg_rating = sum([r.rating for r in reviews]) / len(reviews)
-    
-    # Get available dates (next 14 days)
-    available_dates = get_available_dates(mentor.id)
-    
-    # Get time slots for today (default)
-    today_date = datetime.now().strftime('%Y-%m-%d')
-    available_slots = get_time_slots_for_date(mentor.id, today_date)
-    
-    # Get other services from the same mentor
-    other_services = Service.query.filter_by(
-        mentor_id=mentor.id, 
-        is_active=True
-    ).filter(Service.id != service.id).limit(3).all()
-    
-    # Check if user already has access to digital product
-    has_access = False
-    if current_user.is_authenticated and service.service_type in ['digital_product', 'both']:
-        access = DigitalProductAccess.query.filter_by(
-            user_id=current_user.id,
-            service_id=service.id,
-            is_active=True
-        ).first()
-        has_access = access is not None
-    
-    return render_template('service_detail.html',
-                         mentor=mentor,
-                         service=service,
-                         reviews=reviews,
-                         avg_rating=avg_rating,
-                         available_dates=available_dates,
-                         available_slots=available_slots,
-                         today_date=today_date,
-                         other_services=other_services,
-                         has_access=has_access)
-
-# API endpoint for getting time slots
-@app.route('/api/get-time-slots/<int:mentor_id>', methods=['POST'])
-def get_time_slots(mentor_id):
-    """API endpoint to get available time slots for a specific date"""
-    try:
-        data = request.get_json()
-        date_str = data.get('date')
-        
-        if not date_str:
-            return jsonify({'error': 'Date is required'}), 400
-        
-        available_slots = get_time_slots_for_date(mentor_id, date_str)
-        
-        return jsonify({
-            'success': True,
-            'slots': available_slots,
-            'date': date_str
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# Book service with date
-@app.route('/book-service/<int:service_id>', methods=['POST'])
-@login_required
-def book_service(service_id):
-    service = Service.query.get_or_404(service_id)
-    mentor = User.query.get(service.mentor_id)
-    
-    if current_user.role == 'mentor':
-        flash('Mentors cannot book their own services')
-        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
-    
-    # Check if it's a digital product and user already has access
-    if service.service_type == 'digital_product' and service.access_after_payment:
-        # Check if user already has access
-        access = DigitalProductAccess.query.filter_by(
-            user_id=current_user.id,
-            service_id=service.id,
-            is_active=True
-        ).first()
-        
-        if access:
-            flash('You already have access to this digital product.', 'info')
-            return redirect(url_for('my_digital_products'))
-    
-    # For digital products without consultation, redirect to payment
-    if service.service_type == 'digital_product' and not service.service_type == 'both':
-        return redirect(url_for('create_service_payment', service_id=service.id))
-    
-    # For consultation or both, proceed with booking
-    slot = request.form.get('slot')
-    date_str = request.form.get('date')
-    notes = request.form.get('notes', '')
-    
-    if not slot and service.service_type != 'digital_product':
-        flash('Please select a time slot')
-        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
-    
-    if not date_str and service.service_type != 'digital_product':
-        flash('Please select a date')
-        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
-    
-    # Convert date string to date object
-    booking_date = None
-    if date_str:
-        try:
-            booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            flash('Invalid date format')
-            return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
-        
-        # Check if slot is already booked
-        existing_booking = Booking.query.filter_by(
-            mentor_id=service.mentor_id,
-            booking_date=booking_date,
-            slot_time=slot
-        ).first()
-        
-        if existing_booking:
-            flash('This time slot is already booked. Please select another time.')
-            return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
-    
-    # Create booking
-    booking = Booking(
-        mentor_id=service.mentor_id,
-        learner_id=current_user.id,
-        service_id=service.id,
-        service_name=service.name,
-        slot_time=slot,
-        booking_date=booking_date,
-        price=service.price,
-        notes=notes,
-        status='Pending Payment'
-    )
-    db.session.add(booking)
-    db.session.commit()
-    
-    # For digital products with immediate access (no payment required)
-    if service.service_type == 'digital_product' and not service.access_after_payment:
-        # Grant immediate access
-        access = DigitalProductAccess(
-            user_id=current_user.id,
-            service_id=service.id,
-            expires_at=datetime.utcnow() + timedelta(days=365)
-        )
-        db.session.add(access)
-        db.session.commit()
-        
-        send_digital_product_access_email(current_user, service)
-        flash(f'Digital product "{service.name}" added to your account!', 'success')
-        return redirect(url_for('my_digital_products'))
-    
-    flash(f'Booking created for {service.name}! Please complete payment.', 'success')
-    return redirect(url_for('create_payment', booking_id=booking.id))
-
-# Product booking/purchase
-@app.route('/book-product/<int:product_id>', methods=['POST'])
-@login_required
-def book_product(product_id):
-    product = Product.query.get_or_404(product_id)
-    mentor = User.query.get(product.mentor_id)
-    
-    if product.product_type in ['1:1 call', 'Webinar']:
-        slot = request.form.get('slot')
-        
-        # Create booking
-        booking = Booking(
-            mentor_id=product.mentor_id,
-            learner_id=current_user.id,
-            service_name=product.name,
-            slot_time=slot,
-            price=product.price,
-            status='Pending Payment'
-        )
-        db.session.add(booking)
-        db.session.commit()
-        
-        return redirect(url_for('create_payment', booking_id=booking.id))
-    else:
-        # Handle digital product purchase
-        # Check if user already has access
-        access = DigitalProductAccess.query.filter_by(
-            user_id=current_user.id,
-            product_id=product.id,
-            is_active=True
-        ).first()
-        
-        if access:
-            flash('You already have access to this digital product.', 'info')
-            return redirect(url_for('my_digital_products'))
-        
-        # Create booking for payment tracking
-        booking = Booking(
-            mentor_id=product.mentor_id,
-            learner_id=current_user.id,
-            service_name=product.name,
-            price=product.price,
-            status='Pending Payment'
-        )
-        db.session.add(booking)
-        db.session.commit()
-        
-        return redirect(url_for('create_payment', booking_id=booking.id))
-
-@app.route('/mentorship-program')
-def mentorship_program():
-    """Main mentorship program landing page"""
-    stats = {
-        'success_rate': '95%',
-        'students_enrolled': '2000+',
-        'completion_rate': '89%'
-    }
-    return render_template('mentorship_program.html', stats=stats)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        remember = 'remember' in request.form
-        
-        # Validate input
-        if not email or not password:
-            flash('Please fill in all fields', 'error')
-            return render_template('login.html')
-        
-        # Find user by email
-        user = User.query.filter_by(email=email).first()
-        
-        # FIX THIS LINE: Change user.password to user.password_hash
-        if user and check_password_hash(user.password_hash, password):  # <-- FIX HERE
-            login_user(user, remember=remember)
-            flash('Logged in successfully!', 'success')
-            
-            # Redirect to next page if provided
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard'))
-        else:
-            flash('Invalid email or password', 'error')
-            return render_template('login.html')
-    
-    return render_template('login.html')
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out.')
-    return redirect(url_for('index'))
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    if current_user.role == 'admin':
-        pending_mentors = User.query.filter_by(role='mentor', is_verified=False).all()
-        total_users = User.query.count()
-        verified_mentors = User.query.filter_by(role='mentor', is_verified=True).count()
-        total_bookings = Booking.query.count()
-        
-        # Get recent bookings with mentor names
-        recent_bookings = []
-        bookings = Booking.query.order_by(Booking.created_at.desc()).limit(5).all()
-        for booking in bookings:
-            mentor = User.query.get(booking.mentor_id)
-            learner = User.query.get(booking.learner_id)
-            recent_bookings.append({
-                'mentor_name': mentor.username if mentor else 'Unknown',
-                'learner_name': learner.username if learner else 'Unknown',
-                'service_name': booking.service_name,
-                'slot_time': booking.slot_time,
-                'amount': booking.price or (mentor.price if mentor else 0),
-                'status': booking.status,
-                'created_at': booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A'
-            })
-        
-        return render_template('admin.html',
-                             pending_mentors=pending_mentors,
-                             total_users=total_users,
-                             verified_mentors=verified_mentors,
-                             total_bookings=total_bookings,
-                             recent_bookings=recent_bookings)
-    
-    elif current_user.role == 'mentor':
-        my_bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
-        
-        # Get learner names for bookings
-        bookings_with_learners = []
-        for booking in my_bookings:
-            learner = User.query.get(booking.learner_id)
-            bookings_with_learners.append({
-                'booking': booking,
-                'learner': learner
-            })
-        
-        # Get services count
-        services_count = Service.query.filter_by(mentor_id=current_user.id, is_active=True).count()
-        
-        # Calculate stats - FIXED: completed_bookings as list
-        total_bookings = len(my_bookings)
-        pending_bookings = len([b for b in my_bookings if b.status in ['Pending', 'Pending Payment']])
-        completed_bookings = [b for b in my_bookings if b.status == 'Completed']  # FIXED: This is a LIST
-        total_earnings = sum([b.price or current_user.price for b in my_bookings if b.payment_status == 'success'])
-        total_sessions = len(completed_bookings)  # FIXED: Use len() on the list
-        
-        # Get upcoming bookings
-        today = datetime.now().date()
-        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
-        
-        return render_template('dashboard.html',
-                             upcoming_bookings=upcoming_bookings[:5],
-                             type='mentor',
-                             total_bookings=total_bookings,
-                             pending_bookings=pending_bookings,
-                             completed_bookings=completed_bookings,  # FIXED: Passing the list
-                             total_earnings=total_earnings,
-                             total_sessions=total_sessions,
-                             services_count=services_count,
-                             bookings=bookings_with_learners)  # For backward compatibility
-        
-    else:  # Learner
-        my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
-        bookings_with_mentors = []
-        for booking in my_bookings:
-            mentor = User.query.get(booking.mentor_id)
-            bookings_with_mentors.append({
-                'booking': booking,
-                'mentor': mentor
-            })
-        
-        # Calculate stats for template - FIXED: completed_bookings as list
-        completed_bookings = [b for b in my_bookings if b.status == 'Completed']  # FIXED: This is a LIST
-        total_spent = sum([b.price or 0 for b in completed_bookings])
-        
-        # Get upcoming bookings
-        today = datetime.now().date()
-        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
-        
-        # Add enrollment info for learner
-        enrollment = Enrollment.query.filter_by(user_id=current_user.id).first()
-        
-        # Get digital products count
-        digital_products_count = DigitalProductAccess.query.filter_by(
-            user_id=current_user.id,
-            is_active=True
-        ).count()
-        
-        # Get saved mentors count (placeholder - implement SavedMentor model later)
-        saved_mentors_count = 0
-        
-        # Get recommended mentors
-        recommended_mentors = User.query.filter_by(
-            role='mentor',
-            is_verified=True
-        ).limit(3).all()
-        
-        return render_template('dashboard.html',
-                             upcoming_bookings=upcoming_bookings[:5],
-                             completed_bookings=completed_bookings,  # FIXED: Passing the list
-                             total_spent=total_spent,
-                             saved_mentors_count=saved_mentors_count,
-                             recommended_mentors=recommended_mentors,
-                             type='learner',
-                             enrollment=enrollment,
-                             digital_products_count=digital_products_count,
-                             bookings=bookings_with_mentors)  # For backward compatibility
-@app.route('/verify/<int:id>')
-@login_required
-def verify_mentor(id):
-    if current_user.role != 'admin':
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
-    
-    mentor = User.query.get(id)
-    if not mentor:
-        flash('Mentor not found')
-        return redirect(url_for('dashboard'))
-    
-    if mentor.role != 'mentor':
-        flash('User is not a mentor')
-        return redirect(url_for('dashboard'))
-    
-    mentor.is_verified = True
-    db.session.commit()
-    flash(f'{mentor.username} has been verified!')
-    return redirect(url_for('dashboard'))
-
-@app.route('/reject-mentor/<int:id>', methods=['POST'])
-@login_required
-def reject_mentor(id):
-    if current_user.role != 'admin':
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    mentor = User.query.get(id)
-    if not mentor:
-        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
-    
-    if mentor.role != 'mentor':
-        return jsonify({'success': False, 'message': 'User is not a mentor'}), 400
-    
-    # Delete the mentor application (or mark as rejected)
-    db.session.delete(mentor)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Mentor application rejected'})
-
-# Product management for mentors
+# MENTOR MANAGEMENT ROUTES
 @app.route('/mentor/products', methods=['GET', 'POST'])
 @login_required
+@mentor_required
 def mentor_products():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
     if request.method == 'POST':
         # Add new product
         name = request.form.get('name')
@@ -1975,21 +1694,17 @@ def mentor_products():
         )
         db.session.add(product)
         db.session.commit()
-        flash('Product added successfully!')
+        flash('Product added successfully!', 'success')
         return redirect(url_for('mentor_products'))
     
     # Get mentor's products
     products = Product.query.filter_by(mentor_id=current_user.id).all()
     return render_template('mentor_products.html', products=products)
 
-# Service management for mentors (UPDATED FOR DIGITAL PRODUCTS)
 @app.route('/mentor/manage-services', methods=['GET', 'POST'])
 @login_required
+@mentor_required
 def manage_services():
-    if current_user.role != 'mentor':
-        flash('Only mentors can access this page')
-        return redirect(url_for('dashboard'))
-    
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -2010,7 +1725,7 @@ def manage_services():
             if 'digital_product_file' in request.files:
                 file = request.files['digital_product_file']
                 if file and file.filename != '':
-                    digital_product_file = save_digital_product(file, current_user.id, 0)  # 0 for new service
+                    digital_product_file = save_digital_product(file, current_user.id, 0)
             
             service = Service(
                 mentor_id=current_user.id,
@@ -2029,7 +1744,7 @@ def manage_services():
             )
             db.session.add(service)
             db.session.commit()
-            flash('Service added successfully!')
+            flash('Service added successfully!', 'success')
             
         elif action == 'update':
             service_id = request.form.get('service_id')
@@ -2054,7 +1769,7 @@ def manage_services():
                         service.digital_product_file = save_digital_product(file, current_user.id, service.id)
                 
                 db.session.commit()
-                flash('Service updated successfully!')
+                flash('Service updated successfully!', 'success')
                 
         elif action == 'delete':
             service_id = request.form.get('service_id')
@@ -2062,7 +1777,7 @@ def manage_services():
             if service:
                 service.is_active = False
                 db.session.commit()
-                flash('Service deactivated!')
+                flash('Service deactivated!', 'success')
         
         elif action == 'activate':
             service_id = request.form.get('service_id')
@@ -2070,7 +1785,7 @@ def manage_services():
             if service:
                 service.is_active = True
                 db.session.commit()
-                flash('Service activated!')
+                flash('Service activated!', 'success')
         
         return redirect(url_for('manage_services'))
     
@@ -2079,13 +1794,10 @@ def manage_services():
     
     return render_template('manage_services.html', services=services)
 
-# New routes for mentor dashboard sections
 @app.route('/mentor/bookings')
 @login_required
+@mentor_required
 def mentor_bookings():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
     my_bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(Booking.created_at.desc()).all()
     bookings_with_learners = []
     for booking in my_bookings:
@@ -2097,29 +1809,10 @@ def mentor_bookings():
     
     return render_template('mentor_bookings.html', bookings=bookings_with_learners)
 
-@app.route('/mentor/services', methods=['GET', 'POST'])
-@login_required
-def mentor_services():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        # Update mentor services
-        current_user.services = request.form.get('services')
-        current_user.price = int(request.form.get('price')) if request.form.get('price') else 0
-        current_user.availability = request.form.get('availability')
-        db.session.commit()
-        flash('Services updated successfully!')
-        return redirect(url_for('mentor_services'))
-    
-    return render_template('mentor_services.html')
-
 @app.route('/mentor/calendar')
 @login_required
+@mentor_required
 def mentor_calendar():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
     # Get all booked slots
     bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
     booked_slots = [{
@@ -2133,10 +1826,8 @@ def mentor_calendar():
 
 @app.route('/mentor/payouts')
 @login_required
+@mentor_required
 def mentor_payouts():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
     # Calculate earnings
     completed_bookings = Booking.query.filter_by(
         mentor_id=current_user.id, 
@@ -2146,10 +1837,10 @@ def mentor_payouts():
     total_earnings = sum([b.price or current_user.price for b in completed_bookings])
     pending_payout = total_earnings * 0.8  # Assuming 20% platform fee
     
-    payout_history = [
-        {'date': '2024-01-01', 'amount': 1000, 'status': 'Paid'},
-        {'date': '2023-12-01', 'amount': 1500, 'status': 'Paid'},
-    ]
+    payout_history = Payment.query.filter_by(
+        user_id=current_user.id,
+        status='success'
+    ).order_by(Payment.created_at.desc()).limit(10).all()
     
     return render_template('mentor_payouts.html', 
                          total_earnings=total_earnings,
@@ -2158,10 +1849,8 @@ def mentor_payouts():
 
 @app.route('/mentor/profile', methods=['GET', 'POST'])
 @login_required
+@mentor_required
 def mentor_profile():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
     if request.method == 'POST':
         # Handle profile image upload
         if 'profile_image' in request.files:
@@ -2171,7 +1860,7 @@ def mentor_profile():
                 if image_path:
                     current_user.profile_image = image_path
         
-        # Update mentor profile with all new fields
+        # Update mentor profile
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
         current_user.job_title = request.form.get('job_title')
@@ -2191,170 +1880,14 @@ def mentor_profile():
         current_user.response_rate = int(request.form.get('response_rate')) if request.form.get('response_rate') else 98
         
         db.session.commit()
-        flash('Profile updated successfully!')
+        flash('Profile updated successfully!', 'success')
         return redirect(url_for('mentor_profile'))
     
     return render_template('mentor_profile.html')
 
-@app.route('/mentor/settings', methods=['GET', 'POST'])
-@login_required
-def mentor_settings():
-    if current_user.role != 'mentor':
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        # Handle settings update
-        if request.form.get('action') == 'update_password':
-            current_password = request.form.get('current_password')
-            new_password = request.form.get('new_password')
-            
-            if current_user.check_password(current_password):
-                current_user.set_password(new_password)
-                db.session.commit()
-                flash('Password updated successfully!')
-            else:
-                flash('Current password is incorrect')
-        
-        elif request.form.get('action') == 'update_notifications':
-            # Handle notification preferences
-            flash('Notification settings updated!')
-        
-        elif request.form.get('action') == 'update_privacy':
-            # Handle privacy settings
-            flash('Privacy settings updated!')
-        
-        return redirect(url_for('mentor_settings'))
-    
-    return render_template('mentor_settings.html')
-
-# New routes for learner
-@app.route('/learner/enrollments')
-@login_required
-def learner_enrollments():
-    if current_user.role != 'learner':
-        return redirect(url_for('dashboard'))
-    
-    enrollments = Enrollment.query.filter_by(user_id=current_user.id).all()
-    return render_template('learner_enrollments.html', enrollments=enrollments)
-
-@app.route('/learner/saved-mentors')
-@login_required
-def saved_mentors():
-    if current_user.role != 'learner':
-        return redirect(url_for('dashboard'))
-    
-    # In a real app, this would query a SavedMentor model
-    saved_mentors_list = []
-    return render_template('saved_mentors.html', saved_mentors=saved_mentors_list)
-
-@app.route('/learner/profile', methods=['GET', 'POST'])
-@login_required
-def learner_profile():
-    if current_user.role != 'learner':
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        # Handle profile image upload
-        if 'profile_image' in request.files:
-            file = request.files['profile_image']
-            if file and file.filename != '':
-                image_path = save_profile_image(file, current_user.id)
-                if image_path:
-                    current_user.profile_image = image_path
-        
-        # Update learner profile
-        current_user.full_name = request.form.get('full_name')
-        current_user.phone = request.form.get('phone')
-        current_user.domain = request.form.get('domain')  # Career interest
-        
-        db.session.commit()
-        flash('Profile updated successfully!')
-        return redirect(url_for('learner_profile'))
-    
-    return render_template('learner_profile.html')
-
-# New routes for admin
-@app.route('/admin/users')
-@login_required
-def admin_users():
-    if current_user.role != 'admin':
-        return redirect(url_for('dashboard'))
-    
-    users = User.query.all()
-    return render_template('admin_users.html', users=users)
-
-@app.route('/admin/enrollments')
-@login_required
-def admin_enrollments():
-    if current_user.role != 'admin':
-        return redirect(url_for('dashboard'))
-    
-    enrollments = Enrollment.query.all()
-    enrollment_users = []
-    for enrollment in enrollments:
-        user = User.query.get(enrollment.user_id)
-        enrollment_users.append({
-            'enrollment': enrollment,
-            'user': user
-        })
-    
-    return render_template('admin_enrollments.html', enrollments=enrollment_users)
-
-@app.route('/admin/analytics')
-@login_required
-def admin_analytics():
-    if current_user.role != 'admin':
-        return redirect(url_for('dashboard'))
-    
-    # Basic analytics
-    total_users = User.query.count()
-    total_mentors = User.query.filter_by(role='mentor').count()
-    total_learners = User.query.filter_by(role='learner').count()
-    total_bookings = Booking.query.count()
-    
-    # Revenue calculation
-    completed_payments = Payment.query.filter_by(status='success').all()
-    revenue = sum([p.amount for p in completed_payments]) / 100  # Convert from paise
-    
-    # Monthly growth (simplified)
-    monthly_data = [
-        {'month': 'Jan', 'users': 100, 'revenue': 50000},
-        {'month': 'Feb', 'users': 150, 'revenue': 75000},
-        {'month': 'Mar', 'users': 200, 'revenue': 100000},
-    ]
-    
-    return render_template('admin_analytics.html',
-                         total_users=total_users,
-                         total_mentors=total_mentors,
-                         total_learners=total_learners,
-                         total_bookings=total_bookings,
-                         revenue=revenue,
-                         monthly_data=monthly_data)
-
-# Update booking status
-@app.route('/update-booking-status/<int:booking_id>', methods=['POST'])
-@login_required
-def update_booking_status(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    
-    # Check permissions
-    if current_user.role == 'mentor' and booking.mentor_id != current_user.id:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    elif current_user.role == 'admin':
-        pass  # Admin can update any booking
-    else:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    new_status = request.form.get('status')
-    if new_status in ['Pending', 'Paid', 'Completed', 'Cancelled']:
-        booking.status = new_status
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Status updated'})
-    
-    return jsonify({'success': False, 'message': 'Invalid status'}), 400
-
-# Register route (UPDATED FOR EMAIL VERIFICATION)
+# REGISTER ROUTE
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def register():
     if request.method == 'POST':
         role = request.form.get('role')
@@ -2366,17 +1899,25 @@ def register():
             password = request.form.get('password')
             confirm_password = request.form.get('confirm_password')
             
-            # Check if passwords match
+            # Validation
+            if not all([username, email, password, confirm_password]):
+                flash('All fields are required', 'danger')
+                return render_template('register.html')
+            
             if password != confirm_password:
-                flash('Passwords do not match!')
+                flash('Passwords do not match!', 'danger')
+                return render_template('register.html')
+            
+            if len(password) < 8:
+                flash('Password must be at least 8 characters long', 'danger')
                 return render_template('register.html')
             
             # Check if user exists
             if User.query.filter_by(email=email).first():
-                flash('Email already registered')
+                flash('Email already registered', 'danger')
                 return render_template('register.html')
             if User.query.filter_by(username=username).first():
-                flash('Username already taken')
+                flash('Username already taken', 'danger')
                 return render_template('register.html')
             
             # Create new learner
@@ -2387,77 +1928,57 @@ def register():
             
             # Send verification email
             if send_verification_email(user):
-                flash('Registration successful! Please check your email to verify your account.')
+                flash('Registration successful! Please check your email to verify your account.', 'success')
             else:
-                flash('Registration successful! Please login to resend verification email.')
+                flash('Registration successful! Please login to resend verification email.', 'warning')
             
             return redirect(url_for('login'))
             
         elif role == 'mentor':
-            # Handle mentor registration with new fields
+            # Handle mentor registration
             username = request.form.get('username')
             email = request.form.get('email')
             password = request.form.get('password')
             confirm_password = request.form.get('confirm_password')
             full_name = request.form.get('full_name')
-            phone = request.form.get('phone')
-            job_title = request.form.get('job_title')
-            company = request.form.get('company')
-            previous_company = request.form.get('previous_company')
-            domain = request.form.get('domain')
-            experience = request.form.get('experience')
-            skills = request.form.get('skills') or ''
-            price = request.form.get('price')
-            availability = request.form.get('availability')
-            bio = request.form.get('bio')
             
-            # Get services as list and convert to string
-            services_list = request.form.getlist('services')
-            services = ', '.join(services_list) if services_list else ""
+            # Validation
+            if not all([username, email, password, confirm_password, full_name]):
+                flash('All required fields are missing', 'danger')
+                return render_template('register.html')
             
-            # Social media links
-            facebook_url = request.form.get('facebook_url')
-            instagram_url = request.form.get('instagram_url')
-            youtube_url = request.form.get('youtube_url')
-            linkedin_url = request.form.get('linkedin_url')
-            
-            # Check if passwords match
             if password != confirm_password:
-                flash('Passwords do not match!')
+                flash('Passwords do not match!', 'danger')
+                return render_template('register.html')
+            
+            if len(password) < 8:
+                flash('Password must be at least 8 characters long', 'danger')
                 return render_template('register.html')
             
             # Check if user exists
             if User.query.filter_by(email=email).first():
-                flash('Email already registered')
+                flash('Email already registered', 'danger')
                 return render_template('register.html')
             if User.query.filter_by(username=username).first():
-                flash('Username already taken')
+                flash('Username already taken', 'danger')
                 return render_template('register.html')
             
-            # Create new mentor (unverified by default)
-            if not username and full_name:
-                username = full_name.lower().replace(' ', '_')
-            
+            # Create new mentor
             user = User(
                 username=username, 
                 email=email, 
                 role='mentor',
                 full_name=full_name,
-                phone=phone,
-                job_title=job_title,
-                company=company,
-                previous_company=previous_company,
-                domain=domain,
-                experience=experience,
-                skills=skills,
-                services=services,
-                bio=bio,
-                price=int(price) if price else 0,
-                availability=availability,
-                facebook_url=facebook_url,
-                instagram_url=instagram_url,
-                youtube_url=youtube_url,
-                linkedin_url=linkedin_url,
+                phone=request.form.get('phone'),
+                job_title=request.form.get('job_title'),
+                company=request.form.get('company'),
+                previous_company=request.form.get('previous_company'),
+                domain=request.form.get('domain'),
+                experience=request.form.get('experience'),
+                skills=request.form.get('skills'),
+                bio=request.form.get('bio'),
+                price=int(request.form.get('price')) if request.form.get('price') else 0,
+                availability=request.form.get('availability'),
                 is_verified=False
             )
             user.set_password(password)
@@ -2466,9 +1987,9 @@ def register():
             
             # Send verification email
             if send_verification_email(user):
-                flash('Mentor application submitted! Please check your email to verify your account and wait for admin approval.')
+                flash('Mentor application submitted! Please check your email to verify your account and wait for admin approval.', 'success')
             else:
-                flash('Mentor application submitted! Please login to resend verification email and wait for admin approval.')
+                flash('Mentor application submitted! Please login to resend verification email and wait for admin approval.', 'warning')
             
             return redirect(url_for('login'))
     
@@ -2478,11 +1999,14 @@ def register():
 def enroll():
     """Enrollment page for mentorship program"""
     if request.method == 'POST':
-        # Handle enrollment form submission
         full_name = request.form.get('fullName')
         email = request.form.get('email')
         phone = request.form.get('phone')
         education = request.form.get('education')
+        
+        if not all([full_name, email, phone]):
+            flash('Please fill in all required fields', 'danger')
+            return redirect(url_for('enroll'))
         
         # Check if user is logged in
         if current_user.is_authenticated:
@@ -2495,7 +2019,6 @@ def enroll():
             else:
                 # Create a temporary user record
                 username = email.split('@')[0]
-                # Ensure username is unique
                 counter = 1
                 original_username = username
                 while User.query.filter_by(username=username).first():
@@ -2507,7 +2030,7 @@ def enroll():
                     email=email,
                     role='learner'
                 )
-                user.set_password('temp_' + str(random.randint(1000, 9999)))
+                user.set_password('temp_' + secrets.token_hex(8))
                 db.session.add(user)
                 db.session.commit()
                 user_id = user.id
@@ -2529,135 +2052,88 @@ def enroll():
         db.session.add(enrollment)
         db.session.commit()
         
-        flash('Enrollment submitted successfully! Our team will contact you shortly.')
+        flash('Enrollment submitted successfully! Our team will contact you shortly.', 'success')
         return redirect(url_for('dashboard') if current_user.is_authenticated else url_for('index'))
     
     return render_template('enroll.html')
 
-# These routes are now handled by the new payment system
-@app.route('/process-payment/<int:booking_id>', methods=['POST'])
+# Update booking status
+@app.route('/update-booking-status/<int:booking_id>', methods=['POST'])
 @login_required
-def process_payment(booking_id):
-    """Legacy payment processing - redirect to new system"""
-    return redirect(url_for('create_payment', booking_id=booking_id))
-
-@app.route('/process-enrollment-payment/<int:enrollment_id>', methods=['POST'])
-@login_required
-def process_enrollment_payment(enrollment_id):
-    """Legacy enrollment payment - to be integrated with new system"""
-    enrollment = Enrollment.query.get_or_404(enrollment_id)
+def update_booking_status(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
     
-    # Check if current user owns this enrollment
-    if enrollment.user_id != current_user.id:
+    # Check permissions
+    if current_user.role == 'mentor' and booking.mentor_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    elif current_user.role == 'admin':
+        pass
+    else:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
-    # Update enrollment payment status
-    enrollment.payment_status = 'completed'
-    db.session.commit()
+    new_status = request.form.get('status')
+    if new_status in ['Pending', 'Confirmed', 'Completed', 'Cancelled']:
+        booking.status = new_status
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Status updated'})
     
-    return jsonify({'success': True, 'message': 'Payment completed successfully'})
+    return jsonify({'success': False, 'message': 'Invalid status'}), 400
 
-# DEBUG ROUTE
-@app.route('/debug')
-def debug_paths():
-    output = "<h2>Current Directory Files:</h2>"
-    
-    cwd = os.getcwd()
-    output += f"<b>Current Folder:</b> {cwd}<br><br>"
-    
+# HEALTH CHECK
+@app.route('/health')
+def health_check():
     try:
-        files = os.listdir(cwd)
-        output += "<br>".join(files)
-    except Exception as e:
-        output += f"Error listing files: {e}"
-
-    output += f"<br><br><h2>Looking for templates at: {template_dir}</h2>"
-    
-    if os.path.exists(template_dir):
-        output += "<b>Found templates folder! Contents:</b><br>"
-        try:
-            tpl_files = os.listdir(template_dir)
-            output += "<br>".join(tpl_files)
-        except Exception as e:
-            output += f"Error reading templates folder: {e}"
-    else:
-        output += "<b style='color:red'>Templates folder NOT found here!</b>"
+        # Check database connection
+        db.session.execute('SELECT 1')
         
-    return output
+        # Check if admin user exists
+        admin_exists = User.query.filter_by(role='admin').first() is not None
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'admin_user': admin_exists,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
 
-# Initialize database with proper error handling
+# Initialize database
 with app.app_context():
     try:
-        # Check if database exists and has tables
-        inspector = db.inspect(db.engine)
-        tables = inspector.get_table_names()
+        # Create tables if they don't exist
+        db.create_all()
         
-        if not tables:
-            print("Creating fresh database...")
-            db.create_all()
-            
-            # Create admin user
+        # Create admin user if it doesn't exist
+        if not User.query.filter_by(role='admin').first():
             admin = User(
-                username='admin', 
-                email='admin@clearq.in', 
+                username='admin',
+                email=os.environ.get('ADMIN_EMAIL', 'admin@clearq.in'),
                 role='admin',
-                is_email_verified=True
+                is_email_verified=True,
+                is_verified=True
             )
-            admin.set_password('admin123')
+            admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
             db.session.add(admin)
             db.session.commit()
-            print("Database and admin user created successfully")
-        else:
-            print(f"Database exists with {len(tables)} tables")
-            
-            # Check for new tables
-            required_tables = ['user', 'service', 'booking', 'product', 'review', 'enrollment', 'payment', 'digital_product_access']
-            for table in required_tables:
-                if table not in tables:
-                    print(f"Creating {table} table...")
-                    if table == 'user':
-                        User.__table__.create(db.engine)
-                    elif table == 'service':
-                        Service.__table__.create(db.engine)
-                    elif table == 'booking':
-                        Booking.__table__.create(db.engine)
-                    elif table == 'product':
-                        Product.__table__.create(db.engine)
-                    elif table == 'review':
-                        Review.__table__.create(db.engine)
-                    elif table == 'enrollment':
-                        Enrollment.__table__.create(db.engine)
-                    elif table == 'payment':
-                        Payment.__table__.create(db.engine)
-                    elif table == 'digital_product_access':
-                        DigitalProductAccess.__table__.create(db.engine)
-                    print(f"{table} table created")
-            
-            # Check for new columns in user table
-            columns = inspector.get_columns('user')
-            column_names = [col['name'] for col in columns]
-            
-            new_columns = ['is_email_verified', 'email_verification_token', 'reset_token', 'reset_token_expiry']
-            for col in new_columns:
-                if col not in column_names:
-                    print(f"WARNING: Missing column '{col}' in user table.")
-                    print("Please visit /force-db-reset to recreate database with current schema.")
-                    break
-            else:
-                print("Database schema is up to date.")
-                
+            logger.info("Admin user created")
+        
+        logger.info("Database initialized successfully")
+        
     except Exception as e:
-        print(f"Database initialization error: {e}")
-        # Try to create tables anyway
-        try:
-            db.create_all()
-            print("Database created as fallback")
-        except Exception as e2:
-            print(f"Could not create database: {e2}")
+        logger.error(f"Database initialization error: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
-
-
-
-
+    # Production settings
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    
+    app.run(
+        host=os.environ.get('FLASK_HOST', '0.0.0.0'),
+        port=int(os.environ.get('FLASK_PORT', 5000)),
+        debug=debug_mode,
+        threaded=True
+    )
