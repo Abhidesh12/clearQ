@@ -1771,7 +1771,8 @@ def login():
         # Find user by email
         user = User.query.filter_by(email=email).first()
         
-        if user and check_password_hash(user.password, password):
+        # FIX THIS LINE: Change user.password to user.password_hash
+        if user and check_password_hash(user.password_hash, password):  # <-- FIX HERE
             login_user(user, remember=remember)
             flash('Logged in successfully!', 'success')
             
@@ -1783,7 +1784,6 @@ def login():
             return render_template('login.html')
     
     return render_template('login.html')
-
 @app.route('/logout')
 @login_required
 def logout():
@@ -1824,7 +1824,9 @@ def dashboard():
                              recent_bookings=recent_bookings)
     
     elif current_user.role == 'mentor':
+        # Get all bookings for this mentor
         my_bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
+        
         # Get learner names for bookings
         bookings_with_learners = []
         for booking in my_bookings:
@@ -1837,25 +1839,27 @@ def dashboard():
         # Get services count
         services_count = Service.query.filter_by(mentor_id=current_user.id, is_active=True).count()
         
-        # Add additional mentor stats
+        # Calculate stats - RENAMED TO MATCH TEMPLATE
         total_bookings = len(my_bookings)
         pending_bookings = len([b for b in my_bookings if b.status in ['Pending', 'Pending Payment']])
         completed_bookings = len([b for b in my_bookings if b.status == 'Completed'])
-        revenue = sum([b.price or current_user.price for b in my_bookings if b.payment_status == 'success'])
+        total_earnings = sum([b.price or current_user.price for b in my_bookings if b.payment_status == 'success'])  # RENAMED: revenue -> total_earnings
+        total_sessions = len(completed_bookings)  # ADDED: for template
         
-        # Get upcoming meetings
+        # Get upcoming bookings (renamed from upcoming_meetings)
         today = datetime.now().date()
-        upcoming_meetings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
+        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
         
         return render_template('dashboard.html', 
-                             bookings=bookings_with_learners, 
+                             upcoming_bookings=upcoming_bookings[:5],  # CHANGED: upcoming_meetings -> upcoming_bookings
                              type='mentor',
                              total_bookings=total_bookings,
                              pending_bookings=pending_bookings,
                              completed_bookings=completed_bookings,
-                             revenue=revenue,
+                             total_earnings=total_earnings,  # CHANGED: revenue -> total_earnings
+                             total_sessions=total_sessions,  # ADDED
                              services_count=services_count,
-                             upcoming_meetings=upcoming_meetings[:5])
+                             bookings=bookings_with_learners)  # Keep for backward compatibility
         
     else:  # Learner
         my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
@@ -1866,6 +1870,15 @@ def dashboard():
                 'booking': booking,
                 'mentor': mentor
             })
+        
+        # Calculate stats for template
+        completed_bookings = [b for b in my_bookings if b.status == 'Completed']
+        total_spent = sum([b.price or 0 for b in completed_bookings])
+        
+        # Get upcoming bookings
+        today = datetime.now().date()
+        upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
+        
         # Add enrollment info for learner
         enrollment = Enrollment.query.filter_by(user_id=current_user.id).first()
         
@@ -1875,17 +1888,25 @@ def dashboard():
             is_active=True
         ).count()
         
-        # Get upcoming meetings
-        today = datetime.now().date()
-        upcoming_meetings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
+        # Get saved mentors count (simplified - you need to implement SavedMentor model)
+        saved_mentors_count = 0  # Placeholder
+        
+        # Get recommended mentors
+        recommended_mentors = User.query.filter_by(
+            role='mentor',
+            is_verified=True
+        ).limit(3).all()
         
         return render_template('dashboard.html', 
-                             bookings=bookings_with_mentors, 
+                             upcoming_bookings=upcoming_bookings[:5],  # CHANGED: upcoming_meetings -> upcoming_bookings
+                             completed_bookings=completed_bookings,
+                             total_spent=total_spent,  # ADDED
+                             saved_mentors_count=saved_mentors_count,  # ADDED
+                             recommended_mentors=recommended_mentors,  # ADDED
                              type='learner',
                              enrollment=enrollment,
                              digital_products_count=digital_products_count,
-                             upcoming_meetings=upcoming_meetings[:5])
-
+                             bookings=bookings_with_mentors)  # Keep for backward compatibility
 @app.route('/verify/<int:id>')
 @login_required
 def verify_mentor(id):
@@ -2637,4 +2658,5 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
 
