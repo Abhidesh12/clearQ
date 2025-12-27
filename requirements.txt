@@ -17,6 +17,14 @@ python-dotenv
 Flask-Mail
 itsdangerous
 requests
+Pillow
+python-magic
+scipy
+cryptography
+alembic
+Jinja2
+Flask-Cors
+
 
 
 
