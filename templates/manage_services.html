@@ -1132,8 +1132,8 @@
                         <i class="fas fa-calendar-check"></i>
                     </div>
                     <div class="stat-text">
-                        <h3>{{ services|length * 3 }}</h3>
-                        <p>Bookings</p>
+                        <h3 id="total-bookings">{{ services|length * 3 }}</h3>
+                        <p>Total Bookings</p>
                     </div>
                 </div>
             </div>
@@ -1259,7 +1259,7 @@
                                 <div class="stat-label">Created</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-value">12</div>
+                                <div class="stat-value" id="service-bookings-count">0</div>
                                 <div class="stat-label">Bookings</div>
                             </div>
                         </div>
@@ -1348,6 +1348,13 @@
     </button>
 
     <script>
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Mobile menu toggle
         function toggleMobileMenu() {
             const mobileNav = document.getElementById('mobileNav');
@@ -1374,7 +1381,7 @@
         }
         
         // Service selection
-        function selectService(serviceId) {
+        async function selectService(serviceId) {
             // Update list item styling
             document.querySelectorAll('.service-item').forEach(item => {
                 item.classList.remove('active');
@@ -1393,106 +1400,167 @@
                 </div>
             `;
             
-            // Simulate API call delay
-            setTimeout(() => {
-                showToast('Service loaded', 'success');
+            try {
+                // Fetch service details
+                const response = await fetch(`/api/services/${serviceId}`);
+                const data = await response.json();
                 
-                // In a real app, you would update with actual data from AJAX response
-                detailCard.innerHTML = `
-                    <div class="detail-header">
-                        <div class="detail-title">
-                            <h2>Service ${serviceId}</h2>
-                            <p>Service details and metrics</p>
-                        </div>
-                        <div class="detail-actions">
-                            <button class="btn btn-warning btn-sm" onclick="openEditModal(${serviceId})">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="btn btn-danger btn-sm">
-                                <i class="fas fa-pause"></i>
-                                Deactivate
-                            </button>
-                        </div>
-                    </div>
+                if (data.success) {
+                    const service = data.service;
                     
-                    <div class="detail-content">
-                        <div class="description-section">
-                            <h3 class="section-title">
-                                <i class="fas fa-align-left"></i>
-                                Description
-                            </h3>
-                            <div class="description-text">
-                                This is a sample service description for Service ${serviceId}. 
-                                In a real application, this would be loaded from the server.
+                    // Fetch service statistics
+                    const statsResponse = await fetch(`/api/services/${serviceId}/stats`);
+                    const statsData = await statsResponse.json();
+                    const stats = statsData.stats || {};
+                    
+                    // Update detail card with real data
+                    detailCard.innerHTML = `
+                        <div class="detail-header">
+                            <div class="detail-title">
+                                <h2>${escapeHtml(service.name)}</h2>
+                                <p>Service details and metrics</p>
                             </div>
-                        </div>
-                        
-                        <div class="stats-grid-small">
-                            <div class="stat-item">
-                                <div class="stat-value">₹1500</div>
-                                <div class="stat-label">Price</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">1 hour</div>
-                                <div class="stat-label">Duration</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">12</div>
-                                <div class="stat-label">Bookings</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">85%</div>
-                                <div class="stat-label">Rating</div>
-                            </div>
-                        </div>
-                        
-                        <div class="actions-section">
-                            <h3 class="section-title">
-                                <i class="fas fa-cogs"></i>
-                                Actions
-                            </h3>
-                            <div class="action-buttons">
-                                <button class="btn btn-primary" onclick="openEditModal(${serviceId})">
+                            <div class="detail-actions">
+                                <button class="btn btn-warning btn-sm" onclick="openEditModal(${service.id})">
                                     <i class="fas fa-edit"></i>
-                                    Edit Service
+                                    Edit
                                 </button>
-                                <button class="btn btn-outline" onclick="duplicateService(${serviceId})">
-                                    <i class="fas fa-copy"></i>
-                                    Duplicate
-                                </button>
+                                
+                                ${service.is_active ? `
+                                <form method="POST" class="action-form" id="deactivate-form-${service.id}">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="service_id" value="${service.id}">
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirmAction('Deactivate this service?', event)">
+                                        <i class="fas fa-pause"></i>
+                                        Deactivate
+                                    </button>
+                                </form>
+                                ` : `
+                                <form method="POST" class="action-form" id="activate-form-${service.id}">
+                                    <input type="hidden" name="action" value="activate">
+                                    <input type="hidden" name="service_id" value="${service.id}">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-play"></i>
+                                        Activate
+                                    </button>
+                                </form>
+                                `}
                             </div>
                         </div>
+                        
+                        <div class="detail-content">
+                            <div class="description-section">
+                                <h3 class="section-title">
+                                    <i class="fas fa-align-left"></i>
+                                    Description
+                                </h3>
+                                <div class="description-text">
+                                    ${escapeHtml(service.description)}
+                                </div>
+                            </div>
+                            
+                            <div class="stats-grid-small">
+                                <div class="stat-item">
+                                    <div class="stat-value">₹${service.price}</div>
+                                    <div class="stat-label">Price</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${escapeHtml(service.duration)}</div>
+                                    <div class="stat-label">Duration</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">
+                                        ${service.created_at ? new Date(service.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                                    </div>
+                                    <div class="stat-label">Created</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${stats.total_bookings || 0}</div>
+                                    <div class="stat-label">Bookings</div>
+                                </div>
+                            </div>
+                            
+                            <div class="actions-section">
+                                <h3 class="section-title">
+                                    <i class="fas fa-cogs"></i>
+                                    Actions
+                                </h3>
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary" onclick="openEditModal(${service.id})">
+                                        <i class="fas fa-edit"></i>
+                                        Edit Service
+                                    </button>
+                                    <button class="btn btn-outline" onclick="duplicateService(${service.id})">
+                                        <i class="fas fa-copy"></i>
+                                        Duplicate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Re-attach event listeners to the new forms
+                    attachFormEventListeners();
+                    
+                    showToast('Service loaded', 'success');
+                } else {
+                    showToast('Failed to load service details', 'error');
+                    detailCard.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h3>Error Loading Service</h3>
+                            <p>Failed to load service details. Please try again.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                detailCard.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Error Loading Service</h3>
+                        <p>Failed to load service details. Please try again.</p>
                     </div>
                 `;
-            }, 300);
+                showToast('Failed to load service details', 'error');
+            }
         }
         
         // Modal functions
-        function openEditModal(serviceId) {
-            // In a real app, fetch service data via AJAX
-            const sampleService = {
-                name: 'Career Consultation',
-                description: 'One-on-one career guidance session.',
-                price: 2500,
-                duration: '1 hour',
-                is_active: true
-            };
-            
-            document.getElementById('edit-service-id').value = serviceId;
-            document.getElementById('edit-name').value = sampleService.name;
-            document.getElementById('edit-description').value = sampleService.description;
-            document.getElementById('edit-price').value = sampleService.price;
-            document.getElementById('edit-duration').value = sampleService.duration;
-            
-            if(sampleService.is_active) {
-                document.getElementById('edit-status-active').checked = true;
-            } else {
-                document.getElementById('edit-status-inactive').checked = true;
+        async function openEditModal(serviceId) {
+            try {
+                const response = await fetch(`/api/services/${serviceId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const service = data.service;
+                    
+                    document.getElementById('edit-service-id').value = service.id;
+                    document.getElementById('edit-name').value = service.name;
+                    document.getElementById('edit-description').value = service.description;
+                    document.getElementById('edit-price').value = service.price;
+                    document.getElementById('edit-duration').value = service.duration;
+                    
+                    if(service.is_active) {
+                        document.getElementById('edit-status-active').checked = true;
+                    } else {
+                        document.getElementById('edit-status-inactive').checked = true;
+                    }
+                    
+                    document.getElementById('editModal').classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    showToast('Failed to load service details', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to load service details', 'error');
             }
-            
-            document.getElementById('editModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
         }
         
         function closeModal() {
@@ -1514,19 +1582,16 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<div class="spinner"></div>';
             
-            setTimeout(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }, 2000);
-            
+            // Form will submit normally
             return true;
         }
         
-        function validateEditForm(event) {
+        async function validateEditForm(event) {
+            event.preventDefault();
+            
             const price = document.getElementById('edit-price').value;
             if (price < 0) {
                 showToast('Price cannot be negative', 'error');
-                event.preventDefault();
                 return false;
             }
             
@@ -1535,15 +1600,34 @@
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<div class="spinner"></div>';
             
-            // Simulate form submission
-            setTimeout(() => {
-                closeModal();
-                showToast('Service updated successfully', 'success');
+            try {
+                // Get form data
+                const formData = new FormData(document.getElementById('editForm'));
+                
+                // Submit form via fetch
+                const response = await fetch('{{ url_for("manage_services") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    closeModal();
+                    showToast('Service updated successfully', 'success');
+                    
+                    // Reload the page to show updated services
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error('Failed to update service');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to update service', 'error');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = originalText;
-            }, 1000);
+            }
             
-            event.preventDefault();
             return false;
         }
         
@@ -1599,8 +1683,32 @@
         }
         
         // Duplicate service
-        function duplicateService(serviceId) {
-            showToast('Duplicating service...', 'info');
+        async function duplicateService(serviceId) {
+            if (confirm('Duplicate this service?')) {
+                try {
+                    const response = await fetch(`/api/services/${serviceId}/duplicate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Service duplicated successfully', 'success');
+                        // Reload page to show new service
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast(data.message || 'Failed to duplicate service', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Failed to duplicate service', 'error');
+                }
+            }
         }
         
         // Confirm action
@@ -1612,20 +1720,20 @@
             return true;
         }
         
-        // Handle form submissions
-        document.querySelectorAll('.action-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<div class="spinner"></div>';
-                
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                }, 2000);
+        // Attach event listeners to forms
+        function attachFormEventListeners() {
+            document.querySelectorAll('.action-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<div class="spinner"></div>';
+                    
+                    // Form will submit normally
+                    return true;
+                });
             });
-        });
+        }
         
         // Close modal on outside click
         document.getElementById('editModal').addEventListener('click', function(e) {
@@ -1633,6 +1741,37 @@
                 closeModal();
             }
         });
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('editModal').classList.contains('active')) {
+                closeModal();
+            }
+        });
+        
+        // Load service stats on page load
+        async function loadServiceStats() {
+            try {
+                const response = await fetch('/api/mentor/service-stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update total bookings in stats grid
+                    const totalBookingsElement = document.getElementById('total-bookings');
+                    if (totalBookingsElement) {
+                        totalBookingsElement.textContent = data.stats.total_bookings || 0;
+                    }
+                    
+                    // Update bookings count for the first service if it exists
+                    const serviceBookingsElement = document.getElementById('service-bookings-count');
+                    if (serviceBookingsElement && data.stats.total_bookings) {
+                        serviceBookingsElement.textContent = data.stats.total_bookings;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading service stats:', error);
+            }
+        }
         
         // Show flash messages from Flask
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -1668,6 +1807,31 @@
             if (window.innerWidth >= 768) {
                 document.getElementById('mobileNav').classList.remove('active');
             }
+            
+            // Attach event listeners to existing forms
+            attachFormEventListeners();
+            
+            // Load service stats
+            loadServiceStats();
+            
+            // If there's a first service, load its details
+            {% if services and services|length > 0 %}
+                // Load stats for the first service
+                setTimeout(() => {
+                    const serviceId = {{ services[0].id }};
+                    fetch(`/api/services/${serviceId}/stats`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.stats) {
+                                const serviceBookingsElement = document.getElementById('service-bookings-count');
+                                if (serviceBookingsElement) {
+                                    serviceBookingsElement.textContent = data.stats.total_bookings || 0;
+                                }
+                            }
+                        })
+                        .catch(error => console.error('Error loading service stats:', error));
+                }, 500);
+            {% endif %}
         });
         
         // Handle window resize
