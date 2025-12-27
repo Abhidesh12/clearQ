@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
+{% block title %}Register - ClearQ{% endblock %}
+
 {% block content %}
-<!-- Hero Section for Registration -->
+<!-- Hero Section -->
 <section class="min-h-[70vh] flex items-center">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center mb-8">
-            <span class="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-4">
+            <span class="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-4" 
+                  role="status">
                 🚀 Join ClearQ Community
             </span>
             <h1 class="text-4xl md:text-5xl font-bold text-dark mb-4">
@@ -21,16 +24,24 @@
 
         <!-- Tab Navigation -->
         <div class="max-w-2xl mx-auto mb-8">
-            <div class="flex rounded-xl bg-gray-100 p-1">
-                <button type="button" onclick="switchTab('learner')" 
+            <div class="flex rounded-xl bg-gray-100 p-1" role="tablist" aria-label="Registration type">
+                <button type="button" 
+                        onclick="switchTab('learner')" 
                         id="btn-learner" 
+                        role="tab"
+                        aria-selected="true"
+                        aria-controls="learner-form"
                         class="flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base">
-                    <i class="fas fa-user-graduate mr-2"></i>Join as Learner
+                    <i class="fas fa-user-graduate mr-2" aria-hidden="true"></i>Join as Learner
                 </button>
-                <button type="button" onclick="switchTab('mentor')" 
+                <button type="button" 
+                        onclick="switchTab('mentor')" 
                         id="btn-mentor" 
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="mentor-form"
                         class="flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base">
-                    <i class="fas fa-chalkboard-teacher mr-2"></i>Become a Mentor
+                    <i class="fas fa-chalkboard-teacher mr-2" aria-hidden="true"></i>Become a Mentor
                 </button>
             </div>
         </div>
@@ -44,18 +55,20 @@
         {% if messages %}
             {% for category, message in messages %}
                 <div class="reveal active bg-gradient-to-r 
-                    {% if category == 'error' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
+                    {% if category == 'danger' or category == 'error' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
                     {% elif category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
                     {% elif category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
                     {% else %}from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-700{% endif %}
-                    p-4 rounded-lg shadow-sm mb-6" role="alert">
+                    p-4 rounded-lg shadow-sm mb-6" 
+                    role="alert"
+                    aria-live="assertive">
                     <div class="flex items-center">
                         <i class="fas 
-                            {% if category == 'error' %}fa-exclamation-circle
+                            {% if category == 'danger' or category == 'error' %}fa-exclamation-circle
                             {% elif category == 'warning' %}fa-exclamation-triangle
                             {% elif category == 'success' %}fa-check-circle
                             {% else %}fa-info-circle{% endif %}
-                            mr-3"></i>
+                            mr-3" aria-hidden="true"></i>
                         <p class="font-medium">{{ message }}</p>
                     </div>
                 </div>
@@ -63,10 +76,35 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Form Errors Display -->
+    {% if form and form.errors %}
+        <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg" role="alert">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle mr-3" aria-hidden="true"></i>
+                <div>
+                    <p class="font-bold mb-2">Please fix the following errors:</p>
+                    <ul class="list-disc list-inside text-sm">
+                        {% for field, errors in form.errors.items() %}
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Learner Form -->
-    <form id="learner-form" method="POST" action="{{ url_for('register') }}" 
-          class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal active">
-        <input type="hidden" name="role" id="role-input" value="learner">
+    <form id="learner-form" 
+          method="POST" 
+          action="{{ url_for('register') }}" 
+          class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal active"
+          role="tabpanel"
+          aria-labelledby="btn-learner">
+        {{ form.hidden_tag() if form else '' }}
+        <input type="hidden" name="role" value="learner">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="mb-8 text-center">
             <h2 class="text-2xl font-bold text-dark mb-2">Create Learner Account</h2>
@@ -76,83 +114,121 @@
         <div class="grid md:grid-cols-2 gap-6">
             <!-- Username -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="learner-username" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Username <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                     <input type="text" 
+                           id="learner-username"
                            name="username" 
                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                            placeholder="Choose a username"
-                           required>
+                           required
+                           minlength="3"
+                           maxlength="50"
+                           value="{{ request.form.username if request.form else '' }}"
+                           autocomplete="username">
                 </div>
             </div>
             
             <!-- Email -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="learner-email" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Email <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                     <input type="email" 
+                           id="learner-email"
                            name="email" 
                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                            placeholder="your.email@example.com"
-                           required>
+                           required
+                           autocomplete="email"
+                           value="{{ request.form.email if request.form else '' }}">
                 </div>
             </div>
             
             <!-- Password -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="learner-password" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Password <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                     <input type="password" 
+                           id="learner-password"
                            name="password" 
                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                            placeholder="Create a strong password"
                            minlength="8"
-                           required>
+                           required
+                           autocomplete="new-password">
                 </div>
             </div>
             
             <!-- Confirm Password -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="learner-confirm-password" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Confirm Password <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                     <input type="password" 
+                           id="learner-confirm-password"
                            name="confirm_password" 
                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                            placeholder="Confirm your password"
-                           required>
+                           required
+                           autocomplete="new-password">
                 </div>
+            </div>
+        </div>
+
+        <!-- Terms Checkbox -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+            <div class="flex items-start space-x-3">
+                <input type="checkbox" 
+                       id="learner-terms"
+                       name="terms" 
+                       class="mt-1 rounded text-primary focus:ring-primary"
+                       required>
+                <label for="learner-terms" class="text-xs md:text-sm text-gray-700">
+                    I agree to the <a href="{{ url_for('terms') if url_for('terms') else '#' }}" 
+                                     class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded" 
+                                     target="_blank">Terms of Service</a> 
+                    and <a href="{{ url_for('privacy') if url_for('privacy') else '#' }}" 
+                          class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded" 
+                          target="_blank">Privacy Policy</a>
+                </label>
             </div>
         </div>
 
         <!-- Submit Button -->
         <div class="mt-8">
             <button type="submit" 
-                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-sm md:text-base">
-                <i class="fas fa-rocket mr-2"></i>Start Learning Journey
+                    id="learner-submit"
+                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-rocket mr-2" aria-hidden="true"></i>Start Learning Journey
             </button>
         </div>
     </form>
 
     <!-- Mentor Form -->
-    <form id="mentor-form" method="POST" action="{{ url_for('register') }}" 
-          class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal hidden">
+    <form id="mentor-form" 
+          method="POST" 
+          action="{{ url_for('register') }}" 
+          class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 reveal hidden"
+          role="tabpanel"
+          aria-labelledby="btn-mentor">
+        {{ form.hidden_tag() if form else '' }}
         <input type="hidden" name="role" value="mentor">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <div class="mb-8 text-center">
             <div class="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-chalkboard-teacher text-white text-2xl"></i>
+                <i class="fas fa-chalkboard-teacher text-white text-2xl" aria-hidden="true"></i>
             </div>
             <h2 class="text-2xl font-bold text-dark mb-2">Become a ClearQ Mentor</h2>
             <p class="text-gray-600 text-sm md:text-base">Join our elite community of experts and shape the next generation of professionals</p>
@@ -160,7 +236,7 @@
 
         <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 md:p-6 border border-blue-100">
             <div class="flex items-center">
-                <i class="fas fa-star text-yellow-500 text-xl mr-3"></i>
+                <i class="fas fa-star text-yellow-500 text-xl mr-3" aria-hidden="true"></i>
                 <div>
                     <h4 class="font-bold text-dark mb-1">Mentor Benefits</h4>
                     <p class="text-sm text-gray-600">Earn competitive rates, build your personal brand, and make meaningful impact</p>
@@ -172,54 +248,67 @@
             <!-- Basic Info -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="full-name" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Full Name <span class="text-red-500">*</span>
                     </label>
                     <input type="text" 
+                           id="full-name"
                            name="full_name" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                            placeholder="Jane Doe"
-                           required>
+                           required
+                           value="{{ request.form.full_name if request.form else '' }}">
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="mentor-username" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Username <span class="text-red-500">*</span>
                     </label>
                     <input type="text" 
+                           id="mentor-username"
                            name="username" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                            placeholder="jane_doe"
-                           required>
+                           required
+                           minlength="3"
+                           maxlength="50"
+                           value="{{ request.form.username if request.form else '' }}"
+                           autocomplete="username">
                 </div>
             </div>
             
             <!-- Contact Info -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="mentor-email" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Email <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fas fa-envelope absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="email" 
+                               id="mentor-email"
                                name="email" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                                placeholder="jane@example.com"
-                               required>
+                               required
+                               autocomplete="email"
+                               value="{{ request.form.email if request.form else '' }}">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="phone" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Phone Number
                     </label>
                     <div class="relative">
-                        <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fas fa-phone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="tel" 
+                               id="phone"
                                name="phone" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
-                               placeholder="+91 98765 43210">
+                               placeholder="+91 98765 43210"
+                               pattern="^\+?[0-9\s\-\(\)]+$"
+                               value="{{ request.form.phone if request.form else '' }}">
                     </div>
                 </div>
             </div>
@@ -227,63 +316,68 @@
             <!-- Professional Info -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="job-title" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Current Job Title <span class="text-red-500">*</span>
                     </label>
                     <input type="text" 
+                           id="job-title"
                            name="job_title" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                            placeholder="Senior Product Manager"
-                           required>
+                           required
+                           value="{{ request.form.job_title if request.form else '' }}">
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="company" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Company <span class="text-red-500">*</span>
                     </label>
                     <input type="text" 
+                           id="company"
                            name="company" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                            placeholder="Google, Amazon, etc."
-                           required>
+                           required
+                           value="{{ request.form.company if request.form else '' }}">
                 </div>
             </div>
 
             <!-- Domain & Experience -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="domain" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Primary Domain <span class="text-red-500">*</span>
                     </label>
-                    <select name="domain" 
+                    <select id="domain" 
+                            name="domain" 
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                             required>
                         <option value="">Select Domain</option>
-                        <option value="tech">Technology</option>
-                        <option value="business">Business</option>
-                        <option value="design">Design</option>
-                        <option value="marketing">Marketing</option>
-                        <option value="data_science">Data Science</option>
-                        <option value="product_management">Product Management</option>
-                        <option value="finance">Finance</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="education">Education</option>
-                        <option value="other">Other</option>
+                        <option value="Data Science" {% if request.form.domain == 'Data Science' %}selected{% endif %}>Data Science</option>
+                        <option value="Product Management" {% if request.form.domain == 'Product Management' %}selected{% endif %}>Product Management</option>
+                        <option value="Software Engineering" {% if request.form.domain == 'Software Engineering' %}selected{% endif %}>Software Engineering</option>
+                        <option value="UX/UI Design" {% if request.form.domain == 'UX/UI Design' %}selected{% endif %}>UX/UI Design</option>
+                        <option value="Marketing" {% if request.form.domain == 'Marketing' %}selected{% endif %}>Marketing</option>
+                        <option value="Finance" {% if request.form.domain == 'Finance' %}selected{% endif %}>Finance</option>
+                        <option value="Healthcare" {% if request.form.domain == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                        <option value="Education" {% if request.form.domain == 'Education' %}selected{% endif %}>Education</option>
+                        <option value="Other" {% if request.form.domain == 'Other' %}selected{% endif %}>Other</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="experience" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Years of Experience <span class="text-red-500">*</span>
                     </label>
-                    <select name="experience" 
+                    <select id="experience" 
+                            name="experience" 
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                             required>
                         <option value="">Select Experience</option>
-                        <option value="0-2">0-2 years</option>
-                        <option value="3-5">3-5 years</option>
-                        <option value="6-10">6-10 years</option>
-                        <option value="10+">10+ years</option>
+                        <option value="0-2" {% if request.form.experience == '0-2' %}selected{% endif %}>0-2 years</option>
+                        <option value="3-5" {% if request.form.experience == '3-5' %}selected{% endif %}>3-5 years</option>
+                        <option value="6-10" {% if request.form.experience == '6-10' %}selected{% endif %}>6-10 years</option>
+                        <option value="10+" {% if request.form.experience == '10+' %}selected{% endif %}>10+ years</option>
                     </select>
                 </div>
             </div>
@@ -298,153 +392,33 @@
                         <input type="text" 
                                id="skill-input"
                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base"
-                               placeholder="Add a skill (e.g., React, Negotiation)">
+                               placeholder="Add a skill (e.g., React, Negotiation, Python)"
+                               aria-label="Add skill input">
                         <button type="button" 
                                 onclick="addSkill()"
-                                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm md:text-base whitespace-nowrap">
-                            <i class="fas fa-plus"></i> Add Skill
+                                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm md:text-base whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                            <i class="fas fa-plus" aria-hidden="true"></i> Add Skill
                         </button>
                     </div>
-                    <div id="skills-container" class="flex flex-wrap gap-2 mb-2"></div>
-                    <input type="hidden" id="skills-hidden" name="skills">
+                    <div id="skills-container" class="flex flex-wrap gap-2 mb-2" aria-label="Added skills"></div>
+                    <input type="hidden" id="skills-hidden" name="skills" value="{{ request.form.skills if request.form else '' }}">
                     <p class="text-xs md:text-sm text-gray-500 mt-2">Add up to 10 skills. These will be displayed on your profile.</p>
-                </div>
-            </div>
-
-            <!-- Services Pricing Section -->
-            <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-4">
-                    Service Pricing (₹ per session) <span class="text-red-500">*</span>
-                </label>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <label class="flex items-center space-x-3 mb-3">
-                                <input type="checkbox" 
-                                       name="services" 
-                                       value="resume_review" 
-                                       class="service-checkbox rounded text-primary focus:ring-primary"
-                                       data-price-input="resume-review-price">
-                                <span class="font-medium text-gray-700 text-sm md:text-base">Resume Review</span>
-                            </label>
-                            <div class="relative mt-2">
-                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                <input type="number" 
-                                       name="resume_review_price" 
-                                       id="resume-review-price" 
-                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
-                                       min="0" 
-                                       placeholder="500" 
-                                       disabled>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <label class="flex items-center space-x-3 mb-3">
-                                <input type="checkbox" 
-                                       name="services" 
-                                       value="mock_interview" 
-                                       class="service-checkbox rounded text-primary focus:ring-primary"
-                                       data-price-input="mock-interview-price">
-                                <span class="font-medium text-gray-700 text-sm md:text-base">Mock Interview</span>
-                            </label>
-                            <div class="relative mt-2">
-                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                <input type="number" 
-                                       name="mock_interview_price" 
-                                       id="mock-interview-price" 
-                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
-                                       min="0" 
-                                       placeholder="800" 
-                                       disabled>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <label class="flex items-center space-x-3 mb-3">
-                                <input type="checkbox" 
-                                       name="services" 
-                                       value="career_guidance" 
-                                       class="service-checkbox rounded text-primary focus:ring-primary"
-                                       data-price-input="career-guidance-price">
-                                <span class="font-medium text-gray-700 text-sm md:text-base">Career Guidance</span>
-                            </label>
-                            <div class="relative mt-2">
-                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                <input type="number" 
-                                       name="career_guidance_price" 
-                                       id="career-guidance-price" 
-                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
-                                       min="0" 
-                                       placeholder="600" 
-                                       disabled>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <label class="flex items-center space-x-3 mb-3">
-                                <input type="checkbox" 
-                                       name="services" 
-                                       value="skill_training" 
-                                       class="service-checkbox rounded text-primary focus:ring-primary"
-                                       data-price-input="skill-training-price">
-                                <span class="font-medium text-gray-700 text-sm md:text-base">Skill Training</span>
-                            </label>
-                            <div class="relative mt-2">
-                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
-                                <input type="number" 
-                                       name="skill_training_price" 
-                                       id="skill-training-price" 
-                                       class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-sm md:text-base bg-gray-100"
-                                       min="0" 
-                                       placeholder="1000" 
-                                       disabled>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-xs md:text-sm text-gray-500 mt-2">Select services you offer and set your pricing for each session</p>
-                </div>
-            </div>
-
-            <!-- Availability Section -->
-            <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-4">
-                    Availability Schedule
-                </label>
-                <div class="space-y-4">
-                    <div>
-                        <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
-                            Availability (e.g., "Weekdays 6-9 PM, Weekends 10 AM - 6 PM")
-                        </label>
-                        <input type="text" 
-                               name="availability" 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
-                               placeholder="Weekdays 6-9 PM, Weekends 10 AM - 6 PM">
-                    </div>
-                    
-                    <div>
-                        <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
-                            Available From Date <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" 
-                               name="available_from" 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
-                               required>
-                    </div>
                 </div>
             </div>
 
             <!-- Bio -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="bio" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Professional Bio <span class="text-red-500">*</span>
                 </label>
-                <textarea name="bio" 
+                <textarea id="bio"
+                          name="bio" 
                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                           rows="4" 
                           placeholder="Tell us about your experience, achievements, and what makes you a great mentor..."
                           minlength="100"
-                          required></textarea>
+                          maxlength="2000"
+                          required>{{ request.form.bio if request.form else '' }}</textarea>
                 <div class="flex justify-between items-center mt-2">
                     <p class="text-xs md:text-sm text-gray-500">Minimum 100 characters</p>
                     <span id="bio-counter" class="text-xs text-gray-500">0/100</span>
@@ -453,45 +427,52 @@
 
             <!-- Price -->
             <div class="form-group">
-                <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                <label for="price" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                     Base Price per Session (₹) <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">₹</span>
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold" aria-hidden="true">₹</span>
                     <input type="number" 
+                           id="price"
                            name="price" 
                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                            min="0" 
+                           step="100"
                            placeholder="500"
-                           required>
+                           required
+                           value="{{ request.form.price if request.form else '' }}">
                 </div>
             </div>
 
             <!-- Social Media Links -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="linkedin-url" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         LinkedIn Profile URL
                     </label>
                     <div class="relative">
-                        <i class="fab fa-linkedin absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fab fa-linkedin absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="url" 
+                               id="linkedin-url"
                                name="linkedin_url" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
-                               placeholder="https://linkedin.com/in/username">
+                               placeholder="https://linkedin.com/in/username"
+                               value="{{ request.form.linkedin_url if request.form else '' }}">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="twitter-url" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Twitter/X Profile URL
                     </label>
                     <div class="relative">
-                        <i class="fab fa-twitter absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fab fa-twitter absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="url" 
+                               id="twitter-url"
                                name="twitter_url" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
-                               placeholder="https://twitter.com/username">
+                               placeholder="https://twitter.com/username"
+                               value="{{ request.form.twitter_url if request.form else '' }}">
                     </div>
                 </div>
             </div>
@@ -499,31 +480,35 @@
             <!-- Password -->
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="mentor-password" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="password" 
+                               id="mentor-password"
                                name="password" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                                placeholder="Create a strong password"
                                minlength="8"
-                               required>
+                               required
+                               autocomplete="new-password">
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="mentor-confirm-password" class="form-label block text-sm font-semibold text-gray-700 mb-2">
                         Confirm Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                         <input type="password" 
+                               id="mentor-confirm-password"
                                name="confirm_password" 
                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm md:text-base"
                                placeholder="Confirm your password"
-                               required>
+                               required
+                               autocomplete="new-password">
                     </div>
                 </div>
             </div>
@@ -533,12 +518,16 @@
                 <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl">
                     <input type="checkbox" 
                            name="terms" 
-                           id="terms" 
-                           class="mt-1 rounded text-primary focus:ring-primary"
+                           id="mentor-terms" 
+                           class="mt-1 rounded text-primary focus:ring-primary focus:ring-2 focus:ring-offset-2"
                            required>
-                    <label for="terms" class="text-xs md:text-sm text-gray-700">
-                        I agree to the <a href="#" class="text-primary font-semibold hover:underline">Terms of Service</a> 
-                        and <a href="#" class="text-primary font-semibold hover:underline">Privacy Policy</a>. 
+                    <label for="mentor-terms" class="text-xs md:text-sm text-gray-700">
+                        I agree to the <a href="{{ url_for('terms') if url_for('terms') else '#' }}" 
+                                         class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded" 
+                                         target="_blank">Terms of Service</a> 
+                        and <a href="{{ url_for('privacy') if url_for('privacy') else '#' }}" 
+                              class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded" 
+                              target="_blank">Privacy Policy</a>. 
                         I understand that my profile will be reviewed and I may need to provide verification.
                     </label>
                 </div>
@@ -548,8 +537,9 @@
         <!-- Submit Button -->
         <div class="mt-8">
             <button type="submit" 
-                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-sm md:text-base">
-                <i class="fas fa-paper-plane mr-2"></i>Submit Mentor Application
+                    id="mentor-submit"
+                    class="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-paper-plane mr-2" aria-hidden="true"></i>Submit Mentor Application
             </button>
         </div>
     </form>
@@ -558,7 +548,10 @@
     <div class="text-center mt-8">
         <p class="text-gray-600 text-sm md:text-base">
             Already have an account? 
-            <a href="{{ url_for('login') }}" class="text-primary font-semibold hover:underline">Sign In</a>
+            <a href="{{ url_for('login') }}" 
+               class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded">
+                Sign In
+            </a>
         </p>
     </div>
 </div>
@@ -576,15 +569,40 @@
         color: #ef4444;
     }
     
-    input:focus, textarea:focus, select:focus {
+    input:focus, textarea:focus, select:focus, button:focus, a:focus {
         outline: none;
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
     
+    .reveal {
+        display: none;
+    }
+    
+    .reveal.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
     @media (max-width: 640px) {
         .service-checkbox + span {
             font-size: 0.875rem;
+        }
+    }
+    
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .transition-all, .transition-colors, .transform, .hover\:-translate-y-1 {
+            transition: none !important;
+        }
+        
+        .reveal.active {
+            animation: none;
         }
     }
 </style>
@@ -593,11 +611,25 @@
     // Skills Management
     let skills = [];
     
+    // Initialize skills from hidden input if exists
+    function initializeSkills() {
+        const skillsHidden = document.getElementById('skills-hidden');
+        if (skillsHidden && skillsHidden.value) {
+            skills = skillsHidden.value.split(',').filter(s => s.trim());
+            updateSkillsDisplay();
+        }
+    }
+    
     function addSkill() {
         const skillInput = document.getElementById('skill-input');
         const skill = skillInput.value.trim();
         
-        if (skill && !skills.includes(skill)) {
+        if (skill) {
+            if (skills.includes(skill)) {
+                alert('Skill already added!');
+                return;
+            }
+            
             if (skills.length >= 10) {
                 alert('Maximum 10 skills allowed');
                 return;
@@ -610,8 +642,8 @@
         }
     }
     
-    function removeSkill(skill) {
-        skills = skills.filter(s => s !== skill);
+    function removeSkill(skillToRemove) {
+        skills = skills.filter(skill => skill !== skillToRemove);
         updateSkillsDisplay();
     }
     
@@ -626,73 +658,44 @@
             skillTag.innerHTML = `
                 ${skill}
                 <button type="button" onclick="removeSkill('${skill.replace(/'/g, "\\'")}')" 
-                        class="ml-2 text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-times text-xs"></i>
+                        class="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-full"
+                        aria-label="Remove ${skill}">
+                    <i class="fas fa-times text-xs" aria-hidden="true"></i>
                 </button>
             `;
             container.appendChild(skillTag);
         });
         
-        hiddenInput.value = skills.join(',');
-    }
-    
-    // Allow adding skills with Enter key
-    document.getElementById('skill-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addSkill();
+        if (hiddenInput) {
+            hiddenInput.value = skills.join(',');
         }
-    });
-    
-    // Service price toggling
-    document.querySelectorAll('.service-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const priceInputId = this.getAttribute('data-price-input');
-            const priceInput = document.getElementById(priceInputId);
-            
-            if (this.checked) {
-                priceInput.disabled = false;
-                priceInput.classList.remove('bg-gray-100');
-                priceInput.classList.add('bg-white');
-                priceInput.required = true;
-            } else {
-                priceInput.disabled = true;
-                priceInput.classList.add('bg-gray-100');
-                priceInput.classList.remove('bg-white');
-                priceInput.required = false;
-                priceInput.value = '';
-            }
-        });
-    });
+    }
     
     // Bio character counter
-    const bioTextarea = document.querySelector('textarea[name="bio"]');
-    const bioCounter = document.getElementById('bio-counter');
-    
-    if (bioTextarea && bioCounter) {
-        bioTextarea.addEventListener('input', function() {
-            const charCount = this.value.length;
-            bioCounter.textContent = `${charCount}/100`;
-            if (charCount < 100) {
+    function setupBioCounter() {
+        const bioTextarea = document.getElementById('bio');
+        const bioCounter = document.getElementById('bio-counter');
+        
+        if (bioTextarea && bioCounter) {
+            bioTextarea.addEventListener('input', function() {
+                const charCount = this.value.length;
+                bioCounter.textContent = `${charCount}/100`;
+                if (charCount < 100) {
+                    bioCounter.classList.add('text-red-500');
+                    bioCounter.classList.remove('text-green-500');
+                } else {
+                    bioCounter.classList.remove('text-red-500');
+                    bioCounter.classList.add('text-green-500');
+                }
+            });
+            
+            // Initialize counter
+            bioCounter.textContent = `${bioTextarea.value.length}/100`;
+            if (bioTextarea.value.length < 100) {
                 bioCounter.classList.add('text-red-500');
-                bioCounter.classList.remove('text-green-500');
             } else {
-                bioCounter.classList.remove('text-red-500');
                 bioCounter.classList.add('text-green-500');
             }
-        });
-        
-        // Initialize counter
-        bioCounter.textContent = `${bioTextarea.value.length}/100`;
-    }
-    
-    // Set minimum date for availability to today
-    const dateInput = document.querySelector('input[name="available_from"]');
-    if (dateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.min = today;
-        if (!dateInput.value) {
-            dateInput.value = today;
         }
     }
     
@@ -702,119 +705,141 @@
         const mentorForm = document.getElementById('mentor-form');
         const btnLearner = document.getElementById('btn-learner');
         const btnMentor = document.getElementById('btn-mentor');
-        const roleInput = document.getElementById('role-input');
         
         if (role === 'mentor') {
+            learnerForm.classList.remove('active');
             learnerForm.classList.add('hidden');
             mentorForm.classList.remove('hidden');
-            roleInput.value = 'mentor';
+            mentorForm.classList.add('active');
             
-            btnMentor.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base';
-            btnLearner.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base';
+            btnMentor.setAttribute('aria-selected', 'true');
+            btnLearner.setAttribute('aria-selected', 'false');
+            
+            btnMentor.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
+            btnLearner.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2';
         } else {
             learnerForm.classList.remove('hidden');
+            learnerForm.classList.add('active');
+            mentorForm.classList.remove('active');
             mentorForm.classList.add('hidden');
-            roleInput.value = 'learner';
             
-            btnLearner.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base';
-            btnMentor.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base';
+            btnLearner.setAttribute('aria-selected', 'true');
+            btnMentor.setAttribute('aria-selected', 'false');
+            
+            btnLearner.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gradient-to-r from-primary to-secondary text-white transform hover:-translate-y-0.5 shadow-md text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
+            btnMentor.className = 'flex-1 py-3 px-4 md:px-6 rounded-lg text-center font-semibold transition-all duration-300 bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2';
         }
     }
     
-    // Form Validation
-    document.getElementById('learner-form').addEventListener('submit', function(e) {
-        const password = this.querySelector('input[name="password"]').value;
-        const confirmPassword = this.querySelector('input[name="confirm_password"]').value;
+    // Form Validation Helper
+    function validatePasswordMatch(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return true;
         
-        if (password !== confirmPassword) {
-            e.preventDefault();
+        const password = form.querySelector('input[name="password"]');
+        const confirmPassword = form.querySelector('input[name="confirm_password"]');
+        
+        if (password && confirmPassword && password.value !== confirmPassword.value) {
             alert('Passwords do not match!');
+            confirmPassword.focus();
+            return false;
         }
+        
+        return true;
+    }
+    
+    function showLoading(button, text) {
+        const originalHTML = button.innerHTML;
+        button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2" aria-hidden="true"></i>${text}`;
+        button.disabled = true;
+        return originalHTML;
+    }
+    
+    // Form Event Listeners
+    document.getElementById('learner-form').addEventListener('submit', function(e) {
+        if (!validatePasswordMatch('learner-form')) {
+            e.preventDefault();
+            return;
+        }
+        
+        const submitBtn = document.getElementById('learner-submit');
+        showLoading(submitBtn, 'Creating Account...');
     });
     
     document.getElementById('mentor-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        let isValid = true;
-        const form = this;
-        
-        // Password validation
-        const password = form.querySelector('input[name="password"]').value;
-        const confirmPassword = form.querySelector('input[name="confirm_password"]').value;
-        
-        if (password !== confirmPassword) {
-            alert('Passwords do not match!');
-            isValid = false;
-        }
-        
-        // Bio validation
-        const bio = form.querySelector('textarea[name="bio"]').value;
-        if (bio.length < 100) {
-            alert('Please write a bio of at least 100 characters.');
-            isValid = false;
-        }
-        
-        // Skills validation
+        // Validate skills
         if (skills.length === 0) {
+            e.preventDefault();
             alert('Please add at least one skill.');
-            isValid = false;
+            return;
         }
         
-        // Service validation
-        const serviceCheckboxes = form.querySelectorAll('.service-checkbox:checked');
-        if (serviceCheckboxes.length === 0) {
-            alert('Please select at least one service you offer.');
-            isValid = false;
-        } else {
-            // Validate each selected service has a price
-            serviceCheckboxes.forEach(checkbox => {
-                const priceInputId = checkbox.getAttribute('data-price-input');
-                const priceInput = document.getElementById(priceInputId);
-                if (!priceInput.value || priceInput.value <= 0) {
-                    alert('Please enter a valid price for all selected services.');
-                    isValid = false;
+        // Validate bio length
+        const bio = document.getElementById('bio');
+        if (bio && bio.value.length < 100) {
+            e.preventDefault();
+            alert('Please write a bio of at least 100 characters.');
+            bio.focus();
+            return;
+        }
+        
+        // Validate password match
+        if (!validatePasswordMatch('mentor-form')) {
+            e.preventDefault();
+            return;
+        }
+        
+        const submitBtn = document.getElementById('mentor-submit');
+        showLoading(submitBtn, 'Submitting Application...');
+    });
+    
+    // Initialize on DOM load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize skills
+        initializeSkills();
+        
+        // Setup bio counter
+        setupBioCounter();
+        
+        // Set minimum date for availability (if field exists)
+        const availableFrom = document.querySelector('input[name="available_from"]');
+        if (availableFrom) {
+            const today = new Date().toISOString().split('T')[0];
+            availableFrom.min = today;
+            if (!availableFrom.value) {
+                availableFrom.value = today;
+            }
+        }
+        
+        // Check for URL parameters to switch tabs
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('role');
+        if (role === 'mentor') {
+            switchTab('mentor');
+        }
+        
+        // Focus on first input
+        const firstInput = document.querySelector('form.active input');
+        if (firstInput) {
+            firstInput.focus();
+        }
+        
+        // Allow adding skills with Enter key
+        const skillInput = document.getElementById('skill-input');
+        if (skillInput) {
+            skillInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSkill();
                 }
             });
         }
         
-        // Price validation
-        const price = form.querySelector('input[name="price"]').value;
-        if (!price || price <= 0) {
-            alert('Please enter a valid base price.');
-            isValid = false;
-        }
-        
-        if (isValid) {
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-            submitBtn.disabled = true;
-            
-            // Submit form after validation
-            setTimeout(() => {
-                form.submit();
-            }, 500);
-        }
-    });
-    
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set default prices for services
-        document.getElementById('resume-review-price').value = 500;
-        document.getElementById('mock-interview-price').value = 800;
-        document.getElementById('career-guidance-price').value = 600;
-        document.getElementById('skill-training-price').value = 1000;
-        
-        // Initialize bio counter
-        if (bioTextarea && bioCounter) {
-            bioCounter.textContent = `${bioTextarea.value.length}/100`;
-        }
-        
-        // Check for any error messages from Flask
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('error')) {
-            alert(urlParams.get('error'));
+        // Auto-populate skills from hidden field
+        const skillsHidden = document.getElementById('skills-hidden');
+        if (skillsHidden && skillsHidden.value) {
+            skills = skillsHidden.value.split(',').filter(s => s.trim());
+            updateSkillsDisplay();
         }
     });
 </script>
