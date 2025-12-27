@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title %}Dashboard - ClearQ{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-50">
@@ -9,7 +10,7 @@
                 <div>
                     <h1 class="text-lg font-bold text-gray-900">Dashboard</h1>
                     <p class="text-xs text-gray-600">
-                        {% if type == 'learner' %}Learner{% else %}Mentor{% endif %}
+                        {% if current_user.role == 'learner' %}Learner{% else %}Mentor{% endif %}
                     </p>
                 </div>
                 
@@ -43,20 +44,20 @@
                 
                 <!-- Desktop Navigation -->
                 <nav class="flex space-x-1">
-                    {% if type == 'learner' %}
+                    {% if current_user.role == 'learner' %}
                     <a href="{{ url_for('dashboard') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Overview
                     </a>
                     <a href="{{ url_for('explore') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'explore' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Find Mentors
                     </a>
-                    <a href="{{ url_for('learner_enrollments') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_enrollments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-                        Enrollments
+                    <a href="{{ url_for('learner_bookings') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_bookings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                        My Bookings
                     </a>
                     <a href="{{ url_for('saved_mentors') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'saved_mentors' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Saved
                     </a>
-                    <a href="{{ url_for('learner_profile') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                    <a href="{{ url_for('profile') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Profile
                     </a>
                     {% else %}
@@ -69,13 +70,13 @@
                     <a href="{{ url_for('manage_services') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'manage_services' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Services ({{ services_count or 0 }})
                     </a>
-                    <a href="{{ url_for('mentor_calendar') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_calendar' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                    <a href="{{ url_for('calendar') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'calendar' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Calendar
                     </a>
-                    <a href="{{ url_for('mentor_payouts') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_payouts' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                    <a href="{{ url_for('payouts') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'payouts' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Payouts
                     </a>
-                    <a href="{{ url_for('mentor_profile') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                    <a href="{{ url_for('profile') }}" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if request.endpoint == 'profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
                         Profile
                     </a>
                     {% endif %}
@@ -97,7 +98,7 @@
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">{{ current_user.username }}</p>
-                            <p class="text-sm text-gray-600">{{ type|title }}</p>
+                            <p class="text-sm text-gray-600">{{ current_user.role|title }}</p>
                         </div>
                     </div>
                 </div>
@@ -105,7 +106,7 @@
                 <!-- Menu Items -->
                 <div class="flex-1 overflow-y-auto py-4">
                     <nav class="px-2 space-y-1">
-                        {% if type == 'learner' %}
+                        {% if current_user.role == 'learner' %}
                         <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'dashboard' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                             Overview
@@ -114,15 +115,15 @@
                             <i class="fas fa-search w-5 mr-3"></i>
                             Find Mentors
                         </a>
-                        <a href="{{ url_for('learner_enrollments') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_enrollments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
-                            <i class="fas fa-graduation-cap w-5 mr-3"></i>
-                            My Enrollments
+                        <a href="{{ url_for('learner_bookings') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_bookings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
+                            <i class="fas fa-calendar-check w-5 mr-3"></i>
+                            My Bookings
                         </a>
                         <a href="{{ url_for('saved_mentors') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'saved_mentors' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-bookmark w-5 mr-3"></i>
                             Saved Mentors
                         </a>
-                        <a href="{{ url_for('learner_profile') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'learner_profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
+                        <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-user w-5 mr-3"></i>
                             My Profile
                         </a>
@@ -144,15 +145,15 @@
                             </span>
                             {% endif %}
                         </a>
-                        <a href="{{ url_for('mentor_calendar') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_calendar' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
+                        <a href="{{ url_for('calendar') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'calendar' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-calendar-alt w-5 mr-3"></i>
                             Calendar
                         </a>
-                        <a href="{{ url_for('mentor_payouts') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_payouts' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
+                        <a href="{{ url_for('payouts') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'payouts' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-wallet w-5 mr-3"></i>
                             Payouts
                         </a>
-                        <a href="{{ url_for('mentor_profile') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'mentor_profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
+                        <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors {% if request.endpoint == 'profile' %}bg-indigo-50 text-indigo-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}" onclick="closeMobileMenu()">
                             <i class="fas fa-user-edit w-5 mr-3"></i>
                             Profile
                         </a>
@@ -166,14 +167,37 @@
     <!-- Main Content -->
     <main class="pt-16 lg:pt-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {% if type == 'learner' %}
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-6 p-4 rounded-xl bg-gradient-to-r 
+                            {% if category == 'error' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
+                            {% elif category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
+                            {% elif category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
+                            {% else %}from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-700{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas 
+                                    {% if category == 'error' %}fa-exclamation-circle
+                                    {% elif category == 'warning' %}fa-exclamation-triangle
+                                    {% elif category == 'success' %}fa-check-circle
+                                    {% else %}fa-info-circle{% endif %}
+                                    mr-3"></i>
+                                <p class="font-medium">{{ message }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if current_user.role == 'learner' %}
             <!-- LEARNER DASHBOARD -->
             <div class="space-y-6">
                 <!-- Welcome Card -->
                 <div class="bg-gradient-to-r from-indigo-500 to-blue-600 rounded-2xl p-6 text-white">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                         <div>
-                            <h2 class="text-xl font-bold">Welcome back!</h2>
+                            <h2 class="text-xl font-bold">Welcome back, {{ current_user.username }}!</h2>
                             <p class="text-indigo-100 mt-1">Track your learning journey and upcoming sessions</p>
                         </div>
                         <a href="{{ url_for('explore') }}" class="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-white text-indigo-600 font-medium rounded-lg hover:bg-gray-50 transition-colors">
@@ -187,30 +211,31 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
                         <div class="text-sm text-gray-600">Upcoming Sessions</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ bookings|length }}</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ upcoming_bookings|length if upcoming_bookings else 0 }}</div>
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Enrolled Programs</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ 1 if enrollment else 0 }}</div>
+                        <div class="text-sm text-gray-600">Completed Sessions</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ completed_bookings|length if completed_bookings else 0 }}</div>
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Saved Mentors</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">0</div>
+                        <div class="text-sm text-gray-600">Total Spent</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">₹{{ total_spent or 0 }}</div>
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Hours Learned</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">0</div>
+                        <div class="text-sm text-gray-600">Mentors Followed</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ saved_mentors_count or 0 }}</div>
                     </div>
                 </div>
 
                 <!-- Upcoming Sessions -->
+                {% if upcoming_bookings and upcoming_bookings|length > 0 %}
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
                         <h3 class="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
                     </div>
                     
                     <div class="divide-y divide-gray-200">
-                        {% for item in bookings %}
+                        {% for booking in upcoming_bookings[:3] %}
                         <div class="p-4 sm:p-6">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                                 <div class="flex-1">
@@ -220,25 +245,29 @@
                                         </div>
                                         <div class="ml-4">
                                             <h4 class="font-medium text-gray-900">
-                                                {{ item.mentor.full_name if item.mentor.full_name else item.mentor.username }}
+                                                {{ booking.mentor.full_name if booking.mentor and booking.mentor.full_name else booking.mentor.username if booking.mentor else 'Unknown Mentor' }}
                                             </h4>
                                             <div class="mt-2 flex flex-wrap gap-2">
+                                                {% if booking.mentor and booking.mentor.domain %}
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ item.mentor.domain }}
+                                                    {{ booking.mentor.domain }}
                                                 </span>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if item.booking.status == 'Paid' %}bg-green-100 text-green-800{% elif item.booking.status == 'Pending' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
-                                                    {{ item.booking.status }}
+                                                {% endif %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if booking.status == 'confirmed' %}bg-green-100 text-green-800{% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif booking.status == 'cancelled' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                    {{ booking.status|title }}
                                                 </span>
                                             </div>
                                             <div class="mt-3 text-sm text-gray-600">
                                                 <div class="flex items-center">
                                                     <i class="fas fa-clock w-4 mr-2"></i>
-                                                    {{ item.booking.slot_time }}
+                                                    {{ booking.scheduled_at.strftime('%B %d, %Y at %I:%M %p') if booking.scheduled_at else booking.slot_time if booking.slot_time else 'Time not set' }}
                                                 </div>
+                                                {% if booking.service %}
                                                 <div class="flex items-center mt-1">
                                                     <i class="fas fa-tag w-4 mr-2"></i>
-                                                    {{ item.booking.service_name }}
+                                                    {{ booking.service.name }}
                                                 </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -246,110 +275,107 @@
                                 
                                 <div class="mt-4 sm:mt-0 sm:ml-6">
                                     <div class="text-right">
-                                        <p class="text-lg font-bold text-gray-900">₹{{ item.booking.price or item.mentor.price }}</p>
+                                        <p class="text-lg font-bold text-gray-900">₹{{ booking.amount or booking.service.price if booking.service else 0 }}</p>
                                         <div class="mt-3">
-                                            {% if item.booking.status == 'Paid' %}
-                                            <button onclick="window.open('https://meet.google.com/new', '_blank')" 
+                                            {% if booking.status == 'confirmed' %}
+                                            <button onclick="window.open('{{ booking.meeting_link }}', '_blank')" 
                                                     class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
                                                 Join Meeting
                                             </button>
-                                            {% else %}
-                                            <button onclick="if(confirm('Pay ₹{{ item.booking.price or item.mentor.price }}?')) { 
-                                                fetch('/process-payment/{{ item.booking.id }}', {method: 'POST'})
-                                                .then(() => location.reload());
-                                            }" 
+                                            {% elif booking.status == 'pending' %}
+                                            <a href="{{ url_for('checkout', booking_id=booking.id) }}" 
                                                     class="w-full sm:w-auto px-4 py-2 bg-yellow-600 text-white font-medium rounded-lg hover:bg-yellow-700 transition-colors">
-                                                Pay Now
-                                            </button>
+                                                Complete Payment
+                                            </a>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        {% else %}
-                        <div class="px-4 py-12 text-center">
-                            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-calendar-day text-gray-400 text-xl"></i>
-                            </div>
-                            <h4 class="text-gray-900 font-medium mb-2">No upcoming sessions</h4>
-                            <p class="text-gray-500 mb-4">Book your first session with a mentor</p>
-                            <a href="{{ url_for('explore') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-                                <i class="fas fa-search mr-2"></i>
-                                Find Mentors
+                        {% endfor %}
+                        
+                        {% if upcoming_bookings|length > 3 %}
+                        <div class="p-4 text-center">
+                            <a href="{{ url_for('learner_bookings') }}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                View all {{ upcoming_bookings|length }} upcoming sessions →
                             </a>
                         </div>
-                        {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
-
-                <!-- Enrolled Program -->
+                {% else %}
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">Enrolled Program</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
+                    </div>
+                    <div class="px-4 py-12 text-center">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-calendar-day text-gray-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-gray-900 font-medium mb-2">No upcoming sessions</h4>
+                        <p class="text-gray-500 mb-4">Book your first session with a mentor</p>
+                        <a href="{{ url_for('explore') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-search mr-2"></i>
+                            Find Mentors
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Recommended Mentors -->
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Recommended Mentors</h3>
+                            <a href="{{ url_for('explore') }}" class="mt-2 sm:mt-0 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                View all →
+                            </a>
+                        </div>
                     </div>
                     
                     <div class="p-4 sm:p-6">
-                        {% if enrollment %}
-                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
-                                <div>
-                                    <h4 class="font-bold text-gray-900 text-lg">{{ enrollment.program_name|replace('_', ' ')|title }}</h4>
-                                    <p class="text-sm text-gray-600 mt-1">Enrolled on {{ enrollment.enrollment_date.strftime('%b %d, %Y') if enrollment.enrollment_date else 'N/A' }}</p>
-                                </div>
-                                <span class="mt-2 sm:mt-0 px-3 py-1 text-sm font-medium rounded-full {% if enrollment.status == 'active' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
-                                    {{ enrollment.status|title }}
-                                </span>
-                            </div>
-                            
-                            {% if enrollment.additional_data %}
-                                {% set data = enrollment.additional_data|from_json %}
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                    {% if data.phone %}
-                                    <div>
-                                        <p class="text-sm text-gray-600">Phone</p>
-                                        <p class="font-medium">{{ data.phone }}</p>
+                        {% if recommended_mentors and recommended_mentors|length > 0 %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for mentor in recommended_mentors[:3] %}
+                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        {% if mentor.profile_image %}
+                                        <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
+                                             alt="{{ mentor.full_name }}" 
+                                             class="w-full h-full object-cover rounded-lg">
+                                        {% else %}
+                                        {{ mentor.username[0]|upper }}
+                                        {% endif %}
                                     </div>
-                                    {% endif %}
-                                    {% if data.education %}
-                                    <div>
-                                        <p class="text-sm text-gray-600">Education</p>
-                                        <p class="font-medium">{{ data.education }}</p>
+                                    <div class="ml-4 flex-1">
+                                        <h4 class="font-medium text-gray-900">{{ mentor.full_name or mentor.username }}</h4>
+                                        <p class="text-sm text-gray-600 mt-1">{{ mentor.job_title or 'Expert Mentor' }}</p>
+                                        {% if mentor.rating %}
+                                        <div class="flex items-center mt-2">
+                                            <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                            <span class="ml-1 text-sm font-medium">{{ mentor.rating }}</span>
+                                            <span class="ml-1 text-sm text-gray-500">({{ mentor.reviews_count or 0 }})</span>
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    {% endif %}
                                 </div>
-                            {% endif %}
-                            
-                            <div class="pt-4 border-t border-gray-200">
-                                {% if enrollment.payment_status == 'pending' %}
-                                <button onclick="if(confirm('Pay ₹{{ enrollment.payment_amount }}?')) { 
-                                    fetch('/process-enrollment-payment/{{ enrollment.id }}', {method: 'POST'})
-                                    .then(() => location.reload());
-                                }" 
-                                        class="w-full px-4 py-3 bg-yellow-600 text-white font-medium rounded-lg hover:bg-yellow-700 transition-colors">
-                                    Complete Payment - ₹{{ enrollment.payment_amount }}
-                                </button>
-                                {% else %}
-                                <div class="flex items-center justify-center">
-                                    <span class="px-4 py-2 bg-green-100 text-green-800 font-medium rounded-full">
-                                        <i class="fas fa-check-circle mr-2"></i>
-                                        Payment: {{ enrollment.payment_status|title }}
-                                    </span>
+                                <div class="mt-4">
+                                    <a href="{{ url_for('mentor_public_profile', username=mentor.username) }}" 
+                                       class="w-full block text-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                                        View Profile
+                                    </a>
                                 </div>
-                                {% endif %}
                             </div>
+                            {% endfor %}
                         </div>
                         {% else %}
                         <div class="text-center py-8">
                             <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-graduation-cap text-gray-400 text-xl"></i>
+                                <i class="fas fa-users text-gray-400 text-xl"></i>
                             </div>
-                            <h4 class="text-gray-900 font-medium mb-2">No program enrolled</h4>
-                            <p class="text-gray-500 mb-4">Enroll in our career mentorship program</p>
-                            <a href="{{ url_for('enroll') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-                                <i class="fas fa-plus mr-2"></i>
-                                Enroll Now
-                            </a>
+                            <p class="text-gray-500">Explore mentors to get recommendations</p>
                         </div>
                         {% endif %}
                     </div>
@@ -362,7 +388,7 @@
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                         <div>
-                            <h2 class="text-xl font-bold">Welcome back, Mentor!</h2>
+                            <h2 class="text-xl font-bold">Welcome back, {{ current_user.full_name or current_user.username }}!</h2>
                             <p class="text-purple-100 mt-1">Manage your mentorship sessions and earnings</p>
                         </div>
                         {% if not current_user.is_verified %}
@@ -378,8 +404,8 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
                         <div class="text-sm text-gray-600">Total Earnings</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">₹{{ revenue if revenue else 0 }}</div>
-                        <div class="text-xs text-gray-500 mt-1">{{ total_bookings if total_bookings else bookings|length }} sessions</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">₹{{ total_earnings or 0 }}</div>
+                        <div class="text-xs text-gray-500 mt-1">{{ total_sessions or 0 }} sessions</div>
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
                         <div class="text-sm text-gray-600">Active Services</div>
@@ -390,7 +416,7 @@
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
                         <div class="text-sm text-gray-600">Pending Sessions</div>
-                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ pending_bookings if pending_bookings else 0 }}</div>
+                        <div class="text-2xl font-bold text-gray-900 mt-1">{{ pending_bookings or 0 }}</div>
                         <div class="text-xs text-gray-500 mt-1">Awaiting payment</div>
                     </div>
                     <div class="bg-white rounded-xl border border-gray-200 p-4">
@@ -425,9 +451,9 @@
                                     </div>
                                     <div class="flex items-center bg-white rounded-lg border border-gray-300 overflow-hidden">
                                         <div class="px-4 py-3 flex-1 overflow-hidden">
-                                           <span class="text-gray-900 font-mono text-sm truncate block" id="profileLink">
-    {{ request.host_url }}mentor/{{ current_user.username }}
-</span>
+                                            <span class="text-gray-900 font-mono text-sm truncate block" id="profileLink">
+                                                {{ request.host_url }}mentor/{{ current_user.username }}
+                                            </span>
                                         </div>
                                         <button onclick="copyProfileLink()" 
                                                 class="px-4 py-3 bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
@@ -449,13 +475,14 @@
                             </div>
                             <div class="flex items-center justify-between text-sm">
                                 <span class="text-gray-600">Bookings via shared link</span>
-                                <span class="font-semibold text-gray-900">{{ bookings|length }}</span>
+                                <span class="font-semibold text-gray-900">{{ total_sessions or 0 }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Upcoming Appointments -->
+                {% if upcoming_bookings and upcoming_bookings|length > 0 %}
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between">
@@ -467,7 +494,7 @@
                     </div>
                     
                     <div class="divide-y divide-gray-200">
-                        {% for item in bookings %}
+                        {% for booking in upcoming_bookings[:3] %}
                         <div class="p-4 sm:p-6">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                                 <div class="flex-1">
@@ -477,25 +504,27 @@
                                         </div>
                                         <div class="ml-4">
                                             <h4 class="font-medium text-gray-900">
-                                                {% if item.learner %}
-                                                    {{ item.learner.username }}
+                                                {% if booking.learner %}
+                                                    {{ booking.learner.username }}
                                                 {% else %}
                                                     Unknown Learner
                                                 {% endif %}
                                             </h4>
                                             <div class="mt-2 flex flex-wrap gap-2">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if item.booking.status == 'Paid' %}bg-green-100 text-green-800{% elif item.booking.status == 'Pending' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
-                                                    {{ item.booking.status }}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if booking.status == 'confirmed' %}bg-green-100 text-green-800{% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif booking.status == 'cancelled' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                    {{ booking.status|title }}
                                                 </span>
                                             </div>
                                             <div class="mt-3 text-sm text-gray-600">
+                                                {% if booking.service %}
                                                 <div class="flex items-center">
                                                     <i class="fas fa-tag w-4 mr-2"></i>
-                                                    {{ item.booking.service_name }}
+                                                    {{ booking.service.name }}
                                                 </div>
+                                                {% endif %}
                                                 <div class="flex items-center mt-1">
                                                     <i class="fas fa-clock w-4 mr-2"></i>
-                                                    {{ item.booking.slot_time }}
+                                                    {{ booking.scheduled_at.strftime('%B %d, %Y at %I:%M %p') if booking.scheduled_at else booking.slot_time if booking.slot_time else 'Time not set' }}
                                                 </div>
                                             </div>
                                         </div>
@@ -504,12 +533,17 @@
                                 
                                 <div class="mt-4 sm:mt-0 sm:ml-6">
                                     <div class="text-right">
-                                        <p class="text-lg font-bold text-gray-900">₹{{ item.booking.price or current_user.price }}</p>
+                                        <p class="text-lg font-bold text-gray-900">₹{{ booking.amount or booking.service.price if booking.service else 0 }}</p>
                                         <div class="mt-3">
-                                            {% if item.booking.status == 'Paid' %}
-                                            <button onclick="window.open('https://meet.google.com/new', '_blank')" 
+                                            {% if booking.status == 'confirmed' and booking.meeting_link %}
+                                            <button onclick="window.open('{{ booking.meeting_link }}', '_blank')" 
                                                     class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
                                                 Start Meeting
+                                            </button>
+                                            {% elif booking.status == 'confirmed' %}
+                                            <button onclick="generateMeetingLink('{{ booking.id }}')" 
+                                                    class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                                                Generate Meeting Link
                                             </button>
                                             {% else %}
                                             <span class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 font-medium rounded-lg">
@@ -521,29 +555,45 @@
                                 </div>
                             </div>
                         </div>
-                        {% else %}
-                        <div class="px-4 py-12 text-center">
-                            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-calendar-check text-gray-400 text-xl"></i>
-                            </div>
-                            <h4 class="text-gray-900 font-medium mb-2">No appointments yet</h4>
-                            <p class="text-gray-500 mb-4">
-                                {% if not current_user.is_verified %}
-                                Your profile needs verification to appear in mentor listings
-                                {% else %}
-                                Learners will be able to book sessions with you soon
-                                {% endif %}
-                            </p>
-                            {% if current_user.is_verified %}
-                            <a href="{{ url_for('manage_services') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-                                <i class="fas fa-plus mr-2"></i>
-                                Add Services
-                            </a>
-                            {% endif %}
-                        </div>
                         {% endfor %}
+                        
+                        {% if upcoming_bookings|length > 3 %}
+                        <div class="p-4 text-center">
+                            <a href="{{ url_for('mentor_bookings') }}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                View all {{ upcoming_bookings|length }} appointments →
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+                {% else %}
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Upcoming Appointments</h3>
+                        </div>
+                    </div>
+                    <div class="px-4 py-12 text-center">
+                        <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-calendar-check text-gray-400 text-xl"></i>
+                        </div>
+                        <h4 class="text-gray-900 font-medium mb-2">No appointments yet</h4>
+                        <p class="text-gray-500 mb-4">
+                            {% if not current_user.is_verified %}
+                            Your profile needs verification to appear in mentor listings
+                            {% else %}
+                            Learners will be able to book sessions with you soon
+                            {% endif %}
+                        </p>
+                        {% if current_user.is_verified %}
+                        <a href="{{ url_for('manage_services') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Services
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Profile Info & Quick Actions -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -556,20 +606,20 @@
                                 <p class="font-medium">{{ current_user.domain or 'Not set' }}</p>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">Services</p>
-                                <p class="font-medium">{{ current_user.services or 'Not set' }}</p>
+                                <p class="text-sm text-gray-600">Job Title</p>
+                                <p class="font-medium">{{ current_user.job_title or 'Not set' }}</p>
                             </div>
                             <div>
                                 <p class="text-sm text-gray-600">Experience</p>
                                 <p class="font-medium">{{ current_user.experience or 'Not set' }}</p>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">Availability</p>
-                                <p class="font-medium">{{ current_user.availability or 'Not set' }}</p>
+                                <p class="text-sm text-gray-600">Company</p>
+                                <p class="font-medium">{{ current_user.company or 'Not set' }}</p>
                             </div>
                         </div>
                         <div class="mt-6 pt-6 border-t border-gray-200">
-                            <a href="{{ url_for('mentor_profile') }}" class="w-full px-4 py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-black transition-colors flex items-center justify-center">
+                            <a href="{{ url_for('profile') }}" class="w-full px-4 py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-black transition-colors flex items-center justify-center">
                                 <i class="fas fa-edit mr-2"></i>
                                 Edit Profile
                             </a>
@@ -588,7 +638,7 @@
                                     <span class="text-sm font-medium text-gray-900">Services</span>
                                 </div>
                             </a>
-                            <a href="{{ url_for('mentor_calendar') }}" class="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                            <a href="{{ url_for('calendar') }}" class="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors">
                                 <div class="flex flex-col items-center text-center">
                                     <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
                                         <i class="fas fa-calendar-alt text-blue-600"></i>
@@ -596,7 +646,7 @@
                                     <span class="text-sm font-medium text-gray-900">Calendar</span>
                                 </div>
                             </a>
-                            <a href="{{ url_for('mentor_payouts') }}" class="p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors">
+                            <a href="{{ url_for('payouts') }}" class="p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-colors">
                                 <div class="flex flex-col items-center text-center">
                                     <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-2">
                                         <i class="fas fa-wallet text-green-600"></i>
@@ -604,7 +654,7 @@
                                     <span class="text-sm font-medium text-gray-900">Payouts</span>
                                 </div>
                             </a>
-                            <a href="{{ url_for('mentor_settings') }}" class="p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
+                            <a href="{{ url_for('settings') }}" class="p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors">
                                 <div class="flex flex-col items-center text-center">
                                     <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
                                         <i class="fas fa-cog text-gray-600"></i>
@@ -652,18 +702,22 @@ function closeMobileMenu() {
     document.body.style.overflow = 'auto';
 }
 
-mobileMenuButton.addEventListener('click', openMobileMenu);
+if (mobileMenuButton) {
+    mobileMenuButton.addEventListener('click', openMobileMenu);
+}
 
 // Close menu when clicking outside
-mobileMenu.addEventListener('click', function(e) {
-    if (e.target === mobileMenu || e.target.closest('.fixed.inset-0')) {
-        closeMobileMenu();
-    }
-});
+if (mobileMenu) {
+    mobileMenu.addEventListener('click', function(e) {
+        if (e.target === mobileMenu || e.target.closest('.fixed.inset-0')) {
+            closeMobileMenu();
+        }
+    });
+}
 
 // Close menu on escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+    if (e.key === 'Escape' && mobileMenu && !mobileMenu.classList.contains('hidden')) {
         closeMobileMenu();
     }
 });
@@ -675,7 +729,7 @@ const profileTitle = "{{ current_user.full_name or current_user.username }} - Cl
 function copyProfileLink() {
     navigator.clipboard.writeText(profileLink).then(() => {
         // Elegant success notification
-        const button = event.target;
+        const button = event.currentTarget;
         const originalHTML = button.innerHTML;
         
         button.innerHTML = `
@@ -702,7 +756,8 @@ function copyProfileLink() {
         document.execCommand('copy');
         document.body.removeChild(textArea);
         
-        alert('Profile link copied to clipboard!');
+        // Show alert as fallback
+        showNotification('Profile link copied to clipboard!', 'success');
     });
 }
 
@@ -713,41 +768,81 @@ function shareProfile() {
             title: profileTitle,
             text: 'Check out my mentor profile on ClearQ',
             url: profileLink
+        }).catch(err => {
+            console.error('Error sharing:', err);
         });
     } else {
         // Fallback: Copy to clipboard with elegant feedback
         copyProfileLink();
-        
-        // Create a subtle notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
-        notification.innerHTML = `
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span>Profile link copied to clipboard</span>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.classList.remove('translate-x-full');
-            notification.classList.add('translate-x-0');
-        }, 10);
-        
-        // Animate out and remove
-        setTimeout(() => {
-            notification.classList.remove('translate-x-0');
-            notification.classList.add('translate-x-full');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
     }
+}
+
+function generateMeetingLink(bookingId) {
+    fetch(`/generate-meeting-link/${bookingId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Meeting link generated!', 'success');
+            // Reload page to show new meeting link
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showNotification(data.message || 'Failed to generate meeting link', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to generate meeting link', 'error');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+    
+    // Set color based on type
+    if (type === 'success') {
+        notification.className += ' bg-green-500 text-white';
+    } else if (type === 'error') {
+        notification.className += ' bg-red-500 text-white';
+    } else {
+        notification.className += ' bg-blue-500 text-white';
+    }
+    
+    notification.innerHTML = `
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+    }, 10);
+    
+    // Animate out and remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('translate-x-0');
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
 }
 </script>
 {% endblock %}
-
