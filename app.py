@@ -2,7 +2,7 @@ import os
 import json
 import random
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -63,19 +63,59 @@ def generate_slug(text):
     slug = re.sub(r'[-\s]+', '-', slug)
     return slug.strip('-')
 
-# Helper function to get available time slots
-def get_available_slots(mentor_id):
-    """Get available time slots for a mentor"""
-    # Get booked slots
-    booked_slots = [b.slot_time for b in Booking.query.filter_by(mentor_id=mentor_id).all()]
+# Helper function to get available dates
+def get_available_dates(mentor_id, days_ahead=14):
+    """Get available dates for booking (next 14 days)"""
+    today = datetime.now().date()
+    available_dates = []
     
-    # Generate standard time slots
+    # Get booked dates for this mentor
+    booked_dates = Booking.query.filter_by(mentor_id=mentor_id).all()
+    
+    for i in range(days_ahead):
+        current_date = today + timedelta(days=i)
+        
+        # Check if date is not fully booked (assuming max 8 slots per day)
+        day_bookings = [b for b in booked_dates if b.booking_date == current_date]
+        
+        # Format date information
+        date_info = {
+            'date': current_date,
+            'day_name': current_date.strftime('%a'),
+            'date_str': current_date.strftime('%b %d'),
+            'full_date': current_date.strftime('%Y-%m-%d'),
+            'day_num': current_date.day,
+            'month': current_date.strftime('%b'),
+            'is_today': i == 0,
+            'is_tomorrow': i == 1,
+            'available_slots': 8 - len(day_bookings)  # Max 8 slots per day
+        }
+        
+        available_dates.append(date_info)
+    
+    return available_dates
+
+# Helper function to get time slots for a specific date
+def get_time_slots_for_date(mentor_id, date_str):
+    """Get available time slots for a specific date"""
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return []
+    
+    # Standard time slots
     all_slots = [
         "9:00 AM", "10:00 AM", "11:00 AM", 
         "12:00 PM", "1:00 PM", "2:00 PM", 
         "3:00 PM", "4:00 PM", "5:00 PM", 
         "6:00 PM", "7:00 PM", "8:00 PM"
     ]
+    
+    # Get booked slots for this date
+    booked_slots = [b.slot_time for b in Booking.query.filter_by(
+        mentor_id=mentor_id, 
+        booking_date=date_obj
+    ).all()]
     
     # Filter out booked slots
     available_slots = [s for s in all_slots if s not in booked_slots]
@@ -155,13 +195,14 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)  # Link to specific service
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
     service_name = db.Column(db.String(100))
     slot_time = db.Column(db.String(50))
-    status = db.Column(db.String(20), default='Pending')  # Pending, Paid, Completed
+    booking_date = db.Column(db.Date, nullable=True)  # Date of booking
+    status = db.Column(db.String(20), default='Pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
-    price = db.Column(db.Integer, nullable=True)  # Price at time of booking
-    notes = db.Column(db.Text, nullable=True)  # Additional notes for the booking
+    price = db.Column(db.Integer, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
 
     mentor = db.relationship('User', foreign_keys=[mentor_id])
     learner = db.relationship('User', foreign_keys=[learner_id])
@@ -186,8 +227,8 @@ class Review(db.Model):
     mentor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     learner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=True)
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)  # Review for a service
-    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=True)
+    rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -237,7 +278,7 @@ def get_ai_recommendations(user_goal):
         # Return top 3 matched mentor objects
         recommended_mentors = []
         for i, score in scores[:3]:
-            if score > 0.1:  # Threshold to filter completely irrelevant matches
+            if score > 0.1:
                 recommended_mentors.append(mentor_data[i]['obj'])
                 
         return recommended_mentors
@@ -283,10 +324,7 @@ def from_json_filter(value):
 def reset_database():
     """Drop and recreate all tables (DEVELOPMENT ONLY)"""
     try:
-        # Drop all tables
         db.drop_all()
-        
-        # Recreate all tables with current schema
         db.create_all()
         
         # Create admin user
@@ -567,7 +605,7 @@ def add_sample_mentors():
             'mentor_username': 'john_doe',
             'name': 'Resume Review',
             'description': 'Detailed feedback on your data science resume',
-            'detailed_description': 'Get expert feedback on your data science resume with ATS optimization tips. I\'ll review your resume for technical content, formatting, and ensure it passes through Applicant Tracking Systems used by top tech companies.',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>ATS optimization check</li><li>Formatting and structure review</li><li>Content improvement suggestions</li><li>Keyword optimization for data science roles</li><li>Industry-specific best practices</li></ul>',
             'price': 500,
             'duration': '24-hour delivery'
         },
@@ -575,7 +613,7 @@ def add_sample_mentors():
             'mentor_username': 'john_doe',
             'name': 'Mock Interview',
             'description': '1-hour technical mock interview',
-            'detailed_description': 'Practice technical interviews with realistic data science questions. Includes coding problems, statistics questions, and ML system design. Receive detailed feedback on your problem-solving approach and communication skills.',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Technical questions practice</li><li>Behavioral interview preparation</li><li>Communication skills feedback</li><li>Problem-solving approach evaluation</li><li>Post-interview debrief and improvement plan</li></ul>',
             'price': 1500,
             'duration': '1 hour'
         },
@@ -583,7 +621,7 @@ def add_sample_mentors():
             'mentor_username': 'john_doe',
             'name': 'Career Guidance Session',
             'description': '30-min career path discussion',
-            'detailed_description': 'Personalized career guidance for aspiring data scientists. We\'ll discuss your career goals, skill gaps, and create a roadmap to land your dream job at FAANG companies.',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Personalized career roadmap</li><li>Skill gap analysis</li><li>Industry insights and trends</li><li>Networking strategies</li><li>Actionable next steps</li></ul>',
             'price': 800,
             'duration': '30 mins'
         },
@@ -591,7 +629,7 @@ def add_sample_mentors():
             'mentor_username': 'jane_smith',
             'name': 'Product Case Study Review',
             'description': 'In-depth review of product case studies',
-            'detailed_description': 'Detailed feedback on your product management case studies. I\'ll help you structure your answers, improve your frameworks, and prepare for PM interviews at top tech companies.',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Case study structure review</li><li>Framework application guidance</li><li>Presentation skills feedback</li><li>Industry-specific insights</li><li>Mock case study practice</li></ul>',
             'price': 1200,
             'duration': '45 mins'
         },
@@ -599,8 +637,24 @@ def add_sample_mentors():
             'mentor_username': 'jane_smith',
             'name': 'Product Manager Mock Interview',
             'description': 'Full PM interview simulation',
-            'detailed_description': 'Complete product manager interview simulation including behavioral questions, product design, strategy questions, and execution discussions. Perfect for FAANG PM interviews.',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Complete PM interview simulation</li><li>Behavioral questions practice</li><li>Product design exercises</li><li>Strategy questions discussion</li><li>Detailed feedback and improvement plan</li></ul>',
             'price': 1800,
+            'duration': '1 hour'
+        },
+        {
+            'mentor_username': 'alex_wong',
+            'name': 'Coding Interview Prep',
+            'description': 'Technical coding interview preparation',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Data structures and algorithms review</li><li>Coding problem solving</li><li>Time complexity analysis</li><li>System design fundamentals</li><li>Mock coding interviews</li></ul>',
+            'price': 1600,
+            'duration': '1 hour'
+        },
+        {
+            'mentor_username': 'sara_johnson',
+            'name': 'Design Portfolio Review',
+            'description': 'Comprehensive UX portfolio feedback',
+            'detailed_description': '<h3>What You\'ll Get:</h3><ul><li>Portfolio structure and flow review</li><li>Case study presentation feedback</li><li>Visual design critique</li><li>User research methodology evaluation</li><li>Industry portfolio standards</li></ul>',
+            'price': 1400,
             'duration': '1 hour'
         }
     ]
@@ -754,7 +808,7 @@ def mentor_public_profile(username):
     mentor.profile_views = (mentor.profile_views or 0) + 1
     db.session.commit()
     
-    # Get mentor's services (NEW)
+    # Get mentor's services
     services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
     
     # Get mentor's products (for backward compatibility)
@@ -762,6 +816,9 @@ def mentor_public_profile(username):
     
     # Get reviews
     reviews = Review.query.filter_by(mentor_id=mentor.id).all()
+    
+    # Get available dates for quick booking
+    available_dates = get_available_dates(mentor.id, days_ahead=7)
     
     # Categorize products by type
     product_types = {}
@@ -775,29 +832,34 @@ def mentor_public_profile(username):
     
     return render_template('mentor_public_profile.html',
                          mentor=mentor,
-                         services=services,  # Pass services to template
+                         services=services,
                          products=products,
                          product_types=product_types,
                          reviews=reviews,
-                         total_sessions=total_sessions)
+                         total_sessions=total_sessions,
+                         available_dates=available_dates)
 
-# SINGLE TEMPLATE APPROACH: Service detail route for ALL services
+# Service detail route
 @app.route('/mentor/<username>/service/<service_slug>')
 def service_detail(username, service_slug):
-    """Single service detail page for ALL services using one template"""
+    """Service detail page with date and time selection"""
     mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
     service = Service.query.filter_by(mentor_id=mentor.id, slug=service_slug, is_active=True).first_or_404()
     
     # Get reviews for this service
     reviews = Review.query.filter_by(service_id=service.id).all()
     
-    # Calculate average rating for this service
+    # Calculate average rating
     avg_rating = 0
     if reviews:
         avg_rating = sum([r.rating for r in reviews]) / len(reviews)
     
-    # Get available slots
-    available_slots = get_available_slots(mentor.id)
+    # Get available dates (next 14 days)
+    available_dates = get_available_dates(mentor.id)
+    
+    # Get time slots for today (default)
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    available_slots = get_time_slots_for_date(mentor.id, today_date)
     
     # Get other services from the same mentor
     other_services = Service.query.filter_by(
@@ -805,306 +867,38 @@ def service_detail(username, service_slug):
         is_active=True
     ).filter(Service.id != service.id).limit(3).all()
     
-    # Service type detection for template (optional - for showing different icons/styles)
-    service_type = 'general'
-    service_name_lower = service.name.lower()
-    
-    if 'resume' in service_name_lower or 'cv' in service_name_lower:
-        service_type = 'resume'
-    elif 'interview' in service_name_lower or 'mock' in service_name_lower:
-        service_type = 'interview'
-    elif 'career' in service_name_lower or 'guidance' in service_name_lower:
-        service_type = 'career'
-    elif 'portfolio' in service_name_lower:
-        service_type = 'portfolio'
-    elif 'coding' in service_name_lower or 'technical' in service_name_lower:
-        service_type = 'coding'
-    elif 'system' in service_name_lower or 'design' in service_name_lower:
-        service_type = 'system'
-    
     return render_template('service_detail.html',
                          mentor=mentor,
                          service=service,
                          reviews=reviews,
                          avg_rating=avg_rating,
+                         available_dates=available_dates,
                          available_slots=available_slots,
-                         other_services=other_services,
-                         service_type=service_type)
+                         today_date=today_date,
+                         other_services=other_services)
 
-# Special redirect routes for common service types (optional, for better URLs)
-@app.route('/mentor/<username>/resume-review')
-def redirect_resume_review(username):
-    """Redirect to resume-review service if exists"""
-    return redirect_to_service(username, 'resume')
-
-@app.route('/mentor/<username>/mock-interview')
-def redirect_mock_interview(username):
-    """Redirect to mock-interview service if exists"""
-    return redirect_to_service(username, 'interview')
-
-@app.route('/mentor/<username>/career-guidance')
-def redirect_career_guidance(username):
-    """Redirect to career-guidance service if exists"""
-    return redirect_to_service(username, 'career')
-
-def redirect_to_service(username, service_type):
-    """Helper function to redirect to appropriate service"""
-    mentor = User.query.filter_by(username=username, role='mentor').first()
-    
-    if not mentor:
-        flash('Mentor not found')
-        return redirect(url_for('explore'))
-    
-    # Find service based on type
-    service = None
-    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
-    
-    for s in services:
-        service_name_lower = s.name.lower()
-        if service_type == 'resume' and ('resume' in service_name_lower or 'cv' in service_name_lower):
-            service = s
-            break
-        elif service_type == 'interview' and ('interview' in service_name_lower or 'mock' in service_name_lower):
-            service = s
-            break
-        elif service_type == 'career' and ('career' in service_name_lower or 'guidance' in service_name_lower):
-            service = s
-            break
-    
-    if service:
-        return redirect(url_for('service_detail', username=username, service_slug=service.slug))
-    else:
-        flash(f'{service_type.title()} service not available with this mentor')
-        return redirect(url_for('mentor_public_profile', username=username))
-
-@app.route('/mentor/<username>/<int:product_id>')
-def product_detail(username, product_id):
-    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
-    product = Product.query.filter_by(id=product_id, mentor_id=mentor.id, is_active=True).first_or_404()
-    
-    # Get reviews for this product
-    reviews = Review.query.filter_by(product_id=product_id).all()
-    
-    # For time-based products, get available slots
-    available_slots = []
-    if product.product_type in ['1:1 call', 'Webinar']:
-        available_slots = get_available_slots(mentor.id)
-    
-    return render_template('product_detail.html',
-                         mentor=mentor,
-                         product=product,
-                         reviews=reviews,
-                         available_slots=available_slots)
-
-# Keep old route for backward compatibility
-@app.route('/mentor/<int:id>')
-def mentor_detail_legacy(id):
-    mentor = User.query.get_or_404(id)
-    return redirect(url_for('mentor_public_profile', username=mentor.username))
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        role = request.form.get('role')
+# API endpoint for getting time slots
+@app.route('/api/get-time-slots/<int:mentor_id>', methods=['POST'])
+def get_time_slots(mentor_id):
+    """API endpoint to get available time slots for a specific date"""
+    try:
+        data = request.get_json()
+        date_str = data.get('date')
         
-        if role == 'learner':
-            # Handle learner registration
-            username = request.form.get('username')
-            email = request.form.get('email')
-            password = request.form.get('password')
-            confirm_password = request.form.get('confirm_password')
-            
-            # Check if passwords match
-            if password != confirm_password:
-                flash('Passwords do not match!')
-                return render_template('register.html')
-            
-            # Check if user exists
-            if User.query.filter_by(email=email).first():
-                flash('Email already registered')
-                return render_template('register.html')
-            if User.query.filter_by(username=username).first():
-                flash('Username already taken')
-                return render_template('register.html')
-            
-            # Create new learner
-            user = User(username=username, email=email, role='learner')
-            user.set_password(password)
-            db.session.add(user)
-            db.session.commit()
-            
-            flash('Registration successful! Please login.')
-            return redirect(url_for('login'))
-            
-        elif role == 'mentor':
-            # Handle mentor registration with new fields
-            username = request.form.get('username')
-            email = request.form.get('email')
-            password = request.form.get('password')
-            confirm_password = request.form.get('confirm_password')
-            full_name = request.form.get('full_name')
-            phone = request.form.get('phone')
-            job_title = request.form.get('job_title')
-            company = request.form.get('company')
-            previous_company = request.form.get('previous_company')
-            domain = request.form.get('domain')
-            experience = request.form.get('experience')
-            skills = request.form.get('skills') or ''
-            price = request.form.get('price')
-            availability = request.form.get('availability')
-            bio = request.form.get('bio')
-            
-            # Get services as list and convert to string
-            services_list = request.form.getlist('services')
-            services = ', '.join(services_list) if services_list else ""
-            
-            # Social media links
-            facebook_url = request.form.get('facebook_url')
-            instagram_url = request.form.get('instagram_url')
-            youtube_url = request.form.get('youtube_url')
-            linkedin_url = request.form.get('linkedin_url')
-            
-            # Check if passwords match
-            if password != confirm_password:
-                flash('Passwords do not match!')
-                return render_template('register.html')
-            
-            # Check if user exists
-            if User.query.filter_by(email=email).first():
-                flash('Email already registered')
-                return render_template('register.html')
-            if User.query.filter_by(username=username).first():
-                flash('Username already taken')
-                return render_template('register.html')
-            
-            # Create new mentor (unverified by default)
-            if not username and full_name:
-                username = full_name.lower().replace(' ', '_')
-            
-            user = User(
-                username=username, 
-                email=email, 
-                role='mentor',
-                full_name=full_name,
-                phone=phone,
-                job_title=job_title,
-                company=company,
-                previous_company=previous_company,
-                domain=domain,
-                experience=experience,
-                skills=skills,
-                services=services,
-                bio=bio,
-                price=int(price) if price else 0,
-                availability=availability,
-                facebook_url=facebook_url,
-                instagram_url=instagram_url,
-                youtube_url=youtube_url,
-                linkedin_url=linkedin_url,
-                is_verified=False
-            )
-            user.set_password(password)
-            db.session.add(user)
-            db.session.commit()
-            
-            flash('Mentor application submitted! Please wait for admin approval.')
-            return redirect(url_for('login'))
-    
-    return render_template('register.html')
-
-@app.route('/enroll', methods=['GET', 'POST'])
-def enroll():
-    """Enrollment page for mentorship program"""
-    if request.method == 'POST':
-        # Handle enrollment form submission
-        full_name = request.form.get('fullName')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        education = request.form.get('education')
+        if not date_str:
+            return jsonify({'error': 'Date is required'}), 400
         
-        # Check if user is logged in
-        if current_user.is_authenticated:
-            user_id = current_user.id
-        else:
-            # Check if user exists with this email
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user_id = user.id
-            else:
-                # Create a temporary user record
-                username = email.split('@')[0]
-                # Ensure username is unique
-                counter = 1
-                original_username = username
-                while User.query.filter_by(username=username).first():
-                    username = f"{original_username}_{counter}"
-                    counter += 1
-                
-                user = User(
-                    username=username,
-                    email=email,
-                    role='learner'
-                )
-                user.set_password('temp_' + str(random.randint(1000, 9999)))
-                db.session.add(user)
-                db.session.commit()
-                user_id = user.id
+        available_slots = get_time_slots_for_date(mentor_id, date_str)
         
-        # Save enrollment record
-        enrollment_data = {
-            'full_name': full_name,
-            'phone': phone,
-            'education': education
-        }
-        
-        enrollment = Enrollment(
-            user_id=user_id,
-            program_name='career_mentorship',
-            payment_status='pending',
-            payment_amount=499,
-            additional_data=json.dumps(enrollment_data)
-        )
-        db.session.add(enrollment)
-        db.session.commit()
-        
-        flash('Enrollment submitted successfully! Our team will contact you shortly.')
-        return redirect(url_for('dashboard') if current_user.is_authenticated else url_for('index'))
-    
-    return render_template('enroll.html')
+        return jsonify({
+            'success': True,
+            'slots': available_slots,
+            'date': date_str
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/process-payment/<int:booking_id>', methods=['POST'])
-@login_required
-def process_payment(booking_id):
-    """Process payment for a booking"""
-    booking = Booking.query.get_or_404(booking_id)
-    
-    # Check if current user is the learner
-    if booking.learner_id != current_user.id:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Update booking status
-    booking.status = 'Paid'
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Payment processed successfully'})
-
-@app.route('/process-enrollment-payment/<int:enrollment_id>', methods=['POST'])
-@login_required
-def process_enrollment_payment(enrollment_id):
-    """Process payment for enrollment"""
-    enrollment = Enrollment.query.get_or_404(enrollment_id)
-    
-    # Check if current user owns this enrollment
-    if enrollment.user_id != current_user.id:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    # Update enrollment payment status
-    enrollment.payment_status = 'completed'
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Payment completed successfully'})
-
-# Book a service from service detail page
+# Book service with date
 @app.route('/book-service/<int:service_id>', methods=['POST'])
 @login_required
 def book_service(service_id):
@@ -1116,10 +910,33 @@ def book_service(service_id):
         return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
     
     slot = request.form.get('slot')
+    date_str = request.form.get('date')
     notes = request.form.get('notes', '')
     
     if not slot:
         flash('Please select a time slot')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    if not date_str:
+        flash('Please select a date')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    # Convert date string to date object
+    try:
+        booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Invalid date format')
+        return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
+    
+    # Check if slot is already booked
+    existing_booking = Booking.query.filter_by(
+        mentor_id=service.mentor_id,
+        booking_date=booking_date,
+        slot_time=slot
+    ).first()
+    
+    if existing_booking:
+        flash('This time slot is already booked. Please select another time.')
         return redirect(url_for('service_detail', username=mentor.username, service_slug=service.slug))
     
     # Create booking
@@ -1129,6 +946,7 @@ def book_service(service_id):
         service_id=service.id,
         service_name=service.name,
         slot_time=slot,
+        booking_date=booking_date,
         price=service.price,
         notes=notes,
         status='Pending'
@@ -1136,7 +954,7 @@ def book_service(service_id):
     db.session.add(booking)
     db.session.commit()
     
-    flash(f'Booking created for {service.name}! Please complete payment of ₹{service.price}.')
+    flash(f'Booking created for {service.name} on {booking_date.strftime("%b %d, %Y")} at {slot}!')
     return redirect(url_for('dashboard'))
 
 # Product booking/purchase
@@ -1462,6 +1280,7 @@ def mentor_calendar():
     bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
     booked_slots = [{
         'time': b.slot_time,
+        'date': b.booking_date.strftime('%Y-%m-%d') if b.booking_date else 'N/A',
         'service': b.service_name,
         'learner': User.query.get(b.learner_id).username if User.query.get(b.learner_id) else 'Unknown'
     } for b in bookings]
@@ -1692,6 +1511,209 @@ def update_booking_status(booking_id):
     
     return jsonify({'success': False, 'message': 'Invalid status'}), 400
 
+# Register route
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        role = request.form.get('role')
+        
+        if role == 'learner':
+            # Handle learner registration
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            
+            # Check if passwords match
+            if password != confirm_password:
+                flash('Passwords do not match!')
+                return render_template('register.html')
+            
+            # Check if user exists
+            if User.query.filter_by(email=email).first():
+                flash('Email already registered')
+                return render_template('register.html')
+            if User.query.filter_by(username=username).first():
+                flash('Username already taken')
+                return render_template('register.html')
+            
+            # Create new learner
+            user = User(username=username, email=email, role='learner')
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('Registration successful! Please login.')
+            return redirect(url_for('login'))
+            
+        elif role == 'mentor':
+            # Handle mentor registration with new fields
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            full_name = request.form.get('full_name')
+            phone = request.form.get('phone')
+            job_title = request.form.get('job_title')
+            company = request.form.get('company')
+            previous_company = request.form.get('previous_company')
+            domain = request.form.get('domain')
+            experience = request.form.get('experience')
+            skills = request.form.get('skills') or ''
+            price = request.form.get('price')
+            availability = request.form.get('availability')
+            bio = request.form.get('bio')
+            
+            # Get services as list and convert to string
+            services_list = request.form.getlist('services')
+            services = ', '.join(services_list) if services_list else ""
+            
+            # Social media links
+            facebook_url = request.form.get('facebook_url')
+            instagram_url = request.form.get('instagram_url')
+            youtube_url = request.form.get('youtube_url')
+            linkedin_url = request.form.get('linkedin_url')
+            
+            # Check if passwords match
+            if password != confirm_password:
+                flash('Passwords do not match!')
+                return render_template('register.html')
+            
+            # Check if user exists
+            if User.query.filter_by(email=email).first():
+                flash('Email already registered')
+                return render_template('register.html')
+            if User.query.filter_by(username=username).first():
+                flash('Username already taken')
+                return render_template('register.html')
+            
+            # Create new mentor (unverified by default)
+            if not username and full_name:
+                username = full_name.lower().replace(' ', '_')
+            
+            user = User(
+                username=username, 
+                email=email, 
+                role='mentor',
+                full_name=full_name,
+                phone=phone,
+                job_title=job_title,
+                company=company,
+                previous_company=previous_company,
+                domain=domain,
+                experience=experience,
+                skills=skills,
+                services=services,
+                bio=bio,
+                price=int(price) if price else 0,
+                availability=availability,
+                facebook_url=facebook_url,
+                instagram_url=instagram_url,
+                youtube_url=youtube_url,
+                linkedin_url=linkedin_url,
+                is_verified=False
+            )
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('Mentor application submitted! Please wait for admin approval.')
+            return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
+@app.route('/enroll', methods=['GET', 'POST'])
+def enroll():
+    """Enrollment page for mentorship program"""
+    if request.method == 'POST':
+        # Handle enrollment form submission
+        full_name = request.form.get('fullName')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        education = request.form.get('education')
+        
+        # Check if user is logged in
+        if current_user.is_authenticated:
+            user_id = current_user.id
+        else:
+            # Check if user exists with this email
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user_id = user.id
+            else:
+                # Create a temporary user record
+                username = email.split('@')[0]
+                # Ensure username is unique
+                counter = 1
+                original_username = username
+                while User.query.filter_by(username=username).first():
+                    username = f"{original_username}_{counter}"
+                    counter += 1
+                
+                user = User(
+                    username=username,
+                    email=email,
+                    role='learner'
+                )
+                user.set_password('temp_' + str(random.randint(1000, 9999)))
+                db.session.add(user)
+                db.session.commit()
+                user_id = user.id
+        
+        # Save enrollment record
+        enrollment_data = {
+            'full_name': full_name,
+            'phone': phone,
+            'education': education
+        }
+        
+        enrollment = Enrollment(
+            user_id=user_id,
+            program_name='career_mentorship',
+            payment_status='pending',
+            payment_amount=499,
+            additional_data=json.dumps(enrollment_data)
+        )
+        db.session.add(enrollment)
+        db.session.commit()
+        
+        flash('Enrollment submitted successfully! Our team will contact you shortly.')
+        return redirect(url_for('dashboard') if current_user.is_authenticated else url_for('index'))
+    
+    return render_template('enroll.html')
+
+@app.route('/process-payment/<int:booking_id>', methods=['POST'])
+@login_required
+def process_payment(booking_id):
+    """Process payment for a booking"""
+    booking = Booking.query.get_or_404(booking_id)
+    
+    # Check if current user is the learner
+    if booking.learner_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Update booking status
+    booking.status = 'Paid'
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Payment processed successfully'})
+
+@app.route('/process-enrollment-payment/<int:enrollment_id>', methods=['POST'])
+@login_required
+def process_enrollment_payment(enrollment_id):
+    """Process payment for enrollment"""
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+    
+    # Check if current user owns this enrollment
+    if enrollment.user_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Update enrollment payment status
+    enrollment.payment_status = 'completed'
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Payment completed successfully'})
+
 # DEBUG ROUTE
 @app.route('/debug')
 def debug_paths():
@@ -1769,4 +1791,4 @@ with app.app_context():
             print(f"Could not create database: {e2}")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
