@@ -1795,10 +1795,37 @@ def logout():
 @login_required
 def dashboard():
     if current_user.role == 'admin':
-        # ... admin code remains the same ...
+        pending_mentors = User.query.filter_by(role='mentor', is_verified=False).all()
+        total_users = User.query.count()
+        verified_mentors = User.query.filter_by(role='mentor', is_verified=True).count()
+        total_bookings = Booking.query.count()
+        
+        # Get recent bookings with mentor names
+        recent_bookings = []
+        bookings = Booking.query.order_by(Booking.created_at.desc()).limit(5).all()
+        for booking in bookings:
+            mentor = User.query.get(booking.mentor_id)
+            learner = User.query.get(booking.learner_id)
+            recent_bookings.append({
+                'mentor_name': mentor.username if mentor else 'Unknown',
+                'learner_name': learner.username if learner else 'Unknown',
+                'service_name': booking.service_name,
+                'slot_time': booking.slot_time,
+                'amount': booking.price or (mentor.price if mentor else 0),
+                'status': booking.status,
+                'created_at': booking.created_at.strftime('%b %d, %Y') if booking.created_at else 'N/A'
+            })
+        
+        return render_template('admin.html',
+                             pending_mentors=pending_mentors,
+                             total_users=total_users,
+                             verified_mentors=verified_mentors,
+                             total_bookings=total_bookings,
+                             recent_bookings=recent_bookings)
     
     elif current_user.role == 'mentor':
         my_bookings = Booking.query.filter_by(mentor_id=current_user.id).all()
+        
         # Get learner names for bookings
         bookings_with_learners = []
         for booking in my_bookings:
@@ -1811,33 +1838,27 @@ def dashboard():
         # Get services count
         services_count = Service.query.filter_by(mentor_id=current_user.id, is_active=True).count()
         
-        # Calculate stats
+        # Calculate stats - FIXED: completed_bookings as list
         total_bookings = len(my_bookings)
-        
-        # FIX: completed_bookings should be a list, not a count
-        completed_bookings_list = [b for b in my_bookings if b.status == 'Completed']  # Changed variable name
         pending_bookings = len([b for b in my_bookings if b.status in ['Pending', 'Pending Payment']])
-        
-        # FIX: Use the list for counting
-        completed_bookings_count = len(completed_bookings_list)  # Count of completed bookings
-        total_sessions = completed_bookings_count  # Same as completed count
-        
+        completed_bookings = [b for b in my_bookings if b.status == 'Completed']  # FIXED: This is a LIST
         total_earnings = sum([b.price or current_user.price for b in my_bookings if b.payment_status == 'success'])
+        total_sessions = len(completed_bookings)  # FIXED: Use len() on the list
         
         # Get upcoming bookings
         today = datetime.now().date()
         upcoming_bookings = [b for b in my_bookings if b.booking_date and b.booking_date >= today and b.status == 'Paid']
         
-        return render_template('dashboard.html', 
+        return render_template('dashboard.html',
                              upcoming_bookings=upcoming_bookings[:5],
                              type='mentor',
                              total_bookings=total_bookings,
                              pending_bookings=pending_bookings,
-                             completed_bookings=completed_bookings_list,  # Pass the list
+                             completed_bookings=completed_bookings,  # FIXED: Passing the list
                              total_earnings=total_earnings,
                              total_sessions=total_sessions,
                              services_count=services_count,
-                             bookings=bookings_with_learners)
+                             bookings=bookings_with_learners)  # For backward compatibility
         
     else:  # Learner
         my_bookings = Booking.query.filter_by(learner_id=current_user.id).all()
@@ -1849,9 +1870,9 @@ def dashboard():
                 'mentor': mentor
             })
         
-        # Calculate stats for template
-        completed_bookings_list = [b for b in my_bookings if b.status == 'Completed']  # List, not count
-        total_spent = sum([b.price or 0 for b in completed_bookings_list])
+        # Calculate stats for template - FIXED: completed_bookings as list
+        completed_bookings = [b for b in my_bookings if b.status == 'Completed']  # FIXED: This is a LIST
+        total_spent = sum([b.price or 0 for b in completed_bookings])
         
         # Get upcoming bookings
         today = datetime.now().date()
@@ -1866,8 +1887,8 @@ def dashboard():
             is_active=True
         ).count()
         
-        # Get saved mentors count
-        saved_mentors_count = 0  # Placeholder
+        # Get saved mentors count (placeholder - implement SavedMentor model later)
+        saved_mentors_count = 0
         
         # Get recommended mentors
         recommended_mentors = User.query.filter_by(
@@ -1875,16 +1896,16 @@ def dashboard():
             is_verified=True
         ).limit(3).all()
         
-        return render_template('dashboard.html', 
+        return render_template('dashboard.html',
                              upcoming_bookings=upcoming_bookings[:5],
-                             completed_bookings=completed_bookings_list,  # Pass the list
+                             completed_bookings=completed_bookings,  # FIXED: Passing the list
                              total_spent=total_spent,
                              saved_mentors_count=saved_mentors_count,
                              recommended_mentors=recommended_mentors,
                              type='learner',
                              enrollment=enrollment,
                              digital_products_count=digital_products_count,
-                             bookings=bookings_with_mentors)
+                             bookings=bookings_with_mentors)  # For backward compatibility
 @app.route('/verify/<int:id>')
 @login_required
 def verify_mentor(id):
@@ -2636,6 +2657,7 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
 
 
 
