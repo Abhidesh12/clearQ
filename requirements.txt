@@ -1,4 +1,5 @@
 flask
+flask_wtf
 flask-sqlalchemy
 flask-login
 scikit-learn
@@ -24,6 +25,7 @@ cryptography
 alembic
 Jinja2
 Flask-Cors
+
 
 
 
