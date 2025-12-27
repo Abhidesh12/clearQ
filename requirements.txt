@@ -16,5 +16,8 @@ blinker
 python-dotenv
 Flask-Mail
 itsdangerous
+requests
+
+
 
 
