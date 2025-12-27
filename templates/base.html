@@ -6,7 +6,7 @@
     <title>{% block title %}ClearQ - Mentorship Platform{% endblock %}</title>
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- Preconnect for CDN -->
@@ -246,13 +246,13 @@
                        class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
                         Find Mentors
                     </a>
-                    <a href="{{ url_for('mentorship_program') }}" 
+                    <a href="#how-it-works" 
                        class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
-                        Programs
+                        How It Works
                     </a>
-                    <a href="{{ url_for('about') }}" 
+                    <a href="#categories" 
                        class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
-                        About
+                        Categories
                     </a>
                     
                     {% if current_user.is_authenticated %}
@@ -270,9 +270,9 @@
                             <div class="flex items-center space-x-2">
                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-semibold" 
                                      aria-label="User profile">
-                                    {{ current_user.username[0]|upper }}
+                                    {{ current_user.username[0]|upper if current_user.username else 'U' }}
                                 </div>
-                                <span class="text-sm text-gray-600">Hi, {{ current_user.username }}</span>
+                                <span class="text-sm text-gray-600">Hi, {{ current_user.username if current_user.username else 'User' }}</span>
                             </div>
                             <a href="{{ url_for('logout') }}" 
                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
@@ -315,15 +315,15 @@
                        role="menuitem">
                         Find Mentors
                     </a>
-                    <a href="{{ url_for('mentorship_program') }}" 
+                    <a href="#how-it-works" 
                        class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                        role="menuitem">
-                        Programs
+                        How It Works
                     </a>
-                    <a href="{{ url_for('about') }}" 
+                    <a href="#categories" 
                        class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                        role="menuitem">
-                        About
+                        Categories
                     </a>
                     
                     {% if current_user.is_authenticated %}
@@ -343,10 +343,10 @@
                             <div class="flex items-center space-x-3 mb-4 px-4">
                                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold"
                                      aria-hidden="true">
-                                    {{ current_user.username[0]|upper }}
+                                    {{ current_user.username[0]|upper if current_user.username else 'U' }}
                                 </div>
                                 <div>
-                                    <p class="font-medium text-gray-900">{{ current_user.username }}</p>
+                                    <p class="font-medium text-gray-900">{{ current_user.username if current_user.username else 'User' }}</p>
                                 </div>
                             </div>
                             <a href="{{ url_for('logout') }}" 
@@ -380,19 +380,19 @@
             <div class="max-w-7xl mx-auto mt-4 px-4" role="alert" aria-live="polite" aria-atomic="true">
                 {% for category, message in messages %}
                     <div class="reveal active bg-gradient-to-r 
-                        {% if category == 'danger' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
+                        {% if category == 'error' or category == 'danger' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
                         {% elif category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
                         {% elif category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
                         {% else %}from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-700{% endif %} 
                         p-4 rounded-lg shadow-sm mb-2">
                         <div class="flex items-center">
                             <i class="fas 
-                                {% if category == 'danger' %}fa-exclamation-circle
+                                {% if category == 'error' or category == 'danger' %}fa-exclamation-circle
                                 {% elif category == 'warning' %}fa-exclamation-triangle
                                 {% elif category == 'success' %}fa-check-circle
                                 {% else %}fa-info-circle{% endif %} 
                                 mr-3" aria-hidden="true"></i>
-                            <p class="font-medium">{{ message }}</p>
+                            <p class="font-medium">{{ message|escape }}</p>
                         </div>
                     </div>
                 {% endfor %}
@@ -447,7 +447,7 @@
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Find Mentors
                         </a></li>
-                        <li><a href="{{ url_for('register') }}?role=mentor" 
+                        <li><a href="{{ url_for('register') }}" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Become a Mentor
                         </a></li>
@@ -493,11 +493,11 @@
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             support@clearq.in
                         </a></li>
-                        <li><a href="{{ url_for('privacy') }}" 
+                        <li><a href="{{ url_for('privacy') if 'privacy' in url_for('privacy') else '#' }}" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Privacy Policy
                         </a></li>
-                        <li><a href="{{ url_for('terms') }}" 
+                        <li><a href="{{ url_for('terms') if 'terms' in url_for('terms') else '#' }}" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Terms of Service
                         </a></li>
@@ -512,7 +512,7 @@
             <!-- Copyright -->
             <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
                 <div class="flex flex-col md:flex-row justify-between items-center">
-                    <p>&copy; 2024 ClearQ.in. All rights reserved.</p>
+                    <p>&copy; {{ now.year if now is defined else '2024' }} ClearQ.in. All rights reserved.</p>
                     <p class="mt-2 md:mt-0">
                         Made with <i class="fas fa-heart text-red-500 mx-1" aria-label="love"></i> for the community
                     </p>
@@ -521,14 +521,8 @@
         </div>
     </footer>
 
-    <!-- CSRF Token for JavaScript -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
     <!-- JavaScript -->
     <script>
-        // Store CSRF token for AJAX requests
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        
         // Ensure the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -538,7 +532,7 @@
             const menuIcon = mobileMenuButton ? mobileMenuButton.querySelector('i') : null;
 
             function toggleMobileMenu() {
-                if (!mobileMenuButton || !mobileMenu || !menuIcon) return;
+                if (!mobileMenuButton || !mobileMenu) return;
                 
                 const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
                 mobileMenu.classList.toggle('active');
@@ -546,11 +540,15 @@
                 mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
                 
                 if (mobileMenu.classList.contains('active')) {
-                    menuIcon.classList.remove('fa-bars');
-                    menuIcon.classList.add('fa-times');
+                    if (menuIcon) {
+                        menuIcon.classList.remove('fa-bars');
+                        menuIcon.classList.add('fa-times');
+                    }
                 } else {
-                    menuIcon.classList.remove('fa-times');
-                    menuIcon.classList.add('fa-bars');
+                    if (menuIcon) {
+                        menuIcon.classList.remove('fa-times');
+                        menuIcon.classList.add('fa-bars');
+                    }
                 }
             }
 
@@ -566,8 +564,10 @@
 
             // Close mobile menu when clicking outside
             document.addEventListener('click', function(event) {
-                if (mobileMenu && mobileMenuButton && mobileMenu.classList.contains('active') &&
-                    !mobileMenu.contains(event.target) && !mobileMenuButton.contains(event.target)) {
+                if (mobileMenu && mobileMenuButton && 
+                    !mobileMenu.contains(event.target) && 
+                    !mobileMenuButton.contains(event.target) && 
+                    mobileMenu.classList.contains('active')) {
                     toggleMobileMenu();
                 }
             });
@@ -602,6 +602,40 @@
                 });
             }
 
+            // Stats counter animation (for homepage)
+            const stats = document.querySelectorAll('.stat-number');
+            
+            if (stats.length > 0 && 'IntersectionObserver' in window) {
+                function animateCounter(element, target) {
+                    let current = 0;
+                    const increment = target / 100;
+                    const timer = setInterval(function() {
+                        current += increment;
+                        if (current >= target) {
+                            element.textContent = target + '+';
+                            clearInterval(timer);
+                        } else {
+                            element.textContent = Math.floor(current) + '+';
+                        }
+                    }, 20);
+                }
+
+                // Animate stats when in viewport
+                const statsObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            const target = parseInt(entry.target.getAttribute('data-target') || '0');
+                            animateCounter(entry.target, target);
+                            statsObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.5 });
+
+                stats.forEach(function(stat) {
+                    statsObserver.observe(stat);
+                });
+            }
+
             // Smooth scroll for anchor links
             document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
                 anchor.addEventListener('click', function(e) {
@@ -622,7 +656,8 @@
                         }
                         
                         // Smooth scroll
-                        const headerHeight = document.getElementById('mainHeader') ? document.getElementById('mainHeader').offsetHeight : 0;
+                        const header = document.getElementById('mainHeader');
+                        const headerHeight = header ? header.offsetHeight : 0;
                         const targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
                         const offsetPosition = targetPosition - headerHeight - 20;
                         
@@ -633,6 +668,83 @@
                         
                         // Update URL without reloading
                         history.pushState(null, null, href);
+                    }
+                });
+            });
+
+            // Add active class to nav links based on scroll position
+            const sections = document.querySelectorAll('section[id]');
+            const header = document.getElementById('mainHeader');
+            const headerHeight = header ? header.offsetHeight : 0;
+            
+            function updateActiveNavLink() {
+                const scrollY = window.pageYOffset;
+                
+                sections.forEach(function(section) {
+                    const sectionHeight = section.offsetHeight;
+                    const sectionTop = section.offsetTop - headerHeight - 100;
+                    const sectionId = section.getAttribute('id');
+                    const navLink = document.querySelector(`a[href="#${sectionId}"]`);
+                    
+                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight && navLink) {
+                        navLink.classList.add('text-primary', 'font-semibold');
+                    } else if (navLink) {
+                        navLink.classList.remove('text-primary', 'font-semibold');
+                    }
+                });
+            }
+            
+            // Debounce scroll event for performance
+            let scrollTimeout;
+            if (sections.length > 0) {
+                window.addEventListener('scroll', function() {
+                    if (scrollTimeout) {
+                        window.cancelAnimationFrame(scrollTimeout);
+                    }
+                    scrollTimeout = window.requestAnimationFrame(updateActiveNavLink);
+                });
+
+                // Initialize on page load
+                updateActiveNavLink();
+            }
+
+            // Add loading states to buttons with loading class
+            document.querySelectorAll('button[data-loading]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<span class="loading"></span> Loading...';
+                    button.disabled = true;
+                    
+                    // Reset after 5 seconds (fallback)
+                    setTimeout(function() {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 5000);
+                });
+            });
+
+            // Lazy loading for images
+            if ('loading' in HTMLImageElement.prototype) {
+                const images = document.querySelectorAll('img[data-src]');
+                images.forEach(function(img) {
+                    img.src = img.dataset.src;
+                });
+            }
+
+            // Prevent form double submission
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function() {
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<span class="loading"></span> Processing...';
+                        
+                        // Re-enable after 10 seconds (fallback)
+                        setTimeout(function() {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = 'Submit';
+                        }, 10000);
                     }
                 });
             });
