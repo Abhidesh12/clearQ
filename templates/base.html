@@ -153,7 +153,7 @@
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('dashboard') }}" class="text-gray-700 hover:text-primary font-medium transition-colors">Dashboard</a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="text-gray-700 hover:text-primary font-medium transition-colors">Admin</a>
+                            <a href="{{ url_for('dashboard') }}" class="text-gray-700 hover:text-primary font-medium transition-colors">Admin</a>
                         {% endif %}
                         <div class="flex items-center space-x-4">
                             <div class="flex items-center space-x-2">
@@ -197,7 +197,7 @@
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('dashboard') }}" class="block py-2 text-gray-700 hover:text-primary">Dashboard</a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="block py-2 text-gray-700 hover:text-primary">Admin</a>
+                            <a href="{{ url_for('dashboard') }}" class="block py-2 text-gray-700 hover:text-primary">Admin</a>
                         {% endif %}
                         <div class="pt-4 border-t border-gray-200">
                             <div class="flex items-center space-x-3 mb-4">
@@ -442,3 +442,4 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
