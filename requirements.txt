@@ -14,4 +14,7 @@ requests-oauthlib
 razorpay
 blinker
 python-dotenv
+Flask-Mail
+itsdangerous
+
 
