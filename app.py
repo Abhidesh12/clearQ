@@ -1042,7 +1042,7 @@ class Payment(db.Model):
     
     # Metadata
     notes = db.Column(db.Text, nullable=True)
-    metadata = db.Column(db.Text, nullable=True)  # JSON
+    meta_data = db.Column(db.Text, nullable=True)  # JSON
     
     # Relationships
     user = db.relationship('User', backref='payments')
@@ -1059,13 +1059,13 @@ class Payment(db.Model):
     def get_metadata(self) -> Dict:
         """Get metadata as dict."""
         try:
-            return json.loads(self.metadata) if self.metadata else {}
+            return json.loads(self.meta_data) if self.meta_data else {}
         except:
             return {}
     
     def set_metadata(self, data: Dict):
-        """Set metadata from dict."""
-        self.metadata = json.dumps(data)
+        """Set meta_data from dict."""
+        self.meta_data = json.dumps(data)
 
 class DigitalProductAccess(db.Model):
     __tablename__ = 'digital_product_access'
@@ -2687,3 +2687,4 @@ if __name__ == '__main__':
         debug=debug,
         threaded=True
     )
+
