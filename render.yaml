@@ -18,8 +18,4 @@ services:
       - key: ENVIRONMENT
         value: production
 
-databases:
-  - name: clearq-db
-    plan: free
-    databaseName: clearq
-    user: clearq_user
+
