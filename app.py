@@ -1440,7 +1440,24 @@ def handle_exception(error):
     
     # For web requests, show error page
     return render_template('errors/500.html'), 500
-
+    
+@app.before_request
+def before_request():
+    """Check database connection before each request."""
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+    except Exception as e:
+        logger.error(f"Database connection error: {e}")
+        try:
+            # Try to create tables if they don't exist
+            db.create_all()
+            logger.info("Database tables created on-demand")
+        except Exception as create_error:
+            logger.error(f"Failed to create tables: {create_error}")
+            # Return a maintenance page or error
+            if request.path != '/database-setup':
+                return render_template('errors/database.html'), 500
 # ============================================================================
 # ROUTES
 # ============================================================================
@@ -1448,8 +1465,8 @@ def handle_exception(error):
 @app.route('/')
 def index():
     """Home page."""
-    # Get featured mentors
     try:
+        # Get featured mentors
         featured_mentors = User.query.filter_by(
             role='mentor',
             is_verified=True,
@@ -1459,8 +1476,8 @@ def index():
         logger.error(f"Error getting featured mentors: {e}")
         featured_mentors = []
     
-    # Get featured services
     try:
+        # Get featured services
         featured_services = Service.query.filter_by(
             is_active=True,
             is_featured=True
@@ -1469,12 +1486,12 @@ def index():
         logger.error(f"Error getting featured services: {e}")
         featured_services = []
     
-    # Get stats for display
+    # Get stats for display - handle errors gracefully
     try:
         stats = {
-            'mentors': User.query.filter_by(role='mentor', is_verified=True).count() or 0,
-            'sessions': Booking.query.filter_by(status='completed').count() or 0,
-            'learners': User.query.filter_by(role='learner').count() or 0,
+            'mentors': User.query.filter_by(role='mentor', is_verified=True).count(),
+            'sessions': Booking.query.filter_by(status='completed').count(),
+            'learners': User.query.filter_by(role='learner').count(),
             'success_rate': 95
         }
     except Exception as e:
@@ -1490,7 +1507,34 @@ def index():
                          featured_mentors=featured_mentors,
                          featured_services=featured_services,
                          stats=stats)
-
+@app.route('/database-setup', methods=['GET'])
+def database_setup():
+    """Manual database setup endpoint."""
+    try:
+        db.create_all()
+        flash('Database tables created successfully!', 'success')
+        
+        # Create admin user if not exists
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@clearq.in')
+        if not User.query.filter_by(email=admin_email).first():
+            admin = User(
+                username='admin',
+                email=admin_email,
+                role='admin',
+                is_email_verified=True,
+                is_verified=True,
+                is_active=True
+            )
+            admin.set_password(os.environ.get('ADMIN_PASSWORD', 'Admin@123'))
+            db.session.add(admin)
+            db.session.commit()
+            flash('Admin user created!', 'success')
+        
+        return redirect(url_for('index'))
+    except Exception as e:
+        logger.error(f"Database setup error: {e}")
+        flash(f'Database setup failed: {str(e)}', 'danger')
+        return redirect(url_for('index'))
 @app.route('/enroll')
 def enroll():
     """Enrollment page for mentorship program."""
@@ -3089,20 +3133,24 @@ def faq():
     return render_template('faq.html')
 
 # ============================================================================
-# INITIALIZATION
+# INITIALIZATION AND DATABASE SETUP
 # ============================================================================
 
 def init_database():
-    """Initialize database with default data."""
+    """Initialize database with all tables."""
     with app.app_context():
         try:
-            # Create all tables
+            print("🔧 Initializing database...")
+            
+            # Create all tables if they don't exist
             db.create_all()
-            logger.info("Database tables created")
+            print("✅ Database tables created successfully")
             
             # Create admin user if not exists
             admin_email = os.environ.get('ADMIN_EMAIL', 'admin@clearq.in')
-            if not User.query.filter_by(email=admin_email).first():
+            admin = User.query.filter_by(email=admin_email).first()
+            
+            if not admin:
                 admin = User(
                     username='admin',
                     email=admin_email,
@@ -3115,13 +3163,15 @@ def init_database():
                 admin.set_password(admin_password)
                 db.session.add(admin)
                 db.session.commit()
-                logger.info("Admin user created")
-            
-            logger.info("Database initialization completed successfully")
-            
+                print("✅ Admin user created")
+            else:
+                print("✅ Admin user already exists")
+                
         except Exception as e:
-            logger.error(f"Database initialization error: {e}")
-            raise
+            db.session.rollback()
+            print(f"❌ Error initializing database: {e}")
+            # Don't raise - continue with app startup
+            # The app will create tables on first request if needed
 
 # ============================================================================
 # MAIN ENTRY POINT
@@ -3129,14 +3179,7 @@ def init_database():
 
 if __name__ == '__main__':
     # Initialize database
-    with app.app_context():
-        try:
-            print("🔧 Initializing database...")
-            init_database()
-            print("✅ Database setup complete!")
-        except Exception as e:
-            print(f"⚠️ Note during initialization: {e}")
-            # Continue running even if initialization has issues
+    init_database()
     
     # Run the app
     debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
