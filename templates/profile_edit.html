@@ -1,0 +1,835 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile - ClearQ{% endblock %}
+{% block content %}
+<style>
+    .profile-avatar-upload {
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .profile-avatar-upload:hover .avatar-overlay {
+        opacity: 1;
+    }
+    
+    .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .tab-content {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Edit Profile</h1>
+                    <p class="text-gray-600">Update your personal and professional information</p>
+                </div>
+                <a href="{{ url_for('dashboard') }}" 
+                   class="text-primary font-medium hover:text-primary-dark">
+                    ← Back to Dashboard
+                </a>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="mt-6 flex space-x-2 overflow-x-auto">
+                <button onclick="showTab('personal')" 
+                        class="tab-btn px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100 active">
+                    Personal Info
+                </button>
+                {% if current_user.role == 'mentor' %}
+                <button onclick="showTab('professional')" 
+                        class="tab-btn px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100">
+                    Professional Info
+                </button>
+                <button onclick="showTab('services')" 
+                        class="tab-btn px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100">
+                    Services
+                </button>
+                <button onclick="showTab('social')" 
+                        class="tab-btn px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100">
+                    Social Links
+                </button>
+                {% endif %}
+                <button onclick="showTab('security')" 
+                        class="tab-btn px-4 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-100">
+                    Security
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Personal Info Tab -->
+        <div id="personal-tab" class="tab-content">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Avatar Section -->
+                    <div class="md:w-1/3">
+                        <div class="sticky top-24">
+                            <div class="profile-avatar-upload w-48 h-48 mx-auto mb-6">
+                                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                                    {% if current_user.profile_image %}
+                                        <img src="{{ url_for('static', filename=current_user.profile_image) }}" 
+                                             alt="{{ current_user.full_name }}" 
+                                             class="w-full h-full object-cover rounded-2xl">
+                                    {% else %}
+                                        {{ current_user.full_name[0]|upper if current_user.full_name else current_user.username[0]|upper }}
+                                    {% endif %}
+                                </div>
+                                <div class="avatar-overlay">
+                                    <div class="text-white text-center">
+                                        <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        Change Photo
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="avatarInput" class="hidden" accept="image/*">
+                            
+                            <div class="text-center">
+                                <h3 class="font-bold text-gray-900 mb-2">{{ current_user.full_name }}</h3>
+                                <p class="text-gray-600 mb-4">{{ current_user.email }}</p>
+                                <span class="inline-block px-3 py-1 bg-blue-50 text-primary text-sm font-medium rounded-full">
+                                    {{ current_user.role|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Section -->
+                    <div class="md:w-2/3">
+                        <h2 class="text-lg font-bold text-gray-900 mb-6">Personal Information</h2>
+                        
+                        <form action="/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input type="text" name="full_name" value="{{ current_user.full_name }}" required
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" value="{{ current_user.email }}" disabled
+                                           class="w-full px-4 py-3 border border-gray-300 bg-gray-50 rounded-lg text-gray-500">
+                                    <p class="text-xs text-gray-500 mt-1">Contact support to change email</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                    <input type="tel" name="phone" value="{{ current_user.phone if current_user.phone else '' }}"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input type="text" value="{{ current_user.username }}" disabled
+                                           class="w-full px-4 py-3 border border-gray-300 bg-gray-50 rounded-lg text-gray-500">
+                                </div>
+                            </div>
+                            
+                            {% if current_user.role == 'mentor' %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                                <textarea name="bio" rows="4" 
+                                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                          placeholder="Tell learners about your background, experience, and expertise...">{{ mentor_profile.bio if mentor_profile and mentor_profile.bio else '' }}</textarea>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="pt-6 border-t border-gray-200">
+                                <button type="submit"
+                                        class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                                    Save Changes
+                                </button>
+                                <button type="button" onclick="window.history.back()"
+                                        class="ml-3 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Professional Info Tab (Mentors only) -->
+        {% if current_user.role == 'mentor' %}
+        <div id="professional-tab" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <h2 class="text-lg font-bold text-gray-900 mb-6">Professional Information</h2>
+                
+                <form action="/mentor/profile/update" method="POST" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Experience (Years)</label>
+                            <input type="number" name="experience" min="0" max="50" 
+                                   value="{{ mentor_profile.experience if mentor_profile else '0' }}" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                            <select name="industry" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">Select Industry</option>
+                                <option value="Technology" {% if mentor_profile and mentor_profile.industry == 'Technology' %}selected{% endif %}>Technology</option>
+                                <option value="Finance" {% if mentor_profile and mentor_profile.industry == 'Finance' %}selected{% endif %}>Finance</option>
+                                <option value="Healthcare" {% if mentor_profile and mentor_profile.industry == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                                <option value="Education" {% if mentor_profile and mentor_profile.industry == 'Education' %}selected{% endif %}>Education</option>
+                                <option value="Marketing" {% if mentor_profile and mentor_profile.industry == 'Marketing' %}selected{% endif %}>Marketing</option>
+                                <option value="Design" {% if mentor_profile and mentor_profile.industry == 'Design' %}selected{% endif %}>Design</option>
+                                <option value="Consulting" {% if mentor_profile and mentor_profile.industry == 'Consulting' %}selected{% endif %}>Consulting</option>
+                                <option value="Other" {% if mentor_profile and mentor_profile.industry == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                            <input type="text" name="job_title" 
+                                   value="{{ mentor_profile.job_title if mentor_profile and mentor_profile.job_title else '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                            <input type="text" name="company" 
+                                   value="{{ mentor_profile.company if mentor_profile and mentor_profile.company else '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Skills (comma separated)</label>
+                        <textarea name="skills" rows="3" required
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                  placeholder="e.g., Python, Machine Learning, Product Management, Leadership">{{ mentor_profile.skills if mentor_profile and mentor_profile.skills else '' }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">Add your top skills separated by commas</p>
+                    </div>
+                    
+                    <div class="pt-6 border-t border-gray-200">
+                        <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                            Update Professional Info
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Services Tab (Mentors only) -->
+        <div id="services-tab" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold text-gray-900">Your Services</h2>
+                    <button onclick="showServiceModal()"
+                            class="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                        + Add New Service
+                    </button>
+                </div>
+                
+                <!-- Services List will be loaded here -->
+                <div id="services-list" class="space-y-4">
+                    <!-- Services will be dynamically loaded -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Social Links Tab (Mentors only) -->
+        <div id="social-tab" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <h2 class="text-lg font-bold text-gray-900 mb-6">Social Links</h2>
+                
+                <form action="/mentor/profile/update" method="POST" class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">LinkedIn Profile</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 py-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                                    linkedin.com/in/
+                                </span>
+                                <input type="text" name="linkedin_url" 
+                                       value="{{ mentor_profile.linkedin_url.split('/in/')[1] if mentor_profile and mentor_profile.linkedin_url else '' }}"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="your-profile">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">GitHub Profile</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 py-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                                    github.com/
+                                </span>
+                                <input type="text" name="github_url" 
+                                       value="{{ mentor_profile.github_url.split('github.com/')[1] if mentor_profile and mentor_profile.github_url else '' }}"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="username">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Twitter/X Profile</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 py-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                                    twitter.com/
+                                </span>
+                                <input type="text" name="twitter_url" 
+                                       value="{{ mentor_profile.twitter_url.split('twitter.com/')[1] if mentor_profile and mentor_profile.twitter_url else '' }}"
+                                       class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-6 border-t border-gray-200">
+                        <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                            Update Social Links
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Security Tab -->
+        <div id="security-tab" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <h2 class="text-lg font-bold text-gray-900 mb-6">Security Settings</h2>
+                
+                <div class="space-y-8">
+                    <!-- Change Password -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-4">Change Password</h3>
+                        <form id="changePasswordForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                <input type="password" id="currentPassword" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                <input type="password" id="newPassword" required minlength="8"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">Minimum 8 characters with letters and numbers</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                <input type="password" id="confirmPassword" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            
+                            <button type="submit"
+                                    class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                                Update Password
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Two-Factor Authentication -->
+                    <div class="pt-8 border-t border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-medium text-gray-900">Two-Factor Authentication</h3>
+                                <p class="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                            </div>
+                            <button class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">
+                                Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Session Management -->
+                    <div class="pt-8 border-t border-gray-200">
+                        <h3 class="font-medium text-gray-900 mb-4">Active Sessions</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 01118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-medium">Current Session</p>
+                                        <p class="text-sm text-gray-600">Chrome on Windows • Just now</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                                    Active
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-medium">iPhone 13</p>
+                                        <p class="text-sm text-gray-600">Safari on iOS • 2 days ago</p>
+                                    </div>
+                                </div>
+                                <button class="text-red-600 text-sm font-medium hover:text-red-800">
+                                    Revoke
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="text-red-600 font-medium hover:text-red-800">
+                                Sign out from all devices
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Modal (for mentors) -->
+{% if current_user.role == 'mentor' %}
+<div id="serviceModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Add New Service</h3>
+                <button onclick="closeServiceModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Service form will be loaded here -->
+            <div id="serviceFormContainer"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Tab switching
+    function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab
+        const tab = document.getElementById(`${tabName}-tab`);
+        if (tab) {
+            tab.classList.remove('hidden');
+        }
+        
+        // Activate button
+        event.target.classList.add('active');
+    }
+    
+    // Avatar upload
+    document.getElementById('avatarInput')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+            showNotification('Please select a valid image (JPEG, PNG, GIF)', 'error');
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            showNotification('Image size should be less than 5MB', 'error');
+            return;
+        }
+        
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const avatar = document.querySelector('.profile-avatar-upload div:first-child');
+            avatar.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-2xl" alt="Profile photo">`;
+        };
+        reader.readAsDataURL(file);
+        
+        // Update form
+        const form = document.querySelector('form[action="/profile/update"]');
+        const formData = new FormData(form);
+        formData.append('profile_image', file);
+        
+        // Submit form
+        fetch('/profile/update', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                showNotification('Profile picture updated successfully', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                throw new Error('Failed to update profile picture');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update profile picture', 'error');
+        });
+    });
+    
+    // Click on avatar to trigger file input
+    document.querySelector('.profile-avatar-upload')?.addEventListener('click', function() {
+        document.getElementById('avatarInput').click();
+    });
+    
+    // Load mentor services
+    {% if current_user.role == 'mentor' %}
+    function loadServices() {
+        fetch('/api/mentor/services')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('services-list');
+                if (data.services && data.services.length > 0) {
+                    container.innerHTML = data.services.map(service => `
+                        <div class="border border-gray-200 rounded-xl p-5 hover:border-primary transition-colors">
+                            <div class="flex items-start justify-between mb-3">
+                                <h4 class="font-bold text-gray-900">${service.name}</h4>
+                                <span class="px-2 py-1 ${service.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} text-xs font-medium rounded">
+                                    ${service.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-600 text-sm mb-4">${service.description || 'No description'}</p>
+                            
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-lg font-bold text-primary">₹${service.price}</span>
+                                <span class="text-sm text-gray-600">${service.duration}</span>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button onclick="editService(${service.id})" 
+                                        class="flex-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                                    Edit
+                                </button>
+                                <button onclick="toggleService(${service.id}, ${service.is_active})" 
+                                        class="px-3 py-2 border ${service.is_active ? 'border-red-300 text-red-700' : 'border-green-300 text-green-700'} text-sm font-medium rounded-lg hover:${service.is_active ? 'bg-red-50' : 'bg-green-50'} transition-colors">
+                                    ${service.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 01118 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No services yet</h3>
+                            <p class="text-gray-600">Create your first service to start accepting bookings.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading services:', error);
+            });
+    }
+    
+    // Service modal functions
+    function showServiceModal(serviceId = null) {
+        const modal = document.getElementById('serviceModal');
+        const formContainer = document.getElementById('serviceFormContainer');
+        
+        if (serviceId) {
+            // Load existing service for editing
+            fetch(`/api/service/${serviceId}`)
+                .then(response => response.json())
+                .then(data => {
+                    formContainer.innerHTML = getServiceForm(data.service);
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                });
+        } else {
+            // New service form
+            formContainer.innerHTML = getServiceForm();
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function closeServiceModal() {
+        document.getElementById('serviceModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    function getServiceForm(service = null) {
+        return `
+            <form id="serviceForm" class="space-y-4" onsubmit="saveService(event, ${service ? service.id : 'null'})">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                    <input type="text" name="name" value="${service ? service.name : ''}" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                                  <textarea name="description" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                              placeholder="Describe what learners will get from this service">${service ? service.description : ''}</textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                        <input type="number" name="price" min="0" step="0.01" value="${service ? service.price : ''}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                               placeholder="e.g., 2999">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                        <select name="duration" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select duration</option>
+                            <option value="30 mins" ${service && service.duration === '30 mins' ? 'selected' : ''}>30 minutes</option>
+                            <option value="1 hour" ${service && service.duration === '1 hour' ? 'selected' : ''}>1 hour</option>
+                            <option value="1.5 hours" ${service && service.duration === '1.5 hours' ? 'selected' : ''}>1.5 hours</option>
+                            <option value="2 hours" ${service && service.duration === '2 hours' ? 'selected' : ''}>2 hours</option>
+                            <option value="Custom" ${service && service.duration === 'Custom' ? 'selected' : ''}>Custom</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+                    <select name="service_type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="">Select type</option>
+                        <option value="One-on-One" ${service && service.service_type === 'One-on-One' ? 'selected' : ''}>One-on-One Session</option>
+                        <option value="Group" ${service && service.service_type === 'Group' ? 'selected' : ''}>Group Session</option>
+                        <option value="Workshop" ${service && service.service_type === 'Workshop' ? 'selected' : ''}>Workshop</option>
+                        <option value="Project Review" ${service && service.service_type === 'Project Review' ? 'selected' : ''}>Project Review</option>
+                        <option value="Resume Review" ${service && service.service_type === 'Resume Review' ? 'selected' : ''}>Resume Review</option>
+                        <option value="Mock Interview" ${service && service.service_type === 'Mock Interview' ? 'selected' : ''}>Mock Interview</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" ${service ? (service.is_active ? 'checked' : '') : 'checked'}
+                               class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="ml-2 text-sm text-gray-700">Active (visible to learners)</span>
+                    </label>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeServiceModal()"
+                            class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+                        ${service ? 'Update Service' : 'Create Service'}
+                    </button>
+                </div>
+            </form>
+        `;
+    }
+    
+    function saveService(event, serviceId = null) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert checkbox value to boolean
+        data.is_active = formData.get('is_active') === 'on';
+        
+        const url = serviceId ? `/api/service/${serviceId}` : '/api/service';
+        const method = serviceId ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification(serviceId ? 'Service updated successfully!' : 'Service created successfully!', 'success');
+                closeServiceModal();
+                loadServices(); // Refresh the services list
+            } else {
+                throw new Error(result.message || 'Failed to save service');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification(error.message || 'Failed to save service', 'error');
+        });
+    }
+    
+    function editService(serviceId) {
+        showServiceModal(serviceId);
+    }
+    
+    function toggleService(serviceId, currentStatus) {
+        if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this service?`)) {
+            return;
+        }
+        
+        fetch(`/api/service/${serviceId}/toggle`, {
+            method: 'PUT'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification(`Service ${currentStatus ? 'deactivated' : 'activated'} successfully!`, 'success');
+                loadServices(); // Refresh the services list
+            } else {
+                throw new Error(result.message || 'Failed to update service');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update service status', 'error');
+        });
+    }
+    
+    // Load services when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('services-tab')) {
+            loadServices();
+        }
+    });
+    {% endif %}
+    
+    // Password change
+    document.getElementById('changePasswordForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        // Validation
+        if (newPassword !== confirmPassword) {
+            showNotification('New passwords do not match', 'error');
+            return;
+        }
+        
+        if (newPassword.length < 8) {
+            showNotification('Password must be at least 8 characters long', 'error');
+            return;
+        }
+        
+        // Submit password change
+        fetch('/api/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Password changed successfully!', 'success');
+                document.getElementById('changePasswordForm').reset();
+            } else {
+                showNotification(data.message || 'Failed to change password', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred', 'error');
+        });
+    });
+    
+    // Notification function
+    function showNotification(message, type = 'info') {
+        // Remove existing notification
+        const existingNotification = document.querySelector('.notification-toast');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `notification-toast fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('animate-slideOut');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-slideOut { animation: slideOut 0.3s ease-in forwards; }
+        .tab-btn.active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+{% endblock %}
