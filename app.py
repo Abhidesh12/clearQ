@@ -1465,8 +1465,8 @@ def before_request():
 @app.route('/')
 def index():
     """Home page."""
+    # Get featured mentors
     try:
-        # Get featured mentors
         featured_mentors = User.query.filter_by(
             role='mentor',
             is_verified=True,
@@ -1476,8 +1476,8 @@ def index():
         logger.error(f"Error getting featured mentors: {e}")
         featured_mentors = []
     
+    # Get featured services
     try:
-        # Get featured services
         featured_services = Service.query.filter_by(
             is_active=True,
             is_featured=True
@@ -1486,12 +1486,12 @@ def index():
         logger.error(f"Error getting featured services: {e}")
         featured_services = []
     
-    # Get stats for display - handle errors gracefully
+    # Get stats for display
     try:
         stats = {
-            'mentors': User.query.filter_by(role='mentor', is_verified=True).count(),
-            'sessions': Booking.query.filter_by(status='completed').count(),
-            'learners': User.query.filter_by(role='learner').count(),
+            'mentors': User.query.filter_by(role='mentor', is_verified=True).count() or 0,
+            'sessions': Booking.query.filter_by(status='completed').count() or 0,
+            'learners': User.query.filter_by(role='learner').count() or 0,
             'success_rate': 95
         }
     except Exception as e:
@@ -3187,4 +3187,5 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
