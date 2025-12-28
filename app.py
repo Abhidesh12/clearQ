@@ -34,6 +34,13 @@ import bleach
 from PIL import Image
 import html
 from urllib.parse import urlparse, urljoin
+# Add these imports if not already present
+from flask import url_for
+from itsdangerous import URLSafeTimedSerializer
+import datetime
+
+# Initialize serializer (add this after app configuration)
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # ============================================================================
 # CONFIGURATION & SETUP
@@ -1723,6 +1730,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
