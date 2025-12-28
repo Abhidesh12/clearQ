@@ -7,7 +7,7 @@ import logging
 import traceback
 from typing import Optional, List, Dict, Any, Tuple
 from pathlib import Path
-
+from sqlalchemy import func
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -1426,6 +1426,7 @@ def dashboard():
             ).order_by(Booking.booking_date).limit(5).all()
             
             recommended_mentors = []
+            services_count = stats['total_services']
             
         else:
             # Learner stats
@@ -1880,6 +1881,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
