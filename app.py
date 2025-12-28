@@ -1101,7 +1101,76 @@ def login():
     
     return render_template('login.html')
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handle password reset requests."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Generate reset token and send email
+            token = serializer.dumps(user.email, salt='password-reset')
+            reset_url = url_for('reset_password', token=token, _external=True)
+            
+            # Send reset email
+            subject = 'Password Reset Request - ClearQ'
+            body = f"""You requested a password reset.
 
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 1 hour.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+The ClearQ Team
+"""
+            send_email(user.email, subject, body)
+        
+        # Always show success (security measure)
+        flash('If an account exists with that email, you will receive password reset instructions.', 'info')
+        return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html')
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password with valid token."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    try:
+        email = serializer.loads(token, salt='password-reset', max_age=3600)
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            flash('Invalid or expired reset link.', 'danger')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            password = request.form.get('password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            
+            is_valid, error_msg = validate_password(password)
+            if not is_valid:
+                flash(error_msg, 'danger')
+            elif password != confirm_password:
+                flash('Passwords do not match.', 'danger')
+            else:
+                user.set_password(password)
+                db.session.commit()
+                flash('Your password has been reset! Please log in.', 'success')
+                return redirect(url_for('login'))
+        
+        return render_template('reset_password.html', token=token)
+        
+    except Exception as e:
+        flash('Invalid or expired reset link.', 'danger')
+        return redirect(url_for('login'))    
 @app.route('/logout')
 @login_required
 def logout():
@@ -1606,6 +1675,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
