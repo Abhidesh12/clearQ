@@ -838,12 +838,12 @@ def database_setup():
 
 @app.route('/explore')
 def explore():
-    """Explore mentors."""
+    """Explore mentors page."""
     query = request.args.get('q', '')
     domain = request.args.get('domain', '')
     sort = request.args.get('sort', 'rating')
     
-    # Base query
+    # Base query for mentors
     mentors_query = User.query.filter_by(
         role='mentor',
         is_verified=True,
@@ -878,12 +878,24 @@ def explore():
     per_page = 12
     mentors_paginated = mentors_query.paginate(page=page, per_page=per_page, error_out=False)
     
-    return render_template('mentors.html',
+    # Get unique domains for filter dropdown
+    try:
+        domains = db.session.query(User.domain).filter(
+            User.domain.isnot(None),
+            User.role == 'mentor',
+            User.is_verified == True
+        ).distinct().all()
+        domains = [d[0] for d in domains if d[0]]
+    except Exception as e:
+        logger.error(f"Error getting domains: {e}")
+        domains = []
+    
+    return render_template('explore.html',
                          mentors=mentors_paginated,
                          query=query,
                          domain=domain,
+                         domains=domains,
                          sort=sort)
-
 
 @app.route('/mentor/<username>')
 def mentor_public_profile(username):
@@ -1584,6 +1596,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
