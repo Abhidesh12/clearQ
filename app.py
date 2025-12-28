@@ -1286,25 +1286,39 @@ def handle_exception(error):
 def index():
     """Home page."""
     # Get featured mentors
-    featured_mentors = User.query.filter_by(
-        role='mentor',
-        is_verified=True,
-        is_active=True
-    ).order_by(User.rating.desc()).limit(6).all()
+    try:
+        featured_mentors = User.query.filter_by(
+            role='mentor',
+            is_verified=True,
+            is_active=True
+        ).order_by(User.rating.desc()).limit(6).all()
+    except Exception:
+        featured_mentors = []
     
     # Get featured services
-    featured_services = Service.query.filter_by(
-        is_active=True,
-        is_featured=True
-    ).order_by(Service.created_at.desc()).limit(6).all()
+    try:
+        featured_services = Service.query.filter_by(
+            is_active=True,
+            is_featured=True
+        ).order_by(Service.created_at.desc()).limit(6).all()
+    except Exception:
+        featured_services = []
     
     # Get stats for display
-    stats = {
-        'mentors': User.query.filter_by(role='mentor', is_verified=True).count(),
-        'sessions': Booking.query.filter_by(status='completed').count(),
-        'learners': User.query.filter_by(role='learner').count(),
-        'success_rate': 95
-    }
+    try:
+        stats = {
+            'mentors': User.query.filter_by(role='mentor', is_verified=True).count(),
+            'sessions': Booking.query.filter_by(status='completed').count(),
+            'learners': User.query.filter_by(role='learner').count(),
+            'success_rate': 95
+        }
+    except Exception:
+        stats = {
+            'mentors': 0,
+            'sessions': 0,
+            'learners': 0,
+            'success_rate': 95
+        }
     
     return render_template('index.html',
                          featured_mentors=featured_mentors,
@@ -2672,11 +2686,10 @@ def create_sample_mentors():
 # ============================================================================
 
 if __name__ == '__main__':
-    # Initialize database within app context
+    # Initialize database
     with app.app_context():
         try:
-            print("Initializing database...")
-            # Create all tables
+            print("🔧 Initializing database...")
             db.create_all()
             
             # Create admin user if not exists
@@ -2693,24 +2706,15 @@ if __name__ == '__main__':
                 admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
                 db.session.add(admin)
                 db.session.commit()
-                print("Admin user created")
+                print("✅ Admin user created")
             
-            print("Database initialized successfully")
-            
+            print("✅ Database setup complete!")
         except Exception as e:
-            print(f"Database initialization error: {e}")
+            print(f"⚠️ Note during initialization: {e}")
     
-    # Get configuration
+    # Run the app
     debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     host = os.environ.get('FLASK_HOST', '0.0.0.0')
     port = int(os.environ.get('FLASK_PORT', 5000))
     
-    # Run application
-    app.run(
-        host=host,
-        port=port,
-        debug=debug,
-        threaded=True
-    )
-
-
+    app.run(host=host, port=port, debug=debug, threaded=True)
