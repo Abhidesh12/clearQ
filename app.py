@@ -223,7 +223,53 @@ def get_db():
         yield db
     finally:
         db.close()
+# Add this function after imports and before routes
+def create_admin_user(db: Session):
+    """Create initial admin user if not exists"""
+    admin_email = "admin@clearq.in"
+    admin_username = "admin"
+    
+    # Check if admin already exists
+    existing_admin = db.query(User).filter(
+        (User.email == admin_email) | (User.username == admin_username)
+    ).first()
+    
+    if not existing_admin:
+        # Create admin user
+        admin = User(
+            username=admin_username,
+            email=admin_email,
+            password_hash=hash_password("Admin@123"),  # Change this in production!
+            full_name="ClearQ Administrator",
+            role="admin",
+            is_verified=True,
+            is_active=True
+        )
+        
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+        
+        print("=" * 60)
+        print("ADMIN USER CREATED SUCCESSFULLY")
+        print("=" * 60)
+        print(f"Email: {admin_email}")
+        print(f"Password: Admin@123")
+        print("=" * 60)
+        print("IMPORTANT: Change this password immediately after first login!")
+        print("=" * 60)
+        
+        return admin
+    return existing_admin
 
+# Add this to ensure admin is created on startup
+@app.on_event("startup")
+async def startup_event():
+    db = SessionLocal()
+    try:
+        create_admin_user(db)
+    finally:
+        db.close()
 # Authentication functions
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -1171,4 +1217,5 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
