@@ -44,7 +44,7 @@
                 <div>
                     <span class="font-medium">Total Mentors:</span> 
                     <span class="ml-2 px-2 py-1 bg-blue-100 rounded">
-                        {{ mentors|length if mentors is defined else 0 }}
+                        {{ mentors.total if mentors and mentors.total is defined else 0 }}
                     </span>
                 </div>
                 <div>
@@ -276,3 +276,4 @@
     });
 </script>
 {% endblock %}
+
