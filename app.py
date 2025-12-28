@@ -597,12 +597,14 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
 
 def send_verification_email(user) -> bool:
     """Send email verification link."""
-    token = serializer.dumps(user.email, salt='email-verify')
-    verification_url = url_for('verify_email', token=token, _external=True)
-    
-    subject = 'Verify Your Email - ClearQ'
-    
-    body = f"""Welcome to ClearQ!
+    # Create application context for url_for
+    with app.app_context():
+        token = serializer.dumps(user.email, salt='email-verify')
+        verification_url = url_for('verify_email', token=token, _external=True)
+        
+        subject = 'Verify Your Email - ClearQ'
+        
+        body = f"""Welcome to ClearQ!
 
 Please verify your email address by clicking the link below:
 {verification_url}
@@ -612,8 +614,8 @@ This link will expire in 24 hours.
 Best regards,
 The ClearQ Team
 """
-    
-    return send_email(user.email, subject, body)
+        
+        return send_email(user.email, subject, body)
 
 
 # ============================================================================
@@ -1675,6 +1677,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
