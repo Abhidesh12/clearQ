@@ -186,7 +186,104 @@
                             </div>
                         </div>
                     </div>
-                    
+                    <!-- Update the booking section to use proper API endpoints -->
+<script>
+    async function loadTimeSlots(date) {
+        const mentorId = {{ mentor.mentor.id if mentor.mentor else 0 }};
+        if (!mentorId) return;
+        
+        try {
+            const response = await fetch(`/api/available-slots/${mentorId}?date=${date}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update time slots UI
+                updateTimeSlotsUI(data.slots);
+            }
+        } catch (error) {
+            console.error('Error loading time slots:', error);
+        }
+    }
+    
+    async function createBooking() {
+        const serviceSelect = document.getElementById('quick-service');
+        const dateInput = document.getElementById('selected-date');
+        const timeSelect = document.getElementById('selected-time');
+        
+        if (!serviceSelect.value || !dateInput.value || !timeSelect.value) {
+            showNotification('Please select service, date, and time', 'error');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('service_id', serviceSelect.value);
+        formData.append('scheduled_for', dateInput.value);
+        formData.append('time_slot', timeSelect.value);
+        
+        try {
+            const response = await fetch('/api/create-booking', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Initialize Razorpay
+                const options = {
+                    "key": data.key_id,
+                    "amount": data.amount * 100,
+                    "currency": "INR",
+                    "name": "ClearQ Mentorship",
+                    "description": "Booking Payment",
+                    "order_id": data.order_id,
+                    "handler": function(response) {
+                        verifyPayment(response, data.booking_id);
+                    },
+                    "prefill": {
+                        "name": "{{ current_user.full_name if current_user else '' }}",
+                        "email": "{{ current_user.email if current_user else '' }}",
+                    },
+                    "theme": {
+                        "color": "#2563eb"
+                    }
+                };
+                
+                const razorpay = new Razorpay(options);
+                razorpay.open();
+            }
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            showNotification('Failed to create booking', 'error');
+        }
+    }
+    
+    async function verifyPayment(paymentResponse, bookingId) {
+        const formData = new FormData();
+        formData.append('razorpay_order_id', paymentResponse.razorpay_order_id);
+        formData.append('razorpay_payment_id', paymentResponse.razorpay_payment_id);
+        formData.append('razorpay_signature', paymentResponse.razorpay_signature);
+        
+        try {
+            const response = await fetch('/api/verify-payment', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Payment successful! Booking confirmed.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            showNotification('Payment verification failed', 'error');
+        }
+    }
+</script>
                     <!-- Social Media (Collapsible) -->
                     <div class="mb-6">
                         <button type="button" 
@@ -296,3 +393,4 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 {% endblock %}
+
