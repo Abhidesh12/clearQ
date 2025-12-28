@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}{% if page_type == 'privacy' %}Privacy Policy{% else %}Terms of Service{% endif %} - ClearQ{% endblock %}
+{% block content %}
+<style>
+    .terms-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .terms-content h2 {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .terms-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .terms-content p {
+        margin-bottom: 1rem;
+        line-height: 1.7;
+    }
+    
+    .terms-content ul {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+    
+    .terms-content li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+    
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 40;
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="terms-container px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        {% if page_type == 'privacy' %}
+                            Privacy Policy
+                        {% else %}
+                            Terms of Service
+                        {% endif %}
+                    </h1>
+                    <p class="text-gray-600 mt-2">
+                        Last updated: December 29, 2024
+                    </p>
+                </div>
+                <a href="{{ url_for('index') }}" class="text-primary hover:text-primary-dark font-medium">
+                    ← Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="terms-container px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+            <div class="terms-content">
+                {% if page_type == 'privacy' %}
+                <!-- Privacy Policy Content -->
+                <h2>Privacy Policy</h2>
+                <p>Welcome to ClearQ. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mentorship platform.</p>
+
+                <h3>1. Information We Collect</h3>
+                <p>We collect several types of information from and about users of our platform:</p>
+                <ul>
+                    <li><strong>Personal Information:</strong> Name, email address, phone number, profile picture, and other information you provide during registration.</li>
+                    <li><strong>Professional Information:</strong> For mentors, we collect experience details, industry, skills, services offered, pricing, and availability.</li>
+                    <li><strong>Payment Information:</strong> We collect payment details through our payment processor (Razorpay). We do not store full credit card numbers on our servers.</li>
+                    <li><strong>Usage Data:</strong> Information about how you use our platform, including session bookings, communications, and preferences.</li>
+                    <li><strong>Technical Data:</strong> IP address, browser type, device information, and cookies.</li>
+                </ul>
+
+                <h3>2. How We Use Your Information</h3>
+                <p>We use the information we collect to:</p>
+                <ul>
+                    <li>Provide and maintain our mentorship platform</li>
+                    <li>Process your bookings and payments</li>
+                    <li>Facilitate communication between mentors and learners</li>
+                    <li>Verify mentor identities and qualifications</li>
+                    <li>Send you important updates about your account and bookings</li>
+                    <li>Improve our platform and develop new features</li>
+                    <li>Prevent fraud and ensure platform security</li>
+                    <li>Comply with legal obligations</li>
+                </ul>
+
+                <h3>3. Information Sharing and Disclosure</h3>
+                <p>We may share your information with:</p>
+                <ul>
+                    <li><strong>Mentors/Learners:</strong> To facilitate bookings and communication between users</li>
+                    <li><strong>Service Providers:</strong> Payment processors, email services, and analytics providers</li>
+                    <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
+                    <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
+                </ul>
+
+                <h3>4. Data Security</h3>
+                <p>We implement appropriate technical and organizational measures to protect your personal information. However, no internet transmission is completely secure, and we cannot guarantee absolute security.</p>
+
+                <h3>5. Your Rights</h3>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access your personal information</li>
+                    <li>Correct inaccurate information</li>
+                    <li>Request deletion of your information</li>
+                    <li>Object to or restrict processing of your information</li>
+                    <li>Data portability</li>
+                </ul>
+
+                <h3>6. Cookies and Tracking</h3>
+                <p>We use cookies and similar tracking technologies to track activity on our platform and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.</p>
+
+                <h3>7. Children's Privacy</h3>
+                <p>Our platform is not intended for users under 18 years of age. We do not knowingly collect personal information from children under 18.</p>
+
+                <h3>8. Changes to This Privacy Policy</h3>
+                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.</p>
+
+                <h3>9. Contact Us</h3>
+                <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+                <p>Email: privacy@clearq.in</p>
+                <p>Address: ClearQ Technologies, 123 Mentorship Lane, Career City, IN 123456</p>
+
+                {% else %}
+                <!-- Terms of Service Content -->
+                <h2>Terms of Service</h2>
+                <p>Welcome to ClearQ. These Terms of Service govern your use of our mentorship platform. By accessing or using ClearQ, you agree to be bound by these Terms.</p>
+
+                <h3>1. Acceptance of Terms</h3>
+                <p>By creating an account or using our platform, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these Terms, you must not use our platform.</p>
+
+                <h3>2. Account Registration</h3>
+                <p>To use certain features of our platform, you must register for an account. You agree to:</p>
+                <ul>
+                    <li>Provide accurate, current, and complete information</li>
+                    <li>Maintain the security of your password and account</li>
+                    <li>Promptly update any information that changes</li>
+                    <li>Accept responsibility for all activities under your account</li>
+                    <li>Be at least 18 years old or have parental consent</li>
+                </ul>
+
+                <h3>3. User Roles and Responsibilities</h3>
+                
+                <h4>3.1 Mentors</h4>
+                <p>As a mentor, you agree to:</p>
+                <ul>
+                    <li>Provide accurate information about your qualifications and experience</li>
+                    <li>Deliver services as described in your service listings</li>
+                    <li>Maintain professional conduct during all sessions</li>
+                    <li>Respect scheduled appointment times</li>
+                    <li>Keep confidential information shared by learners private</li>
+                    <li>Obtain necessary approvals if representing a company</li>
+                </ul>
+
+                <h4>3.2 Learners</h4>
+                <p>As a learner, you agree to:</p>
+                <ul>
+                    <li>Provide accurate information about your background and goals</li>
+                    <li>Respect scheduled appointment times</li>
+                    <li>Maintain professional conduct during all sessions</li>
+                    <li>Provide honest and constructive feedback</li>
+                    <li>Use the platform for legitimate learning purposes only</li>
+                </ul>
+
+                <h3>4. Booking and Payment</h3>
+                <p>All bookings are subject to the following terms:</p>
+                <ul>
+                    <li>Payment must be completed before sessions can be scheduled</li>
+                    <li>Cancellations must be made at least 24 hours before the scheduled session</li>
+                    <li>Refunds are issued according to our cancellation policy</li>
+                    <li>Platform fees (20%) are deducted from mentor payments</li>
+                    <li>Taxes are the responsibility of the mentor</li>
+                </ul>
+
+                <h3>5. Intellectual Property</h3>
+                <p>All content on the ClearQ platform, including text, graphics, logos, and software, is the property of ClearQ or its content suppliers and protected by intellectual property laws.</p>
+
+                <h3>6. Prohibited Activities</h3>
+                <p>You agree not to:</p>
+                <ul>
+                    <li>Use the platform for any illegal purpose</li>
+                    <li>Harass, abuse, or harm another person</li>
+                    <li>Impersonate any person or entity</li>
+                    <li>Interfere with or disrupt the platform</li>
+                    <li>Attempt to gain unauthorized access to any part of the platform</li>
+                    <li>Share confidential information from sessions without permission</li>
+                    <li>Use the platform to solicit business outside of ClearQ</li>
+                </ul>
+
+                <h3>7. Disclaimers and Limitation of Liability</h3>
+                <p>ClearQ provides the platform "as is" and "as available" without any warranties. We are not responsible for:</p>
+                <ul>
+                    <li>The quality or outcome of mentorship sessions</li>
+                    <li>Professional advice provided by mentors</li>
+                    <li>Technical issues beyond our reasonable control</li>
+                    <li>User content or conduct</li>
+                </ul>
+
+                <h3>8. Termination</h3>
+                <p>We may suspend or terminate your account if you violate these Terms. Upon termination, your right to use the platform will immediately cease.</p>
+
+                <h3>9. Dispute Resolution</h3>
+                <p>Any disputes arising from these Terms will be resolved through binding arbitration in accordance with Indian law.</p>
+
+                <h3>10. Changes to Terms</h3>
+                <p>We reserve the right to modify these Terms at any time. We will notify users of material changes via email or platform notification.</p>
+
+                <h3>11. Governing Law</h3>
+                <p>These Terms shall be governed by and construed in accordance with the laws of India, without regard to its conflict of law provisions.</p>
+
+                <h3>12. Contact Information</h3>
+                <p>For questions about these Terms, please contact us at:</p>
+                <p>Email: legal@clearq.in</p>
+                <p>Address: ClearQ Technologies, 123 Mentorship Lane, Career City, IN 123456</p>
+
+                {% endif %}
+            </div>
+            
+            <!-- Acceptance Section -->
+            <div class="mt-12 pt-8 border-t border-gray-200">
+                <div class="bg-blue-50 rounded-xl p-6">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 01118 0z"/>
+                        </svg>
+                        <div>
+                            <h3 class="font-bold text-gray-900 mb-2">Important Notice</h3>
+                            <p class="text-gray-700">
+                                By using the ClearQ platform, you acknowledge that you have read, understood, and agree to be bound by these 
+                                {% if page_type == 'privacy' %}
+                                    Privacy Policy
+                                {% else %}
+                                    Terms of Service
+                                {% endif %}.
+                                If you have any questions, please contact our support team before proceeding.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+            class="back-to-top w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl transition-shadow hidden"
+            id="backToTop">
+        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+        </svg>
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Back to top button
+        const backToTop = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                backToTop.classList.remove('hidden');
+            } else {
+                backToTop.classList.add('hidden');
+            }
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                
+                if (href === '#') return;
+                
+                e.preventDefault();
+                const target = document.querySelector(href);
+                
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add section navigation
+        const sections = document.querySelectorAll('.terms-content h2, .terms-content h3');
+        const navContainer = document.createElement('div');
+        navContainer.className = 'lg:fixed lg:top-32 lg:right-8 lg:w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-4 hidden lg:block';
+        navContainer.innerHTML = '<h4 class="font-bold text-gray-900 mb-3">Contents</h4><nav class="space-y-2" id="termsNav"></nav>';
+        
+        if (sections.length > 0) {
+            document.querySelector('.terms-container').appendChild(navContainer);
+            const nav = document.getElementById('termsNav');
+            
+            sections.forEach(section => {
+                const id = section.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                section.id = id;
+                
+                const link = document.createElement('a');
+                link.href = `#${id}`;
+                link.className = 'block text-sm text-gray-600 hover:text-primary transition-colors';
+                link.textContent = section.textContent;
+                
+                if (section.tagName === 'H2') {
+                    link.className += ' font-medium';
+                } else if (section.tagName === 'H3') {
+                    link.className += ' ml-2';
+                }
+                
+                nav.appendChild(link);
+            });
+        }
+    });
+</script>
+{% endblock %}
