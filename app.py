@@ -1304,27 +1304,38 @@ def resend_verification():
 def dashboard():
     """User dashboard."""
     try:
+        # Import datetime if not already imported
+        from datetime import datetime
+        from sqlalchemy import func
+        
         if current_user.role == 'admin':
             # Admin stats
             stats = {
-                'total_users': User.query.count(),
-                'total_mentors': User.query.filter_by(role='mentor').count(),
-                'total_learners': User.query.filter_by(role='learner').count(),
-                'pending_mentors': User.query.filter_by(role='mentor', is_verified=False).count(),
-                'total_bookings': Booking.query.count(),
+                'total_users': User.query.count() or 0,
+                'total_mentors': User.query.filter_by(role='mentor').count() or 0,
+                'total_learners': User.query.filter_by(role='learner').count() or 0,
+                'pending_mentors': User.query.filter_by(role='mentor', is_verified=False).count() or 0,
+                'total_bookings': Booking.query.count() if hasattr(app, 'Booking') else 0,
             }
             upcoming_bookings = []
             recommended_mentors = []
             
         elif current_user.role == 'mentor':
-            # Mentor stats
+            # Mentor stats - safely calculate earnings
+            confirmed_bookings = Booking.query.filter_by(
+                mentor_id=current_user.id, 
+                status='confirmed'
+            ).all() if hasattr(app, 'Booking') else []
+            
+            earnings = sum([b.price for b in confirmed_bookings if b and b.price]) or 0
+            
             stats = {
-                'total_bookings': Booking.query.filter_by(mentor_id=current_user.id).count(),
-                'pending_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='pending').count(),
-                'confirmed_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').count(),
-                'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count(),
-                'total_earnings': sum([b.price for b in Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').all() if b.price]),
-                'total_sessions': Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').count(),
+                'total_bookings': Booking.query.filter_by(mentor_id=current_user.id).count() or 0,
+                'pending_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='pending').count() or 0,
+                'confirmed_bookings': len(confirmed_bookings),
+                'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count() if hasattr(app, 'Service') else 0,
+                'total_earnings': earnings,
+                'total_sessions': len(confirmed_bookings),
             }
             
             # Get upcoming bookings for mentor
@@ -1332,28 +1343,35 @@ def dashboard():
                 Booking.mentor_id == current_user.id,
                 Booking.status == 'confirmed',
                 Booking.booking_date >= datetime.utcnow()
-            ).order_by(Booking.booking_date).limit(5).all()
+            ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
             
             recommended_mentors = []
             
         else:
             # Learner stats
+            confirmed_bookings = Booking.query.filter_by(
+                learner_id=current_user.id, 
+                status='confirmed'
+            ).all() if hasattr(app, 'Booking') else []
+            
+            total_spent = sum([b.price for b in confirmed_bookings if b and b.price]) or 0
+            
             stats = {
-                'total_bookings': Booking.query.filter_by(learner_id=current_user.id).count(),
+                'total_bookings': Booking.query.filter_by(learner_id=current_user.id).count() or 0,
                 'upcoming_bookings': Booking.query.filter(
                     Booking.learner_id == current_user.id,
                     Booking.status == 'confirmed',
                     Booking.booking_date >= datetime.utcnow()
-                ).count(),
+                ).count() if hasattr(app, 'Booking') else 0,
                 'digital_products': DigitalProductAccess.query.filter_by(
                     user_id=current_user.id,
                     is_active=True
-                ).count(),
+                ).count() if hasattr(app, 'DigitalProductAccess') else 0,
                 'completed_sessions': Booking.query.filter(
                     Booking.learner_id == current_user.id,
                     Booking.status == 'completed'
-                ).count(),
-                'total_spent': sum([b.price for b in Booking.query.filter_by(learner_id=current_user.id, status='confirmed').all() if b.price]),
+                ).count() if hasattr(app, 'Booking') else 0,
+                'total_spent': total_spent,
             }
             
             # Get upcoming bookings for learner
@@ -1361,7 +1379,7 @@ def dashboard():
                 Booking.learner_id == current_user.id,
                 Booking.status == 'confirmed',
                 Booking.booking_date >= datetime.utcnow()
-            ).order_by(Booking.booking_date).limit(5).all()
+            ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
             
             # Get recommended mentors for learner
             recommended_mentors = User.query.filter_by(
@@ -1756,6 +1774,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
