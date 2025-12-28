@@ -12,10 +12,12 @@ python-jose[cryptography]
 pyjwt
 pillow
 pydantic
+razorpay
 pydantic-settings
 redis
 celery
 httpx
 stripe
 sendgrid
+
 
