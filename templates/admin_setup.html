@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Setup - ClearQ{% endblock %}
+
+{% block content %}
+<style>
+    .setup-card {
+        max-width: 500px;
+        margin: 2rem auto;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+    
+    .setup-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .setup-body {
+        padding: 2rem;
+    }
+    
+    .security-warning {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0.5rem;
+    }
+    
+    .step {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .step-number {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+        background: #10b981;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 1rem;
+    }
+    
+    .step-content h3 {
+        margin: 0 0 0.5rem 0;
+        color: #1f2937;
+    }
+    
+    .step-content p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .credentials-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .credential-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .credential-item:last-child {
+        border-bottom: none;
+    }
+    
+    .credential-label {
+        font-weight: 600;
+        color: #4b5563;
+    }
+    
+    .credential-value {
+        font-family: monospace;
+        background: #1f2937;
+        color: #10b981;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .copy-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+    
+    .copy-btn:hover {
+        background: #2563eb;
+    }
+    
+    .copy-btn.copied {
+        background: #10b981;
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
+    <div class="setup-card">
+        <div class="setup-header">
+            <h1 class="text-2xl font-bold">ClearQ Admin Setup</h1>
+            <p class="opacity-90 mt-2">Initial platform configuration</p>
+        </div>
+        
+        <div class="setup-body">
+            <div class="security-warning">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5 mr-2"></i>
+                    <div>
+                        <strong class="text-yellow-800">Security Warning:</strong>
+                        <p class="text-yellow-700 text-sm mt-1">
+                            The default admin credentials are shown below. Change the password immediately after first login.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Database Initialized</h3>
+                    <p>All database tables have been created successfully.</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Admin User Created</h3>
+                    <p>Default administrator account has been set up.</p>
+                </div>
+            </div>
+            
+            <div class="credentials-box">
+                <h3 class="font-bold text-gray-900 mb-3">Admin Credentials</h3>
+                
+                <div class="credential-item">
+                    <span class="credential-label">Email:</span>
+                    <code class="credential-value">admin@clearq.in</code>
+                </div>
+                
+                <div class="credential-item">
+                    <span class="credential-label">Password:</span>
+                    <code class="credential-value">Admin@123</code>
+                </div>
+                
+                <div class="credential-item">
+                    <span class="credential-label">Login URL:</span>
+                    <code class="credential-value">{{ url_for('login', _external=True) if url_for else '/login' }}</code>
+                </div>
+                
+                <div class="mt-4">
+                    <button id="copyCredentials" class="copy-btn w-full">
+                        <i class="far fa-copy mr-2"></i>
+                        Copy All Credentials
+                    </button>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Next Steps</h3>
+                    <p>
+                        1. Login with the credentials above<br>
+                        2. Change your password immediately<br>
+                        3. Set up Razorpay payment keys<br>
+                        4. Configure platform settings
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-6">
+                <a href="{{ url_for('login') }}" 
+                   class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg text-center hover:shadow-lg transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Go to Login
+                </a>
+                
+                <a href="{{ url_for('index') }}" 
+                   class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg text-center hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    Homepage
+                </a>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="text-sm text-gray-600 text-center">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    This page will not appear again after setup is complete.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const copyBtn = document.getElementById('copyCredentials');
+        
+        copyBtn.addEventListener('click', function() {
+            const credentials = `Admin Credentials for ClearQ:\n\nEmail: admin@clearq.in\nPassword: Admin@123\nLogin URL: ${window.location.origin}/login\n\nIMPORTANT: Change password immediately after first login!`;
+            
+            navigator.clipboard.writeText(credentials)
+                .then(() => {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                    copyBtn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy credentials. Please copy manually.');
+                });
+        });
+    });
+</script>
+{% endblock %}
