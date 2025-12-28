@@ -1,0 +1,895 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }} - ClearQ{% endblock %}
+
+{% block content %}
+<style>
+    .service-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4rem 0;
+    }
+    
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .feature-list li {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-list i {
+        color: #10b981;
+        margin-right: 1rem;
+        margin-top: 0.25rem;
+        flex-shrink: 0;
+    }
+    
+    .booking-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        padding: 2rem;
+        position: sticky;
+        top: 100px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .calendar-container {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .calendar-day {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .calendar-day:hover {
+        border-color: #667eea;
+        background-color: #f8fafc;
+    }
+    
+    .calendar-day.selected {
+        border-color: #667eea;
+        background-color: #e0e7ff;
+    }
+    
+    .time-slot {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .time-slot:hover {
+        border-color: #667eea;
+        background-color: #f8fafc;
+    }
+    
+    .time-slot.selected {
+        border-color: #667eea;
+        background-color: #e0e7ff;
+        color: #4f46e5;
+        font-weight: 600;
+    }
+    
+    .time-slot.booked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f3f4f6;
+    }
+    
+    .mentor-profile {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
+    }
+    
+    .whats-included {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        padding: 2rem;
+    }
+    
+    .benefit-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .benefit-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .faq-item {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1.5rem 0;
+    }
+    
+    .faq-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        color: #6b7280;
+        line-height: 1.6;
+    }
+    
+    .faq-item.active .faq-answer {
+        max-height: 500px;
+        margin-top: 1rem;
+    }
+    
+    .faq-item.active .faq-question i {
+        transform: rotate(180deg);
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Service Hero -->
+    <div class="service-hero">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="md:w-2/3 mb-8 md:mb-0">
+                    <div class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 mb-4">
+                        <span class="text-sm font-medium">{{ service.category|replace('_', ' ')|title }}</span>
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-4">{{ service.name }}</h1>
+                    <p class="text-xl opacity-90 mb-6">{{ service.description }}</p>
+                    
+                    <div class="flex items-center space-x-6">
+                        <div>
+                            <div class="text-3xl font-bold">₹{{ service.price }}</div>
+                            <div class="text-sm opacity-80">per session</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold">{{ service.duration }} minutes</div>
+                            <div class="text-sm opacity-80">session duration</div>
+                        </div>
+                        {% if service.is_digital %}
+                        <div class="flex items-center">
+                            <i class="fas fa-download mr-2"></i>
+                            <span class="text-sm">Digital Product Included</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex-shrink-0">
+                    <div class="w-48 h-48 rounded-2xl bg-white/20 flex items-center justify-center">
+                        {% if 'resume' in service.name.lower() or 'cv' in service.name.lower() %}
+                        <i class="fas fa-file-alt text-white text-6xl"></i>
+                        {% elif 'interview' in service.name.lower() %}
+                        <i class="fas fa-comments text-white text-6xl"></i>
+                        {% elif 'career' in service.name.lower() %}
+                        <i class="fas fa-briefcase text-white text-6xl"></i>
+                        {% elif 'coding' in service.name.lower() %}
+                        <i class="fas fa-code text-white text-6xl"></i>
+                        {% elif 'salary' in service.name.lower() %}
+                        <i class="fas fa-handshake text-white text-6xl"></i>
+                        {% else %}
+                        <i class="fas fa-graduation-cap text-white text-6xl"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Service Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Mentor Profile -->
+                <div class="mentor-profile">
+                    <div class="flex items-center mb-6">
+                        <div class="w-16 h-16 rounded-full mr-4 overflow-hidden">
+                            {% if mentor.profile_image %}
+                            <img src="{{ mentor.profile_image }}" 
+                                 alt="{{ mentor.full_name }}"
+                                 class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                                {{ mentor.full_name[0] if mentor.full_name else mentor.username[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">{{ mentor.full_name if mentor.full_name else mentor.username }}</h3>
+                            <p class="text-gray-600">{{ mentor.mentor.job_title if mentor.mentor.job_title else 'Expert Mentor' }}</p>
+                        </div>
+                        <a href="/mentor/{{ mentor.username }}" 
+                           class="ml-auto text-blue-600 hover:text-blue-800 font-medium">
+                            View Full Profile →
+                        </a>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ mentor.mentor.rating|default('4.9') }}</div>
+                            <div class="text-sm text-gray-600">Rating</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ mentor.mentor.experience|default('5+') }}</div>
+                            <div class="text-sm text-gray-600">Years Exp</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ mentor.mentor.total_sessions|default('150+') }}</div>
+                            <div class="text-sm text-gray-600">Sessions</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ mentor.mentor.total_reviews|default('24') }}</div>
+                            <div class="text-sm text-gray-600">Reviews</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What's Included -->
+                <div class="whats-included">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">What's Included</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="benefit-card">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+                                <i class="fas fa-video text-blue-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Live 1:1 Video Session</h3>
+                            <p class="text-gray-600">Interactive video call for personalized guidance and real-time feedback.</p>
+                        </div>
+                        
+                        <div class="benefit-card">
+                            <div class="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center mb-4">
+                                <i class="fas fa-file-alt text-green-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Personalized Action Plan</h3>
+                            <p class="text-gray-600">Custom roadmap with clear next steps based on your specific goals.</p>
+                        </div>
+                        
+                        <div class="benefit-card">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-4">
+                                <i class="fas fa-comments text-purple-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Follow-up Support</h3>
+                            <p class="text-gray-600">Post-session email support for any follow-up questions or clarifications.</p>
+                        </div>
+                        
+                        <div class="benefit-card">
+                            <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-4">
+                                <i class="fas fa-download text-orange-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Resource Library Access</h3>
+                            <p class="text-gray-600">Curated materials and templates to help you implement what you learn.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
+                    
+                    <div class="space-y-2">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What preparation is needed before the session?</span>
+                                <i class="fas fa-chevron-down text-gray-500"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Please prepare any relevant documents (resume, portfolio, code samples) and a list of specific questions or areas you'd like to focus on. The more prepared you are, the more valuable the session will be.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Can I record the session?</span>
+                                <i class="fas fa-chevron-down text-gray-500"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Recording is allowed with mentor consent. Please request permission at the beginning of the session. Some mentors may have specific recording policies.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What happens if I need to reschedule?</span>
+                                <i class="fas fa-chevron-down text-gray-500"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>You can reschedule up to 24 hours before your session without penalty. Within 24 hours, rescheduling may be subject to a fee depending on mentor availability.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Is this service refundable?</span>
+                                <i class="fas fa-chevron-down text-gray-500"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Full refunds are available up to 24 hours before the session. Within 24 hours, a 50% cancellation fee applies. No-shows are not refundable.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reviews -->
+                <div class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Recent Reviews</h2>
+                        <a href="/mentor/{{ mentor.username }}#reviews" 
+                           class="text-blue-600 hover:text-blue-800 font-medium">
+                            View all reviews
+                        </a>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Sample Reviews (in production, these would come from database) -->
+                        <div class="border-b border-gray-100 pb-6">
+                            <div class="flex items-center mb-4">
+                                <div class="flex items-center mr-4">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-sm text-gray-600">2 weeks ago</span>
+                            </div>
+                            <p class="text-gray-700 mb-3">"Extremely helpful session! The mentor provided actionable feedback that helped me improve my resume significantly."</p>
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 mr-3"></div>
+                                <span class="font-medium text-gray-900">Rahul S.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="border-b border-gray-100 pb-6">
+                            <div class="flex items-center mb-4">
+                                <div class="flex items-center mr-4">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-sm text-gray-600">1 month ago</span>
+                            </div>
+                            <p class="text-gray-700 mb-3">"The mock interview was exactly what I needed. The feedback was detailed and helped me identify areas for improvement."</p>
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 mr-3"></div>
+                                <span class="font-medium text-gray-900">Priya M.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Booking Widget -->
+            <div class="lg:col-span-1">
+                <div class="booking-card">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">Book This Service</h3>
+                    
+                    <!-- Price Display -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600">Service Price</span>
+                            <span class="text-lg font-bold text-gray-900">₹{{ service.price }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Platform Fee</span>
+                            <span class="text-gray-600">Included</span>
+                        </div>
+                        <div class="border-t border-gray-200 mt-3 pt-3">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-900">Total</span>
+                                <span class="text-2xl font-bold text-gray-900">₹{{ service.price }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'learner' %}
+                            <!-- Date Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Select Date</label>
+                                <div class="calendar-container">
+                                    <!-- Calendar will be populated by JavaScript -->
+                                    <div class="text-center py-4 text-gray-500" id="loading-calendar">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        Loading available dates...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Time Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Select Time</label>
+                                <div id="time-slots" class="flex flex-wrap">
+                                    <!-- Time slots will be populated by JavaScript -->
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2" id="timezone-info">
+                                    Times shown in your local timezone
+                                </p>
+                            </div>
+                            
+                            <!-- Selected Details -->
+                            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100 hidden" id="selected-details">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-700">Selected Date:</span>
+                                    <span class="font-medium" id="selected-date">Not selected</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-700">Selected Time:</span>
+                                    <span class="font-medium" id="selected-time">Not selected</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Book Button -->
+                            <button id="book-now-btn" 
+                                    class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled>
+                                Book Now - ₹{{ service.price }}
+                            </button>
+                            
+                            <!-- Payment Methods -->
+                            <div class="mt-4 text-center">
+                                <p class="text-sm text-gray-600 mb-3">Secure payment powered by</p>
+                                <div class="flex justify-center space-x-4">
+                                    <i class="fab fa-cc-visa text-2xl text-gray-400"></i>
+                                    <i class="fab fa-cc-mastercard text-2xl text-gray-400"></i>
+                                    <i class="fab fa-cc-amex text-2xl text-gray-400"></i>
+                                    <i class="fab fa-cc-razorpay text-2xl text-gray-400"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Safety Notice -->
+                            <div class="mt-6 p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-shield-alt text-green-600 mt-0.5 mr-2"></i>
+                                    <div class="text-sm text-green-800">
+                                        <strong>100% Secure Booking:</strong> Your payment is protected and sessions are guaranteed.
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                    <i class="fas fa-user-graduate text-gray-400 text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-semibold text-gray-900 mb-2">Learners Only</h4>
+                                <p class="text-gray-600 mb-4">Only learners can book mentorship sessions.</p>
+                                <a href="/dashboard" 
+                                   class="inline-block px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                                    Go to Dashboard
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                <i class="fas fa-lock text-white text-xl"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-2">Sign In Required</h4>
+                            <p class="text-gray-600 mb-4">Please sign in to book this service.</p>
+                            <div class="space-y-3">
+                                <a href="/login?next={{ request.url }}"
+                                   class="block w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all">
+                                    Sign In
+                                </a>
+                                <a href="/register"
+                                   class="block w-full py-2 border-2 border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                                    Create Account
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Contact Support -->
+                    <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+                        <p class="text-sm text-gray-600 mb-2">Need help with booking?</p>
+                        <a href="mailto:support@clearq.in" 
+                           class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                            <i class="fas fa-envelope mr-1"></i>
+                            Contact Support
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Digital Product Section -->
+                {% if service.is_digital and service.digital_product_url %}
+                <div class="mt-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mr-4">
+                            <i class="fas fa-download text-green-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900">Digital Product Included</h4>
+                            <p class="text-sm text-gray-600">Access after purchase</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>Instant download access</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>Lifetime updates</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            <span>Commercial license</span>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        Preview Product Details
+                    </button>
+                </div>
+                {% endif %}
+                
+                <!-- Share Service -->
+                <div class="mt-6 bg-white rounded-2xl border border-gray-200 p-6">
+                    <h4 class="font-bold text-gray-900 mb-4">Share this service</h4>
+                    <div class="flex justify-center space-x-4">
+                        <button class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors">
+                            <i class="fab fa-linkedin-in"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                            <i class="fab fa-whatsapp"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" onclick="copyLink()">
+                            <i class="fas fa-link"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let selectedDate = null;
+    let selectedTime = null;
+    let availableDates = [];
+    let availableTimeSlots = [];
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', function() {
+                const item = this.closest('.faq-item');
+                item.classList.toggle('active');
+            });
+        });
+        
+        // Load available dates if user is authenticated learner
+        {% if current_user.is_authenticated and current_user.role == 'learner' %}
+        loadAvailableDates();
+        {% endif %}
+        
+        // Initialize book button
+        const bookButton = document.getElementById('book-now-btn');
+        if (bookButton) {
+            bookButton.addEventListener('click', bookSession);
+        }
+    });
+    
+    async function loadAvailableDates() {
+        try {
+            const response = await fetch(`/api/available-dates/{{ service.mentor.id }}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                availableDates = data.dates;
+                renderCalendar();
+            }
+        } catch (error) {
+            console.error('Error loading dates:', error);
+            document.getElementById('loading-calendar').innerHTML = 
+                '<span class="text-red-600">Error loading dates. Please refresh.</span>';
+        }
+    }
+    
+    function renderCalendar() {
+        const calendarContainer = document.querySelector('.calendar-container');
+        const loadingElement = document.getElementById('loading-calendar');
+        
+        if (availableDates.length === 0) {
+            loadingElement.innerHTML = '<span class="text-gray-500">No available dates found</span>';
+            return;
+        }
+        
+        loadingElement.remove();
+        
+        // Create date elements
+        availableDates.forEach(date => {
+            const dateElement = document.createElement('div');
+            dateElement.className = 'calendar-day';
+            dateElement.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold text-gray-900">${date.dayName}</div>
+                        <div class="text-sm text-gray-600">${date.month} ${date.day}</div>
+                    </div>
+                    <div class="text-sm text-green-600 font-medium">Available</div>
+                </div>
+            `;
+            
+            dateElement.addEventListener('click', () => selectDate(date.fullDate, dateElement));
+            
+            // Select first date by default
+            if (!selectedDate) {
+                selectDate(date.fullDate, dateElement);
+            }
+            
+            calendarContainer.appendChild(dateElement);
+        });
+    }
+    
+    async function selectDate(date, element) {
+        // Update UI
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        
+        selectedDate = date;
+        
+        // Update display
+        const dateObj = new Date(date);
+        document.getElementById('selected-date').textContent = 
+            dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        
+        // Load time slots for this date
+        await loadTimeSlots(date);
+        
+        // Show selected details
+        document.getElementById('selected-details').classList.remove('hidden');
+        
+        // Check if booking is ready
+        checkBookingReady();
+    }
+    
+    async function loadTimeSlots(date) {
+        const timeSlotsContainer = document.getElementById('time-slots');
+        timeSlotsContainer.innerHTML = '<div class="text-gray-500 text-sm">Loading time slots...</div>';
+        
+        try {
+            const response = await fetch(`/api/available-slots/{{ service.mentor.id }}?date=${date}`);
+            const data = await response.json();
+            
+            if (data.success && data.slots.length > 0) {
+                availableTimeSlots = data.slots;
+                renderTimeSlots(data.slots);
+            } else {
+                timeSlotsContainer.innerHTML = 
+                    '<div class="text-gray-500 text-sm">No available time slots for this date</div>';
+                selectedTime = null;
+                document.getElementById('selected-time').textContent = 'Not selected';
+            }
+        } catch (error) {
+            console.error('Error loading time slots:', error);
+            timeSlotsContainer.innerHTML = 
+                '<div class="text-red-500 text-sm">Error loading time slots</div>';
+        }
+    }
+    
+    function renderTimeSlots(slots) {
+        const timeSlotsContainer = document.getElementById('time-slots');
+        timeSlotsContainer.innerHTML = '';
+        
+        slots.forEach(slot => {
+            const slotElement = document.createElement('button');
+            slotElement.type = 'button';
+            slotElement.className = 'time-slot';
+            slotElement.textContent = slot.time;
+            
+            if (slot.booked) {
+                slotElement.classList.add('booked');
+                slotElement.disabled = true;
+            } else {
+                slotElement.addEventListener('click', () => selectTime(slot.time, slotElement));
+            }
+            
+            timeSlotsContainer.appendChild(slotElement);
+        });
+    }
+    
+    function selectTime(time, element) {
+        // Update UI
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        
+        selectedTime = time;
+        document.getElementById('selected-time').textContent = time;
+        
+        checkBookingReady();
+    }
+    
+    function checkBookingReady() {
+        const bookButton = document.getElementById('book-now-btn');
+        bookButton.disabled = !(selectedDate && selectedTime);
+    }
+    
+    async function bookSession() {
+        if (!selectedDate || !selectedTime) {
+            showNotification('Please select date and time', 'error');
+            return;
+        }
+        
+        const bookButton = document.getElementById('book-now-btn');
+        const originalText = bookButton.innerHTML;
+        
+        try {
+            // Disable button and show loading
+            bookButton.disabled = true;
+            bookButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            
+            const formData = new FormData();
+            formData.append('service_id', '{{ service.id }}');
+            formData.append('scheduled_for', selectedDate);
+            formData.append('time_slot', selectedTime);
+            
+            const response = await fetch('/api/create-booking', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Initialize Razorpay payment
+                initializeRazorpayPayment(data);
+            } else {
+                showNotification(data.message || 'Failed to create booking', 'error');
+                bookButton.innerHTML = originalText;
+                bookButton.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            showNotification('Network error. Please try again.', 'error');
+            bookButton.innerHTML = originalText;
+            bookButton.disabled = false;
+        }
+    }
+    
+    function initializeRazorpayPayment(data) {
+        const options = {
+            key: data.key_id,
+            amount: data.amount * 100,
+            currency: 'INR',
+            name: 'ClearQ Mentorship',
+            description: '{{ service.name }}',
+            order_id: data.order_id,
+            handler: async function(response) {
+                // Verify payment
+                await verifyPayment(response, data.booking_id);
+            },
+            prefill: {
+                name: '{{ current_user.full_name if current_user else "" }}',
+                email: '{{ current_user.email if current_user else "" }}',
+                contact: '{{ current_user.phone if current_user else "" }}'
+            },
+            theme: {
+                color: '#4f46e5'
+            },
+            modal: {
+                ondismiss: function() {
+                    // Enable booking button if payment modal is closed
+                    document.getElementById('book-now-btn').disabled = false;
+                    document.getElementById('book-now-btn').innerHTML = 'Book Now - ₹{{ service.price }}';
+                }
+            }
+        };
+        
+        const razorpay = new Razorpay(options);
+        razorpay.open();
+    }
+    
+    async function verifyPayment(paymentResponse, bookingId) {
+        try {
+            const formData = new FormData();
+            formData.append('razorpay_order_id', paymentResponse.razorpay_order_id);
+            formData.append('razorpay_payment_id', paymentResponse.razorpay_payment_id);
+            formData.append('razorpay_signature', paymentResponse.razorpay_signature);
+            
+            const response = await fetch('/api/verify-payment', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Booking confirmed! Redirecting to dashboard...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000);
+            } else {
+                showNotification('Payment verification failed', 'error');
+            }
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            showNotification('Payment verification error', 'error');
+        }
+    }
+    
+    function copyLink() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url)
+            .then(() => {
+                showNotification('Link copied to clipboard!', 'success');
+            })
+            .catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Link copied to clipboard!', 'success');
+            });
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        document.querySelectorAll('.custom-notification').forEach(n => n.remove());
+        
+        const notification = document.createElement('div');
+        notification.className = `custom-notification fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        
+        notification.innerHTML = `
+            <div class="flex items-center gap-2">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+            notification.classList.add('translate-x-0');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('translate-x-0');
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 3000);
+    }
+</script>
+{% endblock %}
