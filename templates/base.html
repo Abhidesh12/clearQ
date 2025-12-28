@@ -261,7 +261,7 @@
                             Dashboard
                         </a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('admin_dashboard') }}" 
+                            <a href="{{ url_for('dashboard') }}" 
                                class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
                                 Admin
                             </a>
@@ -333,7 +333,7 @@
                             Dashboard
                         </a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('admin_dashboard') }}" 
+                            <a href="{{ url_for('dashboard') }}" 
                                class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                                role="menuitem">
                                 Admin
@@ -767,3 +767,4 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
