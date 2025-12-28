@@ -79,6 +79,42 @@
                     <div class="ml-4">
                         <h3 class="text-lg font-bold text-gray-900">{{ current_user.full_name or current_user.username }}</h3>
                         <p class="text-sm text-gray-600">{{ current_user.mentor_profile.job_title or 'Mentor' }}</p>
+                        
+                        <!-- Social Media Links Display -->
+                        {% if current_user.mentor_profile.linkedin_url or current_user.mentor_profile.twitter_url or 
+                              current_user.mentor_profile.github_url or current_user.mentor_profile.website_url %}
+                        <div class="mt-2 flex gap-3">
+                            {% if current_user.mentor_profile.linkedin_url %}
+                            <a href="{{ current_user.mentor_profile.linkedin_url }}" target="_blank" 
+                               class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors"
+                               title="LinkedIn">
+                                <i class="fab fa-linkedin text-sm"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.mentor_profile.twitter_url %}
+                            <a href="{{ current_user.mentor_profile.twitter_url }}" target="_blank" 
+                               class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-400 hover:bg-blue-100 transition-colors"
+                               title="Twitter">
+                                <i class="fab fa-twitter text-sm"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.mentor_profile.github_url %}
+                            <a href="{{ current_user.mentor_profile.github_url }}" target="_blank" 
+                               class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 hover:bg-gray-200 transition-colors"
+                               title="GitHub">
+                                <i class="fab fa-github text-sm"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.mentor_profile.website_url %}
+                            <a href="{{ current_user.mentor_profile.website_url }}" target="_blank" 
+                               class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 hover:bg-purple-200 transition-colors"
+                               title="Website">
+                                <i class="fas fa-globe text-sm"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
                         <div class="mt-2">
                             {% if current_user.mentor_profile.is_verified %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
@@ -113,11 +149,6 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                             {{ form.full_name(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="Enter your full name") }}
-                            {% if form.full_name.errors %}
-                                {% for error in form.full_name.errors %}
-                                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
-                                {% endfor %}
-                            {% endif %}
                         </div>
                         
                         <div>
@@ -155,98 +186,93 @@
                     <!-- Skills -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Skills *</label>
-                        <div class="relative">
-                            {{ form.skills(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="Python, Machine Learning, Data Analysis, JavaScript") }}
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <span class="text-gray-400 text-sm">Separate with commas</span>
-                            </div>
-                        </div>
+                        {{ form.skills(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="Python, Machine Learning, Data Analysis, JavaScript") }}
                     </div>
                     
                     <!-- Bio -->
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Bio *</label>
                         {{ form.bio(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", rows="4", placeholder="Tell learners about your expertise, experience, and mentoring style...") }}
-                        <p class="mt-1 text-xs text-gray-500">Write a compelling bio to attract learners</p>
                     </div>
                     
-                    <!-- Additional Information (Collapsible) -->
-                    <div class="mb-6">
-                        <div class="border border-gray-200 rounded-lg">
-                            <button type="button" 
-                                    onclick="toggleSection('additional-info')"
-                                    class="flex items-center justify-between w-full p-4 text-left text-sm font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-t-lg">
-                                <span class="flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Additional Information
-                                </span>
-                                <svg class="w-5 h-5 text-gray-500 transition-transform" id="additional-info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </button>
-                            
-                            <div id="additional-info" class="hidden p-4 space-y-4 border-t border-gray-200">
-                                <!-- Availability -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Availability</label>
-                                    {{ form.availability(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="Weekdays 6-9 PM, Weekends 10 AM - 6 PM") }}
-                                </div>
-                                
-                                <!-- Previous Company -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Previous Company</label>
-                                    {{ form.previous_company(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors") }}
-                                </div>
-                                
-                                <!-- Hourly Rate -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Hourly Rate (₹)</label>
-                                    <div class="relative">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500">₹</span>
-                                        </div>
-                                        {{ form.hourly_rate(class="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="500") }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Social Media (Collapsible) -->
+                    <!-- Social Media Links -->
                     <div class="mb-6">
                         <div class="border border-gray-200 rounded-lg">
                             <button type="button" 
                                     onclick="toggleSection('social-media')"
                                     class="flex items-center justify-between w-full p-4 text-left text-sm font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-t-lg">
-                                <span class="flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                                    </svg>
-                                    Social Media Links
+                                <span class="flex items-center gap-3">
+                                    <i class="fab fa-linkedin text-blue-600"></i>
+                                    <i class="fab fa-twitter text-blue-400"></i>
+                                    <i class="fab fa-github"></i>
+                                    <span class="ml-2">Social Media Links</span>
                                 </span>
                                 <svg class="w-5 h-5 text-gray-500 transition-transform" id="social-media-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
                             
-                            <div id="social-media" class="hidden p-4 space-y-4 border-t border-gray-200">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
-                                    {{ form.linkedin_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://linkedin.com/in/username") }}
+                            <div id="social-media" class="hidden p-6 space-y-4 border-t border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fab fa-linkedin text-blue-600"></i>
+                                            LinkedIn URL
+                                        </label>
+                                        {{ form.linkedin_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://linkedin.com/in/username") }}
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fab fa-twitter text-blue-400"></i>
+                                            Twitter URL
+                                        </label>
+                                        {{ form.twitter_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://twitter.com/username") }}
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
-                                    {{ form.instagram_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://instagram.com/username") }}
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fab fa-github text-gray-800"></i>
+                                            GitHub URL
+                                        </label>
+                                        {{ form.github_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://github.com/username") }}
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fas fa-globe text-purple-600"></i>
+                                            Website URL
+                                        </label>
+                                        {{ form.website_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://yourwebsite.com") }}
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">YouTube</label>
-                                    {{ form.youtube_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://youtube.com/c/username") }}
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fab fa-youtube text-red-600"></i>
+                                            YouTube URL
+                                        </label>
+                                        {{ form.youtube_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://youtube.com/c/username") }}
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <i class="fab fa-facebook text-blue-700"></i>
+                                            Facebook URL
+                                        </label>
+                                        {{ form.facebook_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://facebook.com/username") }}
+                                    </div>
                                 </div>
+                                
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
-                                    {{ form.twitter_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://twitter.com/username") }}
+                                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                        <i class="fas fa-briefcase text-indigo-600"></i>
+                                        Portfolio URL
+                                    </label>
+                                    {{ form.portfolio_url(class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors", placeholder="https://yourportfolio.com") }}
                                 </div>
                             </div>
                         </div>
@@ -290,14 +316,6 @@ function handleProfileImageChange() {
     const form = document.getElementById('profileImageForm');
     
     if (fileInput.files && fileInput.files[0]) {
-        // Show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-            submitBtn.disabled = true;
-        }
-        
-        // Submit form
         form.submit();
     }
 }
@@ -322,12 +340,12 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
     }
 });
 
-// Initialize with additional info closed
+// Initialize with social media section open if there are existing links
 document.addEventListener('DOMContentLoaded', function() {
-    // Close all collapsible sections by default
-    ['additional-info', 'social-media'].forEach(section => {
-        document.getElementById(section).classList.add('hidden');
-    });
+    const hasSocialLinks = {{ 'true' if (current_user.mentor_profile.linkedin_url or current_user.mentor_profile.twitter_url or current_user.mentor_profile.github_url or current_user.mentor_profile.website_url) else 'false' }};
+    if (hasSocialLinks) {
+        toggleSection('social-media');
+    }
 });
 </script>
 {% endblock %}
