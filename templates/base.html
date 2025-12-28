@@ -6,1028 +6,554 @@
     <title>{% block title %}ClearQ - Mentorship Platform{% endblock %}</title>
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://checkout.razorpay.com 'unsafe-inline'; style-src 'self' https://cdn.tailwindcss.com 'unsafe-inline'; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.razorpay.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="ClearQ - Connect with industry experts for personalized mentorship and career guidance.">
-    <meta name="keywords" content="mentorship, career guidance, professional development, coaching, learning">
-    <meta name="author" content="ClearQ">
-    
-    <!-- Open Graph Tags -->
-    <meta property="og:title" content="ClearQ - Mentorship Platform">
-    <meta property="og:description" content="Connect with industry experts for personalized mentorship.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ request.url_root }}">
-    
-    <!-- Preconnect for performance -->
+    <!-- Preconnect for CDN -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
           crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" 
           rel="stylesheet" crossorigin="anonymous">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Favicon -->
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    
     <style>
-        /* CSS Variables */
+        /* Custom CSS Variables with fallback colors */
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
-            --secondary: #4f46e5;
-            --accent: #7c3aed;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-            --dark: #111827;
-            --light: #f9fafb;
-            --gray: #6b7280;
-            --gray-light: #e5e7eb;
-        }
-
-        /* Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            --secondary: #7c3aed;
+            --dark: #0f172a;
+            --text-body: #334155;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --white: #ffffff;
+            
+            --border-radius: 16px;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --shadow-color: rgba(37, 99, 235, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.6;
-            color: var(--dark);
-            background-color: var(--light);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            color: var(--text-body);
+            background-color: var(--bg-light);
+            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        h1, h2, h3, h4 {
+            color: var(--dark);
+            font-weight: 700;
+            letter-spacing: -0.025em;
         }
 
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+        /* Focus styles for accessibility */
+        :focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        /* Skip to main content link for accessibility */
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: white;
+            padding: 8px 16px;
+            z-index: 1001;
+            text-decoration: none;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(-20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+        .skip-to-content:focus {
+            top: 0;
+        }
+
+        /* Reduced motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
             }
         }
 
         /* Animation Classes */
-        .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        .animate-slideIn {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        /* Reveal Animation for Scroll */
         .reveal {
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s ease-out;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
         }
-
+        
+        @media (prefers-reduced-motion: reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+        
         .reveal.active {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* Loading Spinner */
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Custom Card Styling */
+        .category-card {
+            transition: var(--transition);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .category-card:hover {
+                transform: none;
+            }
+        }
+
+        /* Hero Background */
+        .hero-bg {
+            background: radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.08) 0%, rgba(37, 99, 235, 0.03) 70%, transparent 100%);
+        }
+
+        /* Stats Counter */
+        .stat-number {
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Mobile Menu */
+        .mobile-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            z-index: 50;
+        }
+        
+        .mobile-menu.active {
+            display: block;
+        }
+
+        /* Loading indicator */
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: var(--primary);
+            border-top-color: var(--white);
             animation: spin 1s ease-in-out infinite;
         }
-
-        .loading-dark {
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-top-color: var(--dark);
-        }
-
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-
-        /* Hero Background */
-        .hero-bg {
-            background: linear-gradient(135deg, #f0f9ff 0%, #fef7ff 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-bg::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.08) 0%, transparent 70%),
-                        radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            font-size: 1rem;
-            line-height: 1.5;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            outline: none;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -1px rgba(37, 99, 235, 0.06);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--dark);
-            border: 2px solid var(--gray-light);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-
-        .btn-outline:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            color: white;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-            color: white;
-        }
-
-        .btn-lg {
-            padding: 1rem 2rem;
-            font-size: 1.125rem;
-            border-radius: 0.75rem;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            border-radius: 0.375rem;
-        }
-
-        .btn-block {
-            width: 100%;
-            display: flex;
-        }
-
-        /* Cards */
-        .card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
-            border: 1px solid var(--gray-light);
-        }
-
-        .card:hover {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            transform: translateY(-2px);
-        }
-
-        .card-header {
-            border-bottom: 1px solid var(--gray-light);
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin: 0;
-        }
-
-        .card-body {
-            padding: 0;
-        }
-
-        .card-footer {
-            border-top: 1px solid var(--gray-light);
-            padding-top: 1rem;
-            margin-top: 1rem;
-        }
-
-        /* Alerts */
-        .alert {
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-        }
-
-        .alert-success {
-            background-color: #d1fae5;
-            border-color: var(--success);
-            color: #065f46;
-        }
-
-        .alert-error {
-            background-color: #fee2e2;
-            border-color: var(--danger);
-            color: #7f1d1d;
-        }
-
-        .alert-warning {
-            background-color: #fef3c7;
-            border-color: var(--warning);
-            color: #92400e;
-        }
-
-        .alert-info {
-            background-color: #dbeafe;
-            border-color: var(--info);
-            color: #1e40af;
-        }
-
-        .alert-icon {
-            font-size: 1.25rem;
-            margin-top: 0.125rem;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.25rem;
-            color: currentColor;
-            opacity: 0.7;
-            padding: 0;
-            margin: 0;
-            line-height: 1;
-        }
-
-        .alert-close:hover {
-            opacity: 1;
-        }
-
-        /* Forms */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 0.875rem;
-        }
-
-        .form-label.required::after {
-            content: " *";
-            color: var(--danger);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            line-height: 1.5;
-            color: var(--dark);
-            background-color: white;
-            border: 2px solid var(--gray-light);
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .form-control::placeholder {
-            color: var(--gray);
-            opacity: 0.7;
-        }
-
-        .form-control:disabled,
-        .form-control[readonly] {
-            background-color: var(--light);
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .form-text {
-            display: block;
-            margin-top: 0.25rem;
-            font-size: 0.875rem;
-            color: var(--gray);
-        }
-
-        .form-text.error {
-            color: var(--danger);
-        }
-
-        .form-text.success {
-            color: var(--success);
-        }
-
-        .form-check {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-        }
-
-        .form-check-input {
-            margin-right: 0.5rem;
-            width: 1rem;
-            height: 1rem;
-            cursor: pointer;
-        }
-
-        .form-check-label {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        /* Navigation */
-        .nav-link {
-            color: var(--gray);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--primary);
-            background-color: rgba(37, 99, 235, 0.05);
-        }
-
-        .nav-link.active {
-            color: var(--primary);
-            background-color: rgba(37, 99, 235, 0.1);
-            font-weight: 600;
-        }
-
-        /* Glass Effect */
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Gradient Text */
-        .gradient-text {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            line-height: 1;
-            text-align: center;
-            white-space: nowrap;
-            vertical-align: baseline;
-            border-radius: 9999px;
-        }
-
-        .badge-primary {
-            background-color: rgba(37, 99, 235, 0.1);
-            color: var(--primary);
-        }
-
-        .badge-success {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-
-        .badge-warning {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-        }
-
-        .badge-danger {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-        }
-
-        .badge-info {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: var(--info);
-        }
-
-        /* Progress Bar */
-        .progress {
-            height: 0.5rem;
-            background-color: var(--gray-light);
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 9999px;
-            transition: width 0.3s ease;
-        }
-
-        /* Accessibility */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        /* Focus Styles */
-        :focus-visible {
-            outline: 2px solid var(--primary);
-            outline-offset: 2px;
-        }
-
-        /* Focus for mouse users */
-        :focus:not(:focus-visible) {
-            outline: none;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 640px) {
-            .container {
-                padding: 0 0.75rem;
-            }
-            
-            .mobile-hidden {
-                display: none !important;
-            }
-            
-            .btn-lg {
-                padding: 0.75rem 1.5rem;
-                font-size: 1rem;
-            }
-            
-            .card {
-                padding: 1rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .tablet-hidden {
-                display: none !important;
-            }
-        }
-
-        /* Print Styles */
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            
-            body {
-                background: white;
-                color: black;
-            }
-            
-            a {
-                color: black;
-                text-decoration: underline;
-            }
-        }
-
-        /* Custom Utilities */
-        .text-shadow {
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .text-shadow-lg {
-            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-        }
-
-        .shadow-soft {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .shadow-medium {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .shadow-hard {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        }
-
-        .border-light {
-            border-color: var(--gray-light);
-        }
-
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-        }
-
-        .bg-gradient-success {
-            background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
-        }
-
-        .bg-gradient-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
-        }
-
-        .bg-gradient-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--light);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--gray-light);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--gray);
-        }
-
-        /* Selection Color */
-        ::selection {
-            background-color: rgba(37, 99, 235, 0.2);
-            color: var(--dark);
-        }
-
-        /* Placeholder Styling */
-        ::placeholder {
-            color: var(--gray);
-            opacity: 0.7;
-        }
-
-        /* Disabled State */
-        :disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Image Optimization */
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        /* Lazy Loading */
-        img[loading="lazy"] {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        img[loading="lazy"].loaded {
-            opacity: 1;
-        }
-
-        /* Aspect Ratios */
-        .aspect-square {
-            aspect-ratio: 1/1;
-        }
-
-        .aspect-video {
-            aspect-ratio: 16/9;
-        }
-
-        .aspect-portrait {
-            aspect-ratio: 3/4;
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
     
-    {% block styles %}{% endblock %}
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        'primary-dark': '#1d4ed8',
+                        secondary: '#7c3aed',
+                        dark: '#0f172a',
+                    },
+                    backgroundImage: {
+                        'gradient-primary': 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin': 'spin 1s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        spin: {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
     <!-- Skip to main content (Accessibility) -->
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-white px-4 py-2 rounded-lg z-50 no-print">
-        Skip to main content
-    </a>
-    
-    <!-- Header -->
-    <header class="sticky top-0 z-50 glass-effect shadow-sm no-print">
-        <nav class="container py-4">
-            <div class="flex items-center justify-between">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <!-- Modern Header -->
+    <header id="mainHeader" class="bg-white/85 backdrop-blur-xl sticky top-0 z-50 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
-                <a href="{{ url_for('index') }}" class="flex items-center space-x-3" aria-label="ClearQ Home">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                        <i class="fas fa-graduation-cap text-white text-lg"></i>
+                <a href="{{ url_for('index') }}" class="flex-shrink-0 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg p-1">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-sm" aria-hidden="true"></i>
                     </div>
-                    <span class="text-2xl font-bold text-gray-900">Clear<span class="text-primary">Q</span></span>
+                    <span class="text-xl font-bold text-dark">Clear<span class="text-primary">Q</span></span>
                 </a>
-                
+
                 <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="{{ url_for('explore') }}" class="nav-link">
-                        Explore Mentors
+                <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
+                    <a href="{{ url_for('explore') }}" 
+                       class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
+                        Find Mentors
                     </a>
-                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else url_for('explore') }}" 
-                       class="nav-link">
-                        Programs
+                    <a href="#how-it-works" 
+                       class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
+                        How It Works
                     </a>
-                    <a href="{{ url_for('about') }}" class="nav-link">
-                        About
-                    </a>
-                    <a href="{{ url_for('contact') }}" class="nav-link">
-                        Contact
+                    <a href="#categories" 
+                       class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
+                        Categories
                     </a>
                     
                     {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
+                            Dashboard
+                        </a>
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('admin_dashboard') }}" 
+                               class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
+                                Admin
+                            </a>
+                        {% endif %}
                         <div class="flex items-center space-x-4">
-                            <div class="relative group">
-                                <button class="flex items-center space-x-2 focus:outline-none bg-transparent border-none cursor-pointer">
-                                    {% if current_user.profile_image %}
-                                        <img src="{{ url_for('static', filename=current_user.profile_image) }}" 
-                                             alt="{{ current_user.username }}" 
-                                             class="w-10 h-10 rounded-full object-cover">
-                                    {% else %}
-                                        <div class="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold">
-                                            {{ current_user.username[0]|upper }}
-                                        </div>
-                                    {% endif %}
-                                    <span class="text-gray-700 font-medium">{{ current_user.username }}</span>
-                                    <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
-                                </button>
-                                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 invisible group-hover:visible group-focus-within:visible transition-all duration-200 z-50">
-                                    <a href="{{ url_for('dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
-                                    </a>
-                                    <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-user mr-2"></i> Profile
-                                    </a>
-                                    <a href="{{ url_for('my_bookings') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-calendar mr-2"></i> My Bookings
-                                    </a>
-                                    {% if current_user.role == 'admin' %}
-                                        <div class="border-t my-2"></div>
-                                        <a href="{{ url_for('admin_mentors') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
-                                            <i class="fas fa-cog mr-2"></i> Admin Panel
-                                        </a>
-                                    {% endif %}
-                                    <div class="border-t my-2"></div>
-                                    <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-danger hover:bg-red-50">
-                                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                                    </a>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-semibold" 
+                                     aria-label="User profile">
+                                    {{ current_user.username[0]|upper if current_user.username else 'U' }}
                                 </div>
+                                <span class="text-sm text-gray-600">Hi, {{ current_user.username if current_user.username else 'User' }}</span>
                             </div>
-                        </div>
-                    {% else %}
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('login') }}" class="btn btn-secondary">
-                                Log In
-                            </a>
-                            <a href="{{ url_for('register') }}" class="btn btn-primary">
-                                Get Started
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <!-- Mobile menu button -->
-                <button id="mobileMenuButton" class="md:hidden text-gray-700 p-2 rounded-lg hover:bg-gray-100 focus:outline-none no-print" 
-                        aria-label="Toggle mobile menu" aria-expanded="false">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Mobile Menu -->
-            <div id="mobileMenu" class="hidden md:hidden mt-4 p-4 bg-white rounded-lg shadow-lg no-print">
-                <div class="space-y-3">
-                    <a href="{{ url_for('explore') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                        Explore Mentors
-                    </a>
-                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else url_for('explore') }}" 
-                       class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                        Programs
-                    </a>
-                    <a href="{{ url_for('about') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                        About
-                    </a>
-                    <a href="{{ url_for('contact') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                        Contact
-                    </a>
-                    
-                    {% if current_user.is_authenticated %}
-                        <div class="pt-4 border-t">
-                            <a href="{{ url_for('dashboard') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                                Dashboard
-                            </a>
-                            <a href="{{ url_for('profile') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                                Profile
-                            </a>
-                            <a href="{{ url_for('my_bookings') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                                My Bookings
-                            </a>
-                            {% if current_user.role == 'admin' %}
-                                <a href="{{ url_for('admin_mentors') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
-                                    Admin Panel
-                                </a>
-                            {% endif %}
-                            <a href="{{ url_for('logout') }}" class="block py-2 text-danger hover:text-red-700 hover:bg-red-50 rounded-lg px-3">
+                            <a href="{{ url_for('logout') }}" 
+                               class="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                                 Logout
                             </a>
                         </div>
                     {% else %}
-                        <div class="pt-4 border-t space-y-2">
-                            <a href="{{ url_for('login') }}" class="block w-full py-2 text-center btn btn-secondary">
+                        <div class="flex items-center space-x-4">
+                            <a href="{{ url_for('login') }}" 
+                               class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 Log In
                             </a>
-                            <a href="{{ url_for('register') }}" class="block w-full py-2 text-center btn btn-primary">
+                            <a href="{{ url_for('register') }}" 
+                               class="px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium hover:shadow-lg hover:shadow-primary/25 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                Get Started
+                            </a>
+                        </div>
+                    {% endif %}
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuButton" 
+                        class="md:hidden text-gray-700 p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                        aria-label="Toggle mobile menu"
+                        aria-expanded="false"
+                        aria-controls="mobileMenu">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" 
+                 class="mobile-menu md:hidden"
+                 role="menu"
+                 aria-label="Mobile navigation"
+                 aria-hidden="true">
+                <div class="py-4 space-y-3">
+                    <a href="{{ url_for('explore') }}" 
+                       class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                       role="menuitem">
+                        Find Mentors
+                    </a>
+                    <a href="#how-it-works" 
+                       class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                       role="menuitem">
+                        How It Works
+                    </a>
+                    <a href="#categories" 
+                       class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                       role="menuitem">
+                        Categories
+                    </a>
+                    
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                           role="menuitem">
+                            Dashboard
+                        </a>
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('admin_dashboard') }}" 
+                               class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                               role="menuitem">
+                                Admin
+                            </a>
+                        {% endif %}
+                        <div class="pt-4 border-t border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4 px-4">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold"
+                                     aria-hidden="true">
+                                    {{ current_user.username[0]|upper if current_user.username else 'U' }}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ current_user.username if current_user.username else 'User' }}</p>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('logout') }}" 
+                               class="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium mx-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                               role="menuitem">
+                                Logout
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="pt-4 border-t border-gray-200 space-y-3">
+                            <a href="{{ url_for('login') }}" 
+                               class="block w-full text-center py-3 rounded-lg border border-gray-300 text-gray-700 font-medium mx-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                               role="menuitem">
+                                Log In
+                            </a>
+                            <a href="{{ url_for('register') }}" 
+                               class="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium mx-4 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                               role="menuitem">
                                 Get Started
                             </a>
                         </div>
                     {% endif %}
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    
+
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="container mt-4 no-print" role="alert" aria-live="polite" aria-atomic="true">
+            <div class="max-w-7xl mx-auto mt-4 px-4" role="alert" aria-live="polite" aria-atomic="true">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' if category in ['error', 'danger'] else 'warning' if category == 'warning' else 'info' }} animate-fadeIn">
-                        <i class="fas 
-                            {% if category == 'success' %}fa-check-circle
-                            {% elif category in ['error', 'danger'] %}fa-exclamation-circle
-                            {% elif category == 'warning' %}fa-exclamation-triangle
-                            {% else %}fa-info-circle{% endif %} 
-                            alert-icon"></i>
-                        <div class="alert-content">
-                            <span>{{ message }}</span>
+                    <div class="reveal active bg-gradient-to-r 
+                        {% if category == 'error' or category == 'danger' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
+                        {% elif category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
+                        {% elif category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
+                        {% else %}from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-700{% endif %} 
+                        p-4 rounded-lg shadow-sm mb-2">
+                        <div class="flex items-center">
+                            <i class="fas 
+                                {% if category == 'error' or category == 'danger' %}fa-exclamation-circle
+                                {% elif category == 'warning' %}fa-exclamation-triangle
+                                {% elif category == 'success' %}fa-check-circle
+                                {% else %}fa-info-circle{% endif %} 
+                                mr-3" aria-hidden="true"></i>
+                            <p class="font-medium">{{ message|escape }}</p>
                         </div>
-                        <button class="alert-close" onclick="this.parentElement.style.display='none'" aria-label="Close message">
-                            &times;
-                        </button>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
     {% endwith %}
-    
-    <!-- Main Content -->
+
+    <!-- Main Content Block -->
     <main id="main-content" class="flex-grow" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
-    
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-white mt-16 no-print">
-        <div class="container py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+
+    <!-- Enhanced Footer -->
+    <footer class="bg-dark text-white mt-16" role="contentinfo">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Company Info -->
                 <div>
-                    <a href="{{ url_for('index') }}" class="flex items-center space-x-3 mb-6">
-                        <div class="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-                            <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    <a href="{{ url_for('index') }}" class="flex items-center space-x-2 mb-6 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-dark rounded-lg p-1 inline-block">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white" aria-hidden="true"></i>
                         </div>
-                        <span class="text-2xl font-bold text-white">Clear<span class="text-blue-400">Q</span></span>
+                        <span class="text-xl font-bold text-white">Clear<span class="text-primary">Q</span></span>
                     </a>
-                    <p class="text-gray-400 mb-6">
+                    <p class="text-gray-400 mb-6 max-w-xs">
                         Democratizing mentorship for everyone. Connect with industry experts to accelerate your career growth.
                     </p>
                     <div class="flex space-x-4">
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Twitter">
-                            <i class="fab fa-twitter text-xl"></i>
+                        <a href="#" 
+                           class="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                           aria-label="Twitter">
+                            <i class="fab fa-twitter text-gray-400 hover:text-white" aria-hidden="true"></i>
                         </a>
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn">
-                            <i class="fab fa-linkedin text-xl"></i>
+                        <a href="#" 
+                           class="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                           aria-label="LinkedIn">
+                            <i class="fab fa-linkedin-in text-gray-400 hover:text-white" aria-hidden="true"></i>
                         </a>
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Instagram">
-                            <i class="fab fa-instagram text-xl"></i>
+                        <a href="#" 
+                           class="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                           aria-label="Instagram">
+                            <i class="fab fa-instagram text-gray-400 hover:text-white" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
-                
+
                 <!-- Quick Links -->
                 <div>
-                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                    <ul class="space-y-2">
-                        <li><a href="{{ url_for('explore') }}" class="text-gray-400 hover:text-white transition-colors">
+                    <h3 class="text-lg font-semibold mb-6">Quick Links</h3>
+                    <ul class="space-y-3">
+                        <li><a href="{{ url_for('explore') }}" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Find Mentors
                         </a></li>
-                        <li><a href="{{ url_for('register') }}" class="text-gray-400 hover:text-white transition-colors">
+                        <li><a href="{{ url_for('register') }}" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Become a Mentor
                         </a></li>
-                        <li><a href="{{ url_for('about') }}" class="text-gray-400 hover:text-white transition-colors">
-                            About Us
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            Success Stories
                         </a></li>
-                        <li><a href="{{ url_for('contact') }}" class="text-gray-400 hover:text-white transition-colors">
-                            Contact
-                        </a></li>
-                    </ul>
-                </div>
-                
-                <!-- Resources -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Resources</h3>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">
-                            Career Guides
-                        </a></li>
-                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">
-                            Interview Prep
-                        </a></li>
-                        <li><a href="{{ url_for('faq') }}" class="text-gray-400 hover:text-white transition-colors">
-                            FAQ
-                        </a></li>
-                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Blog
                         </a></li>
                     </ul>
                 </div>
-                
-                <!-- Legal -->
+
+                <!-- Resources -->
                 <div>
-                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
-                    <ul class="space-y-2">
-                        <li><a href="{{ url_for('privacy') }}" class="text-gray-400 hover:text-white transition-colors">
+                    <h3 class="text-lg font-semibold mb-6">Resources</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            Career Guides
+                        </a></li>
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            Interview Prep
+                        </a></li>
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            Skill Assessments
+                        </a></li>
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            FAQ
+                        </a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact & Legal -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-6">Contact & Legal</h3>
+                    <ul class="space-y-3">
+                        <li><a href="mailto:support@clearq.in" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            support@clearq.in
+                        </a></li>
+                        <li><a href="{{ url_for('privacy') if 'privacy' in url_for('privacy') else '#' }}" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Privacy Policy
                         </a></li>
-                        <li><a href="{{ url_for('terms') }}" class="text-gray-400 hover:text-white transition-colors">
+                        <li><a href="{{ url_for('terms') if 'terms' in url_for('terms') else '#' }}" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Terms of Service
                         </a></li>
-                        <li><a href="mailto:support@clearq.in" class="text-gray-400 hover:text-white transition-colors">
-                            support@clearq.in
+                        <li><a href="#" 
+                               class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
+                            Cookie Policy
                         </a></li>
                     </ul>
                 </div>
             </div>
-            
+
             <!-- Copyright -->
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500">
-                <p>&copy; <span id="currentYear">2024</span> ClearQ.in. All rights reserved.</p>
-                <p class="mt-2 text-sm">Made with <i class="fas fa-heart text-red-500 mx-1" aria-label="love"></i> for the community</p>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p>&copy; {{ now.year if now is defined else '2024' }} ClearQ.in. All rights reserved.</p>
+                    <p class="mt-2 md:mt-0">
+                        Made with <i class="fas fa-heart text-red-500 mx-1" aria-label="love"></i> for the community
+                    </p>
+                </div>
             </div>
         </div>
     </footer>
-    
+
     <!-- JavaScript -->
     <script>
-        // Ensure DOM is loaded
+        // Ensure the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             
-            // Mobile Menu Toggle
+            // Mobile Menu Toggle with accessibility
             const mobileMenuButton = document.getElementById('mobileMenuButton');
             const mobileMenu = document.getElementById('mobileMenu');
-            
+            const menuIcon = mobileMenuButton ? mobileMenuButton.querySelector('i') : null;
+
             function toggleMobileMenu() {
                 if (!mobileMenuButton || !mobileMenu) return;
                 
                 const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
-                mobileMenu.classList.toggle('hidden');
+                mobileMenu.classList.toggle('active');
+                mobileMenu.setAttribute('aria-hidden', isExpanded);
                 mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
                 
-                // Toggle icon
-                const icon = mobileMenuButton.querySelector('i');
-                if (icon) {
-                    if (mobileMenu.classList.contains('hidden')) {
-                        icon.classList.remove('fa-times');
-                        icon.classList.add('fa-bars');
-                    } else {
-                        icon.classList.remove('fa-bars');
-                        icon.classList.add('fa-times');
+                if (mobileMenu.classList.contains('active')) {
+                    if (menuIcon) {
+                        menuIcon.classList.remove('fa-bars');
+                        menuIcon.classList.add('fa-times');
+                    }
+                } else {
+                    if (menuIcon) {
+                        menuIcon.classList.remove('fa-times');
+                        menuIcon.classList.add('fa-bars');
                     }
                 }
             }
-            
+
             if (mobileMenuButton) {
                 mobileMenuButton.addEventListener('click', toggleMobileMenu);
-                
-                // Keyboard support
                 mobileMenuButton.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -1035,25 +561,25 @@
                     }
                 });
             }
-            
+
             // Close mobile menu when clicking outside
             document.addEventListener('click', function(event) {
                 if (mobileMenu && mobileMenuButton && 
                     !mobileMenu.contains(event.target) && 
                     !mobileMenuButton.contains(event.target) && 
-                    !mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.contains('active')) {
                     toggleMobileMenu();
                 }
             });
-            
+
             // Close mobile menu on escape key
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                if (event.key === 'Escape' && mobileMenu && mobileMenu.classList.contains('active')) {
                     toggleMobileMenu();
-                    mobileMenuButton.focus();
+                    if (mobileMenuButton) mobileMenuButton.focus();
                 }
             });
-            
+
             // Scroll animations with Intersection Observer
             const revealElements = document.querySelectorAll('.reveal');
             
@@ -1070,31 +596,52 @@
                     rootMargin: '0px',
                     threshold: 0.1
                 });
-                
+
                 revealElements.forEach(function(element) {
                     revealObserver.observe(element);
                 });
             }
+
+            // Stats counter animation (for homepage)
+            const stats = document.querySelectorAll('.stat-number');
             
-            // Auto-dismiss flash messages
-            setTimeout(function() {
-                document.querySelectorAll('.alert').forEach(function(alert) {
-                    alert.style.transition = 'opacity 0.5s ease';
-                    alert.style.opacity = '0';
-                    setTimeout(function() {
-                        if (alert.parentNode) {
-                            alert.parentNode.removeChild(alert);
+            if (stats.length > 0 && 'IntersectionObserver' in window) {
+                function animateCounter(element, target) {
+                    let current = 0;
+                    const increment = target / 100;
+                    const timer = setInterval(function() {
+                        current += increment;
+                        if (current >= target) {
+                            element.textContent = target + '+';
+                            clearInterval(timer);
+                        } else {
+                            element.textContent = Math.floor(current) + '+';
                         }
-                    }, 500);
+                    }, 20);
+                }
+
+                // Animate stats when in viewport
+                const statsObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            const target = parseInt(entry.target.getAttribute('data-target') || '0');
+                            animateCounter(entry.target, target);
+                            statsObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.5 });
+
+                stats.forEach(function(stat) {
+                    statsObserver.observe(stat);
                 });
-            }, 5000);
-            
+            }
+
             // Smooth scroll for anchor links
             document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
                 anchor.addEventListener('click', function(e) {
                     const href = this.getAttribute('href');
                     
-                    if (href === '#') {
+                    if (href === '#' || href === '#!') {
                         e.preventDefault();
                         return;
                     }
@@ -1104,12 +651,12 @@
                         e.preventDefault();
                         
                         // Close mobile menu if open
-                        if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        if (mobileMenu && mobileMenu.classList.contains('active')) {
                             toggleMobileMenu();
                         }
                         
                         // Smooth scroll
-                        const header = document.querySelector('header');
+                        const header = document.getElementById('mainHeader');
                         const headerHeight = header ? header.offsetHeight : 0;
                         const targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
                         const offsetPosition = targetPosition - headerHeight - 20;
@@ -1120,103 +667,100 @@
                         });
                         
                         // Update URL without reloading
-                        if (href !== '#main-content') {
-                            history.pushState(null, null, href);
-                        }
-                        
-                        // Focus on target for accessibility
-                        target.setAttribute('tabindex', '-1');
-                        target.focus();
-                        target.removeAttribute('tabindex');
+                        history.pushState(null, null, href);
                     }
                 });
             });
+
+            // Add active class to nav links based on scroll position
+            const sections = document.querySelectorAll('section[id]');
+            const header = document.getElementById('mainHeader');
+            const headerHeight = header ? header.offsetHeight : 0;
             
-            // Form validation enhancement
-            document.querySelectorAll('form').forEach(function(form) {
-                form.addEventListener('submit', function(e) {
-                    // Prevent double submission
+            function updateActiveNavLink() {
+                const scrollY = window.pageYOffset;
+                
+                sections.forEach(function(section) {
+                    const sectionHeight = section.offsetHeight;
+                    const sectionTop = section.offsetTop - headerHeight - 100;
+                    const sectionId = section.getAttribute('id');
+                    const navLink = document.querySelector(`a[href="#${sectionId}"]`);
+                    
+                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight && navLink) {
+                        navLink.classList.add('text-primary', 'font-semibold');
+                    } else if (navLink) {
+                        navLink.classList.remove('text-primary', 'font-semibold');
+                    }
+                });
+            }
+            
+            // Debounce scroll event for performance
+            let scrollTimeout;
+            if (sections.length > 0) {
+                window.addEventListener('scroll', function() {
+                    if (scrollTimeout) {
+                        window.cancelAnimationFrame(scrollTimeout);
+                    }
+                    scrollTimeout = window.requestAnimationFrame(updateActiveNavLink);
+                });
+
+                // Initialize on page load
+                updateActiveNavLink();
+            }
+
+            // Add loading states to buttons with loading class
+            document.querySelectorAll('button[data-loading]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<span class="loading"></span> Loading...';
+                    button.disabled = true;
+                    
+                    // Reset after 5 seconds (fallback)
+                    setTimeout(function() {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 5000);
+                });
+            });
+
+            // Lazy loading for images
+            if ('loading' in HTMLImageElement.prototype) {
+                const images = document.querySelectorAll('img[data-src]');
+                images.forEach(function(img) {
+                    img.src = img.dataset.src;
+                });
+            }
+
+            // Prevent form double submission
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function() {
                     const submitButton = form.querySelector('button[type="submit"]');
-                    if (submitButton && !submitButton.disabled) {
+                    if (submitButton) {
                         submitButton.disabled = true;
-                        const originalText = submitButton.innerHTML;
                         submitButton.innerHTML = '<span class="loading"></span> Processing...';
                         
                         // Re-enable after 10 seconds (fallback)
                         setTimeout(function() {
                             submitButton.disabled = false;
-                            submitButton.innerHTML = originalText;
+                            submitButton.innerHTML = 'Submit';
                         }, 10000);
                     }
-                    
-                    // Clear previous error messages
-                    form.querySelectorAll('.form-text.error').forEach(function(error) {
-                        error.remove();
-                    });
-                    
-                    // Remove error borders
-                    form.querySelectorAll('.form-control').forEach(function(input) {
-                        input.classList.remove('border-red-500');
-                    });
                 });
             });
-            
-            // Lazy loading images
-            if ('loading' in HTMLImageElement.prototype) {
-                const images = document.querySelectorAll('img[data-src]');
-                images.forEach(function(img) {
-                    img.src = img.dataset.src;
-                    img.addEventListener('load', function() {
-                        img.classList.add('loaded');
-                    });
+
+            // Add focus-visible polyfill if needed
+            if (!('focus-visible' in document.documentElement.classList)) {
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        document.body.classList.add('focus-visible');
+                    }
                 });
-            }
-            
-            // Stats counter animation (for homepage)
-            const statNumbers = document.querySelectorAll('.stat-number');
-            
-            if (statNumbers.length > 0 && 'IntersectionObserver' in window) {
-                function animateCounter(element, target) {
-                    let current = 0;
-                    const increment = target / 100;
-                    const timer = setInterval(function() {
-                        current += increment;
-                        if (current >= target) {
-                            element.textContent = target + (element.dataset.suffix || '+');
-                            clearInterval(timer);
-                        } else {
-                            element.textContent = Math.floor(current) + (element.dataset.suffix || '+');
-                        }
-                    }, 20);
-                }
                 
-                const statsObserver = new IntersectionObserver(function(entries) {
-                    entries.forEach(function(entry) {
-                        if (entry.isIntersecting) {
-                            const target = parseInt(entry.target.getAttribute('data-target') || '0');
-                            animateCounter(entry.target, target);
-                            statsObserver.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.5 });
-                
-                statNumbers.forEach(function(stat) {
-                    statsObserver.observe(stat);
+                document.addEventListener('mousedown', function() {
+                    document.body.classList.remove('focus-visible');
                 });
             }
-            
-            // Update copyright year
-            const currentYearElement = document.getElementById('currentYear');
-            if (currentYearElement) {
-                currentYearElement.textContent = new Date().getFullYear();
-            }
-            
-            // Print button functionality
-            document.querySelectorAll('.print-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    window.print();
-                });
-            });
         });
     </script>
     
