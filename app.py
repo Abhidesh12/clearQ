@@ -13,8 +13,7 @@ import json
 from fastapi import Query
 from urllib.parse import quote
 from jose import JWTError, jwt
-
-from database import get_db, Base, engine
+from database import get_db, Base, engine, SessionLocal
 from models import *
 from auth import *
 from payment import *
@@ -962,6 +961,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
