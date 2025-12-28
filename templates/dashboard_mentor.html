@@ -31,11 +31,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-star mr-3"></i> Priority DM
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('mentor_services') }}">
                             <i class="fas fa-concierge-bell mr-3"></i> Services
                         </a>
@@ -43,11 +38,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('mentor_calendar') }}">
                             <i class="fas fa-calendar-alt mr-3"></i> Calendar
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-robot mr-3"></i> AutoDM
                         </a>
                     </li>
                     <li class="nav-item">
@@ -62,21 +52,21 @@
             </div>
             
             <div class="menu-section">
-                <h6 class="menu-heading">YOUR PAGE</h6>
+                <h6 class="menu-heading">PROFILE</h6>
                 <ul class="nav flex-column">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('mentor_profile_view', mentor_username=current_user.username) }}">
-                            <i class="fas fa-eye mr-3"></i> View Public Profile
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('mentor_testimonials') }}">
-                            <i class="fas fa-comment-alt mr-3"></i> Testimonials
+                            <i class="fas fa-eye mr-3"></i> View Profile
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('mentor_profile') }}">
                             <i class="fas fa-user-edit mr-3"></i> Edit Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('mentor_testimonials') }}">
+                            <i class="fas fa-comment-alt mr-3"></i> Testimonials
                         </a>
                     </li>
                     <li class="nav-item">
@@ -88,16 +78,16 @@
             </div>
             
             <div class="menu-section">
-                <h6 class="menu-heading">INSIGHTS</h6>
+                <h6 class="menu-heading">GROWTH</h6>
                 <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('mentor_analytics') }}">
-                            <i class="fas fa-chart-line mr-3"></i> Analytics
-                        </a>
-                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('explore') }}">
                             <i class="fas fa-search mr-3"></i> Find Learners
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('mentor_analytics') }}">
+                            <i class="fas fa-chart-line mr-3"></i> Analytics
                         </a>
                     </li>
                 </ul>
@@ -140,8 +130,8 @@
                     <a href="{{ url_for('explore') }}" class="btn btn-primary">
                         <i class="fas fa-search mr-2"></i> Find Learners
                     </a>
-                    <a href="{{ url_for('mentor_calendar') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-calendar-alt mr-2"></i> View Calendar
+                    <a href="{{ url_for('mentor_profile') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-edit mr-2"></i> Edit Profile
                     </a>
                 </div>
             </div>
@@ -176,13 +166,6 @@
                         <p>Total Revenue</p>
                     </div>
                 </div>
-                <div class="stat-item">
-                    <i class="fas fa-star stat-icon"></i>
-                    <div class="stat-content">
-                        <h3>{{ rating or '4.5' }}</h3>
-                        <p>Average Rating</p>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -197,12 +180,12 @@
                 <div class="card-body">
                     {% if bookings %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Learner</th>
                                     <th>Service</th>
-                                    <th>Date & Time</th>
+                                    <th>Date</th>
                                     <th>Status</th>
                                     <th>Amount</th>
                                     <th>Actions</th>
@@ -228,11 +211,8 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ booking.service_name or 'General Consultation' }}</td>
-                                    <td>
-                                        <div>{{ booking.scheduled_date.strftime('%b %d, %Y') if booking.scheduled_date else 'TBD' }}</div>
-                                        <small class="text-muted">{{ booking.slot_time or 'Time not set' }}</small>
-                                    </td>
+                                    <td>{{ booking.service_name or 'Consultation' }}</td>
+                                    <td>{{ booking.scheduled_date.strftime('%b %d') if booking.scheduled_date else 'TBD' }}</td>
                                     <td>
                                         <span class="badge bg-{% if booking.status == 'Pending' %}warning{% elif booking.status == 'Confirmed' %}primary{% elif booking.status == 'Completed' %}success{% else %}secondary{% endif %}">
                                             {{ booking.status }}
@@ -240,14 +220,8 @@
                                     </td>
                                     <td>₹{{ booking.amount or '0' }}</td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('view_booking', booking_id=booking.id) }}" 
-                                               class="btn btn-outline-primary">View</a>
-                                            {% if booking.status == 'Pending' %}
-                                            <a href="{{ url_for('confirm_booking', booking_id=booking.id) }}" 
-                                               class="btn btn-outline-success">Confirm</a>
-                                            {% endif %}
-                                        </div>
+                                        <a href="{{ url_for('view_booking', booking_id=booking.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">View</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -261,63 +235,122 @@
                             <h5>No bookings yet</h5>
                             <p>Your upcoming bookings will appear here</p>
                         </div>
-                        <a href="{{ url_for('mentor_profile') }}" class="btn btn-primary">
-                            <i class="fas fa-user-edit mr-2"></i> Complete Your Profile
-                        </a>
                     </div>
                     {% endif %}
                 </div>
             </div>
             
-            <!-- Quick Stats & Actions -->
+            <!-- Social Links & Quick Stats -->
             <div class="row mt-4">
                 <div class="col-lg-8">
+                    <!-- Social Links Management -->
                     <div class="card">
                         <div class="card-header">
-                            <h5>Performance Overview</h5>
+                            <h5>Social Links</h5>
+                            <a href="{{ url_for('mentor_profile') }}#social-media" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="metric-card">
-                                        <h6>Response Rate</h6>
-                                        <div class="progress" style="height: 10px;">
-                                            <div class="progress-bar bg-success" 
-                                                 style="width: {{ response_rate or 95 }}%"></div>
-                                        </div>
-                                        <span class="metric-value">{{ response_rate or 95 }}%</span>
+                            {% if current_user.mentor_profile.linkedin_url or current_user.mentor_profile.twitter_url or 
+                                  current_user.mentor_profile.github_url or current_user.mentor_profile.website_url %}
+                            <div class="social-links-grid">
+                                {% if current_user.mentor_profile.linkedin_url %}
+                                <a href="{{ current_user.mentor_profile.linkedin_url }}" target="_blank" 
+                                   class="social-link-card bg-blue-50 border-blue-200 hover:bg-blue-100">
+                                    <div class="social-icon bg-blue-100 text-blue-600">
+                                        <i class="fab fa-linkedin"></i>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="metric-card">
-                                        <h6>Satisfaction Rate</h6>
-                                        <div class="progress" style="height: 10px;">
-                                            <div class="progress-bar bg-info" 
-                                                 style="width: {{ satisfaction_rate or 90 }}%"></div>
-                                        </div>
-                                        <span class="metric-value">{{ satisfaction_rate or 90 }}%</span>
+                                    <div class="social-info">
+                                        <span class="social-name">LinkedIn</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.linkedin_url|truncate(25) }}</span>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="metric-card">
-                                        <h6>Repeat Clients</h6>
-                                        <div class="metric-value">{{ repeat_clients or 0 }}</div>
-                                        <small>Learners who booked again</small>
+                                </a>
+                                {% endif %}
+                                
+                                {% if current_user.mentor_profile.twitter_url %}
+                                <a href="{{ current_user.mentor_profile.twitter_url }}" target="_blank" 
+                                   class="social-link-card bg-blue-50 border-blue-100 hover:bg-blue-100">
+                                    <div class="social-icon bg-blue-100 text-blue-400">
+                                        <i class="fab fa-twitter"></i>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="metric-card">
-                                        <h6>Total Sessions</h6>
-                                        <div class="metric-value">{{ total_sessions or 0 }}</div>
-                                        <small>Completed sessions</small>
+                                    <div class="social-info">
+                                        <span class="social-name">Twitter</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.twitter_url|truncate(25) }}</span>
                                     </div>
-                                </div>
+                                </a>
+                                {% endif %}
+                                
+                                {% if current_user.mentor_profile.github_url %}
+                                <a href="{{ current_user.mentor_profile.github_url }}" target="_blank" 
+                                   class="social-link-card bg-gray-50 border-gray-200 hover:bg-gray-100">
+                                    <div class="social-icon bg-gray-100 text-gray-800">
+                                        <i class="fab fa-github"></i>
+                                    </div>
+                                    <div class="social-info">
+                                        <span class="social-name">GitHub</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.github_url|truncate(25) }}</span>
+                                    </div>
+                                </a>
+                                {% endif %}
+                                
+                                {% if current_user.mentor_profile.website_url %}
+                                <a href="{{ current_user.mentor_profile.website_url }}" target="_blank" 
+                                   class="social-link-card bg-purple-50 border-purple-200 hover:bg-purple-100">
+                                    <div class="social-icon bg-purple-100 text-purple-600">
+                                        <i class="fas fa-globe"></i>
+                                    </div>
+                                    <div class="social-info">
+                                        <span class="social-name">Website</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.website_url|truncate(25) }}</span>
+                                    </div>
+                                </a>
+                                {% endif %}
+                                
+                                {% if current_user.mentor_profile.youtube_url %}
+                                <a href="{{ current_user.mentor_profile.youtube_url }}" target="_blank" 
+                                   class="social-link-card bg-red-50 border-red-200 hover:bg-red-100">
+                                    <div class="social-icon bg-red-100 text-red-600">
+                                        <i class="fab fa-youtube"></i>
+                                    </div>
+                                    <div class="social-info">
+                                        <span class="social-name">YouTube</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.youtube_url|truncate(25) }}</span>
+                                    </div>
+                                </a>
+                                {% endif %}
+                                
+                                {% if current_user.mentor_profile.portfolio_url %}
+                                <a href="{{ current_user.mentor_profile.portfolio_url }}" target="_blank" 
+                                   class="social-link-card bg-indigo-50 border-indigo-200 hover:bg-indigo-100">
+                                    <div class="social-icon bg-indigo-100 text-indigo-600">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <div class="social-info">
+                                        <span class="social-name">Portfolio</span>
+                                        <span class="social-url">{{ current_user.mentor_profile.portfolio_url|truncate(25) }}</span>
+                                    </div>
+                                </a>
+                                {% endif %}
                             </div>
+                            {% else %}
+                            <div class="text-center py-6">
+                                <div class="text-muted mb-4">
+                                    <i class="fas fa-share-alt fa-3x opacity-50 mb-3"></i>
+                                    <h5>No social links added</h5>
+                                    <p class="mb-0">Add your social links to help learners connect with you</p>
+                                </div>
+                                <a href="{{ url_for('mentor_profile') }}#social-media" class="btn btn-primary">
+                                    <i class="fas fa-plus mr-2"></i> Add Social Links
+                                </a>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 
                 <div class="col-lg-4">
+                    <!-- Quick Actions -->
                     <div class="card">
                         <div class="card-header">
                             <h5>Quick Actions</h5>
@@ -325,46 +358,48 @@
                         <div class="card-body">
                             <div class="d-grid gap-3">
                                 <a href="{{ url_for('mentor_services') }}" class="btn btn-outline-primary btn-lg">
-                                    <i class="fas fa-plus-circle mr-2"></i> Add New Service
+                                    <i class="fas fa-plus-circle mr-2"></i> Add Service
                                 </a>
                                 <a href="{{ url_for('mentor_calendar') }}" class="btn btn-outline-secondary btn-lg">
                                     <i class="fas fa-calendar-plus mr-2"></i> Set Availability
                                 </a>
                                 <a href="{{ url_for('mentor_profile') }}" class="btn btn-outline-secondary btn-lg">
-                                    <i class="fas fa-user-edit mr-2"></i> Update Profile
+                                    <i class="fas fa-user-edit mr-2"></i> Edit Profile
                                 </a>
-                                <a href="{{ url_for('mentor_testimonials') }}" class="btn btn-outline-secondary btn-lg">
-                                    <i class="fas fa-star mr-2"></i> Request Reviews
+                                <a href="{{ url_for('explore') }}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-search mr-2"></i> Browse Learners
                                 </a>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Upcoming Sessions -->
+                    <!-- Profile Completion -->
                     <div class="card mt-4">
                         <div class="card-header">
-                            <h5>Upcoming Sessions</h5>
+                            <h5>Profile Completion</h5>
                         </div>
                         <div class="card-body">
-                            {% if upcoming_sessions %}
-                            <div class="list-group list-group-flush">
-                                {% for session in upcoming_sessions[:3] %}
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ session.learner.full_name or session.learner.username }}</h6>
-                                        <small class="text-muted">{{ session.time_until }}</small>
-                                    </div>
-                                    <p class="mb-1">{{ session.service_name }}</p>
-                                    <small class="text-muted">{{ session.scheduled_time }}</small>
+                            <div class="progress" style="height: 10px; margin-bottom: 15px;">
+                                <div class="progress-bar" style="width: {{ profile_completion }}%"></div>
+                            </div>
+                            <div class="profile-checklist">
+                                <div class="checklist-item {% if current_user.mentor_profile.bio %}completed{% endif %}">
+                                    <i class="fas fa-{% if current_user.mentor_profile.bio %}check-circle text-success{% else %}circle text-muted{% endif %} mr-2"></i>
+                                    Bio Added
                                 </div>
-                                {% endfor %}
+                                <div class="checklist-item {% if current_user.mentor_profile.skills %}completed{% endif %}">
+                                    <i class="fas fa-{% if current_user.mentor_profile.skills %}check-circle text-success{% else %}circle text-muted{% endif %} mr-2"></i>
+                                    Skills Added
+                                </div>
+                                <div class="checklist-item {% if current_user.mentor_profile.hourly_rate %}completed{% endif %}">
+                                    <i class="fas fa-{% if current_user.mentor_profile.hourly_rate %}check-circle text-success{% else %}circle text-muted{% endif %} mr-2"></i>
+                                    Hourly Rate Set
+                                </div>
+                                <div class="checklist-item {% if current_user.mentor_profile.linkedin_url %}completed{% endif %}">
+                                    <i class="fas fa-{% if current_user.mentor_profile.linkedin_url %}check-circle text-success{% else %}circle text-muted{% endif %} mr-2"></i>
+                                    LinkedIn Added
+                                </div>
                             </div>
-                            {% else %}
-                            <div class="text-center py-3 text-muted">
-                                <i class="fas fa-clock fa-2x mb-2"></i>
-                                <p>No upcoming sessions</p>
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -436,12 +471,6 @@
     box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
 }
 
-.sidebar-menu .nav-link .badge {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 10px;
-}
-
 .sidebar-footer {
     margin-top: auto;
     padding: 20px;
@@ -487,23 +516,24 @@
     border-radius: 8px;
     font-weight: 500;
     transition: all 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    border: none;
     color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .btn-outline-primary {
     border: 2px solid #4f46e5;
     color: #4f46e5;
     background: transparent;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 14px;
 }
 
 .stats-summary {
@@ -522,11 +552,6 @@
     gap: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     border: 1px solid #e2e8f0;
-    transition: transform 0.2s;
-}
-
-.stat-item:hover {
-    transform: translateY(-2px);
 }
 
 .stat-icon {
@@ -582,59 +607,132 @@
     padding: 24px;
 }
 
+.table-responsive {
+    overflow-x: auto;
+}
+
 .table {
-    margin: 0;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .table th {
-    border-top: none;
-    font-weight: 600;
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
     color: #64748b;
+    font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .table td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
-    border-color: #f1f5f9;
 }
 
 .badge {
     padding: 6px 12px;
     border-radius: 20px;
-    font-weight: 500;
     font-size: 12px;
+    font-weight: 500;
 }
 
-.metric-card {
+.bg-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.bg-primary {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.bg-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.social-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.social-link-card {
+    display: flex;
+    align-items: center;
     padding: 16px;
-    border-radius: 8px;
-    background: #f8fafc;
-    margin-bottom: 16px;
+    border: 1px solid;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
 }
 
-.metric-card h6 {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 8px;
+.social-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.metric-value {
-    font-size: 24px;
-    font-weight: 700;
+.social-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-right: 12px;
+}
+
+.social-info {
+    flex: 1;
+}
+
+.social-name {
+    display: block;
+    font-weight: 600;
     color: #1e293b;
+    font-size: 14px;
+}
+
+.social-url {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 2px;
+    word-break: break-all;
 }
 
 .progress {
-    border-radius: 10px;
     background: #e2e8f0;
-    margin: 8px 0;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.list-group-item {
-    border-color: #f1f5f9;
-    padding: 16px 0;
+.progress-bar {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    height: 100%;
+    transition: width 0.3s;
+}
+
+.profile-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.checklist-item.completed {
+    color: #059669;
 }
 
 @media (max-width: 1200px) {
@@ -670,33 +768,9 @@
     .stats-summary {
         grid-template-columns: 1fr;
     }
+    .social-links-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Update greeting based on time
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-    document.querySelector('.dashboard-header h2').innerHTML = `${greeting}, ${document.querySelector('.dashboard-header h2').textContent.split(', ')[1]}`;
-    
-    // Animate stats on scroll
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate-fade-in-up');
-            }
-        });
-    }, observerOptions);
-    
-    document.querySelectorAll('.stat-item, .card').forEach(el => {
-        observer.observe(el);
-    });
-});
-</script>
 {% endblock %}
