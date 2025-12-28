@@ -39,8 +39,6 @@ from flask import url_for
 from itsdangerous import URLSafeTimedSerializer
 import datetime
 
-# Initialize serializer (add this after app configuration)
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # ============================================================================
 # CONFIGURATION & SETUP
@@ -77,6 +75,8 @@ app = Flask(
     template_folder=str(TEMPLATE_DIR),
     static_folder=str(STATIC_DIR)
 )
+
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # ============================================================================
 # SECURITY CONFIGURATION
@@ -1774,6 +1774,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
