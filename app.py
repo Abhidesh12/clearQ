@@ -617,6 +617,30 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
                     f"SSL={app.config.get('MAIL_USE_SSL')}, "
                     f"TLS={app.config.get('MAIL_USE_TLS')}")
         return False
+def send_verification_email(user) -> bool:
+    """Send email verification link."""
+    try:
+        token = serializer.dumps(user.email, salt='email-verify')
+        verification_url = url_for('verify_email', token=token, _external=True)
+        
+        subject = 'Verify Your Email - ClearQ'
+        
+        body = f"""Welcome to ClearQ!
+
+Please verify your email address by clicking the link below:
+{verification_url}
+
+This link will expire in 24 hours.
+
+Best regards,
+The ClearQ Team
+"""
+        
+        return send_email(user.email, subject, body)
+        
+    except Exception as e:
+        logger.error(f"Error in send_verification_email: {e}")
+        return False
 def send_verification_email_thread(user):
     """Thread-safe email sending with proper context."""
     try:
@@ -648,7 +672,7 @@ The ClearQ Team
             result = send_email(user.email, subject, body)
             
             if result:
-                logger.info(f"✓ Email successfully queued for {user.email}")
+                logger.info(f"✓ Email successfully sent to {user.email}")
             else:
                 logger.error(f"✗ Email failed to send for {user.email}")
                 
@@ -1079,12 +1103,12 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            # FIX: Send verification email in background thread
+            # FIX: Use the thread wrapper instead of send_verification_email directly
             import threading
             email_thread = threading.Thread(
-                target=send_verification_email, 
+                target=send_verification_email_thread,  # Changed to thread wrapper
                 args=(user,),
-                daemon=True  # Thread won't block app shutdown
+                daemon=True
             )
             email_thread.start()
             
@@ -1103,7 +1127,6 @@ def register():
             flash('Registration failed. Please try again.', 'danger')
     
     return render_template('register.html')
-
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login():
@@ -1224,7 +1247,11 @@ def verify_email(token):
     """Verify email address."""
     try:
         email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
-        user = User.query.filter_by(email=email).first_or_404()
+        user = User.query.filter_by(email=email).first()  # Changed from first_or_404()
+        
+        if not user:
+            flash('Invalid verification link. User not found.', 'danger')
+            return redirect(url_for('login'))
         
         if user.is_email_verified:
             flash('Email is already verified.', 'info')
@@ -1255,7 +1282,6 @@ def verify_email(token):
         flash('Verification failed. Please try again.', 'danger')
     
     return redirect(url_for('index'))
-
 
 @app.route('/resend-verification')
 @login_required
@@ -1730,6 +1756,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
