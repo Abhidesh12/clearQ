@@ -46,9 +46,17 @@ class MentorProfile(Base):
     industry = Column(String(100))
     skills = Column(Text)  # Comma separated skills
     hourly_rate = Column(Float, default=0)
+    
+    # Social URLs
     linkedin_url = Column(String(255))
     github_url = Column(String(255))
+    twitter_url = Column(String(255))
+    instagram_url = Column(String(255))
+    facebook_url = Column(String(255))
+    youtube_url = Column(String(255))
     portfolio_url = Column(String(255))
+    website_url = Column(String(255))
+    
     is_verified = Column(Boolean, default=False)
     verification_status = Column(String(50), default="pending")  # pending, approved, rejected
     verification_notes = Column(Text)
