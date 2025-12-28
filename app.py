@@ -794,6 +794,18 @@ def mentorship_program():
     
     return render_template('mentorship_program.html',
                          featured_programs=featured_programs)
+@app.route('/enroll')
+def enroll():
+    """Enrollment page for mentorship program."""
+    # Get active services
+    try:
+        services = Service.query.filter_by(is_active=True).limit(6).all()
+    except Exception as e:
+        logger.error(f"Error getting services: {e}")
+        services = []
+    
+    return render_template('enroll.html', services=services)
+    
 @app.route('/database-setup')
 def database_setup():
     """Manual database setup endpoint."""
@@ -1572,6 +1584,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
