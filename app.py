@@ -1,138 +1,248 @@
-"""
-ClearQ Mentorship Platform - Complete Backend with FastAPI
-Author: Expert Web Developer
-Date: 2025-12-29
-"""
-
 import os
-import secrets
 import uuid
+import json
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException, Depends, status
+from typing import Optional, List
+from pathlib import Path
+
+from fastapi import FastAPI, Request, Depends, HTTPException, status, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from pydantic import BaseModel, EmailStr, validator
-import asyncpg
-from passlib.context import CryptContext
-import jwt
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float, DateTime, Text, ForeignKey, JSON, Enum
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.sql import func
+import bcrypt
+from jose import JWTError, jwt
 from dotenv import load_dotenv
-import shutil
-from pathlib import Path
+import razorpay
+from PIL import Image
+import io
 
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI
-app = FastAPI(title="ClearQ Mentorship Platform", version="1.0.0")
+app = FastAPI(title="ClearQ Mentorship Platform")
 
-# Security
-security = HTTPBasic()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Database connection pool
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/clearq")
-
-# JWT Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# File upload configuration
-UPLOAD_DIR = "static/uploads"
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
-# Create upload directory
-Path(UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
-
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Database configuration
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost/mentorship")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 # Templates
 templates = Jinja2Templates(directory="templates")
 
-# Pydantic Models for Validation
-class UserRegister(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    full_name: str
-    role: str = "learner"  # learner, mentor, admin
-    phone: Optional[str] = None
+# Static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Create uploads directory
+os.makedirs("static/uploads/profile_pics", exist_ok=True)
+os.makedirs("static/uploads/digital_products", exist_ok=True)
+
+# Security
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+security = HTTPBearer()
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
+# Database Models
+class User(Base):
+    __tablename__ = "users"
     
-    @validator('role')
-    def validate_role(cls, v):
-        if v not in ['learner', 'mentor', 'admin']:
-            raise ValueError('Role must be learner, mentor, or admin')
-        return v
-
-class MentorProfile(BaseModel):
-    experience: int
-    industry: str
-    job_title: Optional[str] = None
-    company: Optional[str] = None
-    bio: Optional[str] = None
-    skills: str
-    linkedin_url: Optional[str] = None
-    github_url: Optional[str] = None
-    twitter_url: Optional[str] = None
-
-class ServiceCreate(BaseModel):
-    name: str
-    description: str
-    price: float
-    duration: str = "1 hour"
-    category: str  # mock_interview, resume_review, career_guidance, etc.
-    digital_product_link: Optional[str] = None
-    is_active: bool = True
-
-class BookingCreate(BaseModel):
-    service_id: int
-    mentor_id: int
-    booking_date: str
-    booking_time: str
-    notes: Optional[str] = None
-
-class ReviewCreate(BaseModel):
-    booking_id: int
-    rating: int
-    comment: str
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True)
+    email = Column(String(100), unique=True, index=True)
+    password_hash = Column(String(255))
+    role = Column(Enum("learner", "mentor", "admin", name="user_roles"), default="learner")
+    full_name = Column(String(100))
+    profile_image = Column(String(255))
+    phone = Column(String(20))
+    bio = Column(Text)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    @validator('rating')
-    def validate_rating(cls, v):
-        if v < 1 or v > 5:
-            raise ValueError('Rating must be between 1 and 5')
-        return v
+    # Relationships
+    mentor = relationship("Mentor", back_populates="user", uselist=False)
+    learner = relationship("Learner", back_populates="user", uselist=False)
+    bookings = relationship("Booking", back_populates="user")
 
-# Database connection helper
-async def get_db_connection():
-    conn = await asyncpg.connect(DATABASE_URL)
+class Mentor(Base):
+    __tablename__ = "mentors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    experience = Column(Integer)  # Years of experience
+    industry = Column(String(100))
+    job_title = Column(String(100))
+    company = Column(String(100))
+    skills = Column(Text)  # Comma separated skills
+    linkedin_url = Column(String(255))
+    twitter_url = Column(String(255))
+    github_url = Column(String(255))
+    website_url = Column(String(255))
+    hourly_rate = Column(Float, default=0)
+    rating = Column(Float, default=0)
+    total_reviews = Column(Integer, default=0)
+    total_sessions = Column(Integer, default=0)
+    is_approved = Column(Boolean, default=False)
+    approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="mentor")
+    services = relationship("Service", back_populates="mentor")
+    availabilities = relationship("Availability", back_populates="mentor")
+    bookings = relationship("Booking", back_populates="mentor")
+    reviews = relationship("Review", back_populates="mentor")
+
+class Learner(Base):
+    __tablename__ = "learners"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    education = Column(String(100))
+    career_goals = Column(Text)
+    interests = Column(Text)  # Comma separated interests
+    
+    # Relationships
+    user = relationship("User", back_populates="learner")
+    bookings = relationship("Booking", back_populates="learner")
+
+class Service(Base):
+    __tablename__ = "services"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    mentor_id = Column(Integer, ForeignKey("mentors.id"))
+    name = Column(String(100))
+    description = Column(Text)
+    category = Column(Enum(
+        "mock_interview", "resume_review", "career_guidance", 
+        "coding_help", "portfolio_review", "salary_negotiation",
+        "leadership_coaching", "skill_development", name="service_categories"
+    ))
+    price = Column(Float)
+    duration = Column(Integer)  # in minutes
+    is_digital = Column(Boolean, default=False)
+    digital_product_url = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    mentor = relationship("Mentor", back_populates="services")
+    bookings = relationship("Booking", back_populates="service")
+
+class Availability(Base):
+    __tablename__ = "availabilities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    mentor_id = Column(Integer, ForeignKey("mentors.id"))
+    day_of_week = Column(Integer)  # 0-6 (Monday-Sunday)
+    start_time = Column(String(8))  # HH:MM:SS
+    end_time = Column(String(8))  # HH:MM:SS
+    is_recurring = Column(Boolean, default=True)
+    
+    # Relationships
+    mentor = relationship("Mentor", back_populates="availabilities")
+
+class Booking(Base):
+    __tablename__ = "bookings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    booking_uid = Column(String(50), unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    learner_id = Column(Integer, ForeignKey("learners.id"))
+    mentor_id = Column(Integer, ForeignKey("mentors.id"))
+    service_id = Column(Integer, ForeignKey("services.id"))
+    scheduled_for = Column(DateTime(timezone=True))
+    scheduled_until = Column(DateTime(timezone=True))
+    status = Column(Enum(
+        "pending", "confirmed", "completed", "cancelled", "no_show",
+        name="booking_status"
+    ), default="pending")
+    meeting_link = Column(String(255))
+    amount = Column(Float)
+    razorpay_order_id = Column(String(100))
+    razorpay_payment_id = Column(String(100))
+    razorpay_signature = Column(String(255))
+    notes = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="bookings")
+    learner = relationship("Learner", back_populates="bookings")
+    mentor = relationship("Mentor", back_populates="bookings")
+    service = relationship("Service", back_populates="bookings")
+    review = relationship("Review", back_populates="booking", uselist=False)
+
+class Review(Base):
+    __tablename__ = "reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), unique=True)
+    mentor_id = Column(Integer, ForeignKey("mentors.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    rating = Column(Integer)  # 1-5
+    comment = Column(Text)
+    is_verified = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    booking = relationship("Booking", back_populates="review")
+    mentor = relationship("Mentor", back_populates="reviews")
+    user = relationship("User")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    title = Column(String(100))
+    message = Column(Text)
+    type = Column(String(50))  # info, success, warning, error
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
     try:
-        yield conn
+        yield db
     finally:
-        await conn.close()
+        db.close()
 
 # Authentication functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(request: Request):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
     if not token:
         return None
@@ -142,1142 +252,667 @@ async def get_current_user(request: Request):
         user_id: int = payload.get("sub")
         if user_id is None:
             return None
-    except jwt.PyJWTError:
+    except JWTError:
         return None
     
-    # Get user from database
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        user = await conn.fetchrow(
-            "SELECT * FROM users WHERE id = $1",
-            user_id
-        )
-        return dict(user) if user else None
-    finally:
-        await conn.close()
+    user = db.query(User).filter(User.id == user_id).first()
+    return user
 
-# File upload helper
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-async def save_upload_file(upload_file: UploadFile) -> Optional[str]:
-    if not allowed_file(upload_file.filename):
-        return None
-    
+# Utility functions
+def save_profile_image(file: UploadFile, user_id: int):
     # Generate unique filename
-    file_ext = upload_file.filename.rsplit('.', 1)[1].lower()
-    filename = f"{uuid.uuid4()}.{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    ext = file.filename.split('.')[-1]
+    filename = f"{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = f"static/uploads/profile_pics/{filename}"
     
-    # Save file
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
+    # Open and process image
+    image = Image.open(file.file)
+    # Resize if too large
+    if image.size[0] > 800 or image.size[1] > 800:
+        image.thumbnail((800, 800))
     
-    return f"uploads/{filename}"
+    # Convert to RGB if necessary
+    if image.mode in ('RGBA', 'LA'):
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        background.paste(image, mask=image.split()[-1])
+        image = background
+    
+    # Save image
+    image.save(filepath, "JPEG", quality=85)
+    
+    return f"/static/uploads/profile_pics/{filename}"
 
-async def init_db():
-    """Initialize database tables"""
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Users table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                full_name VARCHAR(100) NOT NULL,
-                role VARCHAR(20) NOT NULL DEFAULT 'learner',
-                phone VARCHAR(20),
-                profile_image VARCHAR(255),
-                is_active BOOLEAN DEFAULT TRUE,
-                is_verified BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Mentor profiles table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS mentor_profiles (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                experience INTEGER NOT NULL,
-                industry VARCHAR(100) NOT NULL,
-                job_title VARCHAR(100),
-                company VARCHAR(100),
-                bio TEXT,
-                skills TEXT,
-                linkedin_url VARCHAR(255),
-                github_url VARCHAR(255),
-                twitter_url VARCHAR(255),
-                rating DECIMAL(3,2) DEFAULT 0.0,
-                review_count INTEGER DEFAULT 0,
-                total_sessions INTEGER DEFAULT 0,
-                success_rate INTEGER DEFAULT 0,
-                is_approved BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Services table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS services (
-                id SERIAL PRIMARY KEY,
-                mentor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                name VARCHAR(100) NOT NULL,
-                description TEXT,
-                price DECIMAL(10,2) NOT NULL,
-                duration VARCHAR(50) DEFAULT '1 hour',
-                category VARCHAR(50) NOT NULL,
-                digital_product_link VARCHAR(255),
-                is_active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Time slots table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS time_slots (
-                id SERIAL PRIMARY KEY,
-                mentor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
-                slot_date DATE NOT NULL,
-                start_time TIME NOT NULL,
-                end_time TIME NOT NULL,
-                is_booked BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Bookings table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS bookings (
-                id SERIAL PRIMARY KEY,
-                learner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                mentor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
-                time_slot_id INTEGER REFERENCES time_slots(id) ON DELETE CASCADE,
-                booking_date DATE NOT NULL,
-                booking_time TIME NOT NULL,
-                status VARCHAR(50) DEFAULT 'pending', -- pending, confirmed, completed, cancelled
-                payment_status VARCHAR(50) DEFAULT 'pending', -- pending, paid, failed, refunded
-                razorpay_order_id VARCHAR(255),
-                razorpay_payment_id VARCHAR(255),
-                amount DECIMAL(10,2) NOT NULL,
-                notes TEXT,
-                meeting_link VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Reviews table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS reviews (
-                id SERIAL PRIMARY KEY,
-                booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
-                learner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                mentor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                service_id INTEGER REFERENCES services(id) ON DELETE CASCADE,
-                rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-                comment TEXT,
-                is_verified BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Earnings table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS earnings (
-                id SERIAL PRIMARY KEY,
-                mentor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
-                amount DECIMAL(10,2) NOT NULL,
-                platform_fee DECIMAL(10,2) NOT NULL,
-                mentor_amount DECIMAL(10,2) NOT NULL,
-                status VARCHAR(50) DEFAULT 'pending', -- pending, processed, paid
-                processed_at TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Admin user (if not exists)
-        admin_exists = await conn.fetchval(
-            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
-        )
-        
-        if admin_exists == 0:
-            admin_password = get_password_hash("admin123")
-            await conn.execute("""
-                INSERT INTO users (username, email, password_hash, full_name, role, is_verified, is_active)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-            """, "admin", "admin@clearq.in", admin_password, "Administrator", "admin", True, True)
-        
-        print("Database initialized successfully!")
-        
-    except Exception as e:
-        print(f"Error initializing database: {e}")
-        raise
-    finally:
-        await conn.close()
+def generate_booking_uid():
+    return f"BK{uuid.uuid4().hex[:8].upper()}"
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
-    await init_db()
-
-# Homepage
+# Routes
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    current_user = await get_current_user(request)
+async def index(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Get featured mentors
+    featured_mentors = db.query(Mentor).join(User).filter(
+        Mentor.is_approved == True,
+        User.is_active == True
+    ).order_by(Mentor.rating.desc()).limit(6).all()
+    
+    # Get top services
+    top_services = db.query(Service).join(Mentor).filter(
+        Service.is_active == True,
+        Mentor.is_approved == True
+    ).order_by(Service.price).limit(8).all()
+    
     return templates.TemplateResponse("index.html", {
         "request": request,
         "current_user": current_user,
+        "featured_mentors": featured_mentors,
+        "top_services": top_services,
         "now": datetime.now()
     })
 
-# Mentorship Program Page
+@app.get("/explore", response_class=HTMLResponse)
+async def explore_mentors(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    category: str = None,
+    industry: str = None,
+    min_price: float = None,
+    max_price: float = None,
+    search: str = None
+):
+    query = db.query(Mentor).join(User).filter(
+        Mentor.is_approved == True,
+        User.is_active == True
+    )
+    
+    if category:
+        query = query.join(Service).filter(Service.category == category)
+    
+    if industry:
+        query = query.filter(Mentor.industry.ilike(f"%{industry}%"))
+    
+    if search:
+        query = query.filter(
+            (User.full_name.ilike(f"%{search}%")) |
+            (Mentor.job_title.ilike(f"%{search}%")) |
+            (Mentor.skills.ilike(f"%{search}%"))
+        )
+    
+    mentors = query.distinct().all()
+    
+    # Get unique industries
+    industries = db.query(Mentor.industry).distinct().filter(Mentor.industry.isnot(None)).all()
+    industries = [i[0] for i in industries]
+    
+    return templates.TemplateResponse("explore.html", {
+        "request": request,
+        "current_user": current_user,
+        "mentors": mentors,
+        "industries": industries,
+        "search_query": search
+    })
+
+@app.get("/mentor/{username}", response_class=HTMLResponse)
+async def mentor_profile(request: Request, username: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    mentor = db.query(User).filter(
+        User.username == username,
+        User.role == "mentor",
+        User.is_active == True
+    ).first()
+    
+    if not mentor or not mentor.mentor or not mentor.mentor.is_approved:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+    
+    services = db.query(Service).filter(
+        Service.mentor_id == mentor.mentor.id,
+        Service.is_active == True
+    ).all()
+    
+    reviews = db.query(Review).filter(
+        Review.mentor_id == mentor.mentor.id,
+        Review.is_verified == True
+    ).order_by(Review.created_at.desc()).limit(10).all()
+    
+    # Get upcoming availability (next 7 days)
+    availabilities = []
+    for i in range(7):
+        date = datetime.now() + timedelta(days=i)
+        availabilities.append({
+            "date": date,
+            "day_name": date.strftime("%A"),
+            "day_num": date.day,
+            "month": date.strftime("%B")
+        })
+    
+    return templates.TemplateResponse("mentor_profile.html", {
+        "request": request,
+        "current_user": current_user,
+        "mentor": mentor,
+        "services": services,
+        "reviews": reviews,
+        "available_dates": availabilities
+    })
+
+@app.get("/service/{service_id}", response_class=HTMLResponse)
+async def service_detail(request: Request, service_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    return templates.TemplateResponse("service_detail.html", {
+        "request": request,
+        "current_user": current_user,
+        "service": service,
+        "mentor": service.mentor.user
+    })
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request, current_user: User = Depends(get_current_user)):
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.post("/register")
+async def register_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    full_name: str = Form(...),
+    role: str = Form(...),
+    phone: str = Form(None),
+    bio: str = Form(None),
+    profile_image: UploadFile = File(None)
+):
+    # Check if user exists
+    existing_user = db.query(User).filter(
+        (User.email == email) | (User.username == username)
+    ).first()
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    # Create user
+    user = User(
+        username=username,
+        email=email,
+        password_hash=hash_password(password),
+        full_name=full_name,
+        role=role,
+        phone=phone,
+        bio=bio,
+        is_verified=role != "mentor"  # Mentors need admin verification
+    )
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Save profile image if uploaded
+    if profile_image and profile_image.filename:
+        image_path = save_profile_image(profile_image, user.id)
+        user.profile_image = image_path
+        db.commit()
+    
+    # Create role-specific profile
+    if role == "mentor":
+        mentor = Mentor(user_id=user.id)
+        db.add(mentor)
+    elif role == "learner":
+        learner = Learner(user_id=user.id)
+        db.add(learner)
+    
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    response = RedirectResponse(url="/dashboard", status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=os.getenv("ENVIRONMENT") == "production",
+        samesite="lax"
+    )
+    
+    return response
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, current_user: User = Depends(get_current_user)):
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    user = db.query(User).filter(User.email == email, User.is_active == True).first()
+    
+    if not user or not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    response = RedirectResponse(url="/dashboard", status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=os.getenv("ENVIRONMENT") == "production",
+        samesite="lax"
+    )
+    
+    return response
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(key="access_token")
+    return response
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    if current_user.role == "admin":
+        return RedirectResponse(url="/admin/dashboard", status_code=303)
+    
+    # Get user's bookings
+    bookings = db.query(Booking).filter(Booking.user_id == current_user.id).order_by(Booking.scheduled_for.desc()).limit(10).all()
+    
+    # Get notifications
+    notifications = db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False
+    ).order_by(Notification.created_at.desc()).all()
+    
+    if current_user.role == "mentor":
+        # Get mentor-specific data
+        mentor = current_user.mentor
+        upcoming_sessions = db.query(Booking).filter(
+            Booking.mentor_id == mentor.id,
+            Booking.status.in_(["confirmed"]),
+            Booking.scheduled_for >= datetime.now()
+        ).order_by(Booking.scheduled_for).limit(10).all()
+        
+        earnings = db.query(func.sum(Booking.amount)).filter(
+            Booking.mentor_id == mentor.id,
+            Booking.status == "completed"
+        ).scalar() or 0
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "current_user": current_user,
+            "bookings": bookings,
+            "notifications": notifications,
+            "upcoming_sessions": upcoming_sessions,
+            "earnings": earnings,
+            "is_mentor": True
+        })
+    else:
+        # Learner dashboard
+        upcoming_sessions = db.query(Booking).filter(
+            Booking.user_id == current_user.id,
+            Booking.status.in_(["confirmed"]),
+            Booking.scheduled_for >= datetime.now()
+        ).order_by(Booking.scheduled_for).limit(10).all()
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "current_user": current_user,
+            "bookings": bookings,
+            "notifications": notifications,
+            "upcoming_sessions": upcoming_sessions,
+            "is_mentor": False
+        })
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user or current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get pending mentor approvals
+    pending_mentors = db.query(Mentor).join(User).filter(
+        Mentor.is_approved == False,
+        User.is_active == True
+    ).all()
+    
+    # Get recent bookings
+    recent_bookings = db.query(Booking).order_by(Booking.created_at.desc()).limit(10).all()
+    
+    # Get platform stats
+    total_users = db.query(User).count()
+    total_mentors = db.query(User).filter(User.role == "mentor").count()
+    total_learners = db.query(User).filter(User.role == "learner").count()
+    total_bookings = db.query(Booking).count()
+    total_revenue = db.query(func.sum(Booking.amount)).filter(Booking.status == "completed").scalar() or 0
+    
+    return templates.TemplateResponse("admin_dashboard.html", {
+        "request": request,
+        "current_user": current_user,
+        "pending_mentors": pending_mentors,
+        "recent_bookings": recent_bookings,
+        "stats": {
+            "total_users": total_users,
+            "total_mentors": total_mentors,
+            "total_learners": total_learners,
+            "total_bookings": total_bookings,
+            "total_revenue": total_revenue
+        }
+    })
+
+@app.post("/api/mentor/{mentor_id}/approve")
+async def approve_mentor(
+    mentor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+    
+    mentor.is_approved = True
+    mentor.approved_by = current_user.id
+    mentor.approved_at = datetime.now()
+    
+    # Update user verification status
+    mentor.user.is_verified = True
+    
+    db.commit()
+    
+    # Create notification for mentor
+    notification = Notification(
+        user_id=mentor.user_id,
+        title="Account Approved",
+        message="Your mentor account has been approved by admin. You can now start accepting bookings.",
+        type="success"
+    )
+    db.add(notification)
+    db.commit()
+    
+    return {"success": True, "message": "Mentor approved successfully"}
+
+@app.post("/api/create-booking")
+async def create_booking(
+    request: Request,
+    service_id: int = Form(...),
+    scheduled_for: str = Form(...),
+    time_slot: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "learner":
+        raise HTTPException(status_code=403, detail="Only learners can book sessions")
+    
+    # Parse date and time
+    from dateutil import parser
+    scheduled_datetime = parser.parse(f"{scheduled_for} {time_slot}")
+    
+    # Check if time slot is available
+    conflicting_booking = db.query(Booking).filter(
+        Booking.service_id == service_id,
+        Booking.scheduled_for == scheduled_datetime,
+        Booking.status.in_(["confirmed", "pending"])
+    ).first()
+    
+    if conflicting_booking:
+        raise HTTPException(status_code=400, detail="Time slot already booked")
+    
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    # Create booking
+    booking = Booking(
+        booking_uid=generate_booking_uid(),
+        user_id=current_user.id,
+        learner_id=current_user.learner.id,
+        mentor_id=service.mentor_id,
+        service_id=service_id,
+        scheduled_for=scheduled_datetime,
+        scheduled_until=scheduled_datetime + timedelta(minutes=service.duration),
+        amount=service.price,
+        status="pending"
+    )
+    
+    db.add(booking)
+    db.commit()
+    
+    # Create Razorpay order
+    order_data = {
+        'amount': int(service.price * 100),  # Convert to paise
+        'currency': 'INR',
+        'receipt': booking.booking_uid,
+        'notes': {
+            'booking_id': str(booking.id),
+            'service': service.name,
+            'mentor': service.mentor.user.full_name
+        }
+    }
+    
+    try:
+        order = razorpay_client.order.create(data=order_data)
+        booking.razorpay_order_id = order['id']
+        db.commit()
+    except Exception as e:
+        db.delete(booking)
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Payment gateway error: {str(e)}")
+    
+    return {
+        "success": True,
+        "booking_id": booking.id,
+        "order_id": order['id'],
+        "amount": service.price,
+        "currency": "INR",
+        "key_id": RAZORPAY_KEY_ID
+    }
+
+@app.post("/api/verify-payment")
+async def verify_payment(
+    request: Request,
+    razorpay_order_id: str = Form(...),
+    razorpay_payment_id: str = Form(...),
+    razorpay_signature: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Verify payment signature
+    params_dict = {
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_payment_id': razorpay_payment_id,
+        'razorpay_signature': razorpay_signature
+    }
+    
+    try:
+        razorpay_client.utility.verify_payment_signature(params_dict)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
+    
+    # Update booking
+    booking = db.query(Booking).filter(
+        Booking.razorpay_order_id == razorpay_order_id,
+        Booking.user_id == current_user.id
+    ).first()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    booking.razorpay_payment_id = razorpay_payment_id
+    booking.razorpay_signature = razorpay_signature
+    booking.status = "confirmed"
+    
+    # Create meeting link (in production, integrate with Zoom/Google Meet API)
+    booking.meeting_link = f"https://meet.clearq.in/{booking.booking_uid}"
+    
+    db.commit()
+    
+    # Create notifications
+    # For learner
+    learner_notification = Notification(
+        user_id=current_user.id,
+        title="Booking Confirmed",
+        message=f"Your booking with {booking.mentor.user.full_name} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+        type="success"
+    )
+    
+    # For mentor
+    mentor_notification = Notification(
+        user_id=booking.mentor.user_id,
+        title="New Booking",
+        message=f"{current_user.full_name} has booked a session with you on {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+        type="info"
+    )
+    
+    db.add(learner_notification)
+    db.add(mentor_notification)
+    db.commit()
+    
+    return {"success": True, "message": "Payment verified successfully"}
+
+@app.get("/api/available-slots/{mentor_id}")
+async def get_available_slots(
+    mentor_id: int,
+    date: str,
+    db: Session = Depends(get_db)
+):
+    from dateutil import parser
+    selected_date = parser.parse(date).date()
+    
+    # Get mentor's services
+    services = db.query(Service).filter(
+        Service.mentor_id == mentor_id,
+        Service.is_active == True
+    ).all()
+    
+    # Get mentor's availability
+    availabilities = db.query(Availability).filter(Availability.mentor_id == mentor_id).all()
+    
+    # Get existing bookings for the date
+    bookings = db.query(Booking).filter(
+        Booking.mentor_id == mentor_id,
+        func.date(Booking.scheduled_for) == selected_date,
+        Booking.status.in_(["confirmed", "pending"])
+    ).all()
+    
+    # Generate available slots (simplified logic)
+    available_slots = []
+    for service in services:
+        # Assuming 1-hour slots from 9 AM to 6 PM
+        for hour in range(9, 18):
+            slot_time = datetime.combine(selected_date, datetime.min.time()) + timedelta(hours=hour)
+            
+            # Check if slot is available
+            slot_available = True
+            for booking in bookings:
+                if booking.scheduled_for.hour == hour:
+                    slot_available = False
+                    break
+            
+            if slot_available:
+                available_slots.append({
+                    "time": f"{hour:02d}:00",
+                    "service_id": service.id,
+                    "service_name": service.name,
+                    "price": service.price
+                })
+    
+    return {"success": True, "slots": available_slots}
+
+@app.post("/api/submit-review")
+async def submit_review(
+    request: Request,
+    booking_id: int = Form(...),
+    rating: int = Form(...),
+    comment: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Check if booking exists and belongs to user
+    booking = db.query(Booking).filter(
+        Booking.id == booking_id,
+        Booking.user_id == current_user.id,
+        Booking.status == "completed"
+    ).first()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Check if review already exists
+    existing_review = db.query(Review).filter(Review.booking_id == booking_id).first()
+    if existing_review:
+        raise HTTPException(status_code=400, detail="Review already submitted")
+    
+    # Create review
+    review = Review(
+        booking_id=booking_id,
+        mentor_id=booking.mentor_id,
+        user_id=current_user.id,
+        rating=rating,
+        comment=comment
+    )
+    
+    db.add(review)
+    
+    # Update mentor rating
+    mentor = booking.mentor
+    total_reviews = mentor.total_reviews + 1
+    mentor.rating = ((mentor.rating * mentor.total_reviews) + rating) / total_reviews
+    mentor.total_reviews = total_reviews
+    
+    db.commit()
+    
+    return {"success": True, "message": "Review submitted successfully"}
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request, current_user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("terms.html", {
+        "request": request,
+        "current_user": current_user
+    })
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request, current_user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("privacy.html", {
+        "request": request,
+        "current_user": current_user
+    })
+
 @app.get("/mentorship-program", response_class=HTMLResponse)
-async def mentorship_program(request: Request):
-    current_user = await get_current_user(request)
+async def mentorship_program(request: Request, current_user: User = Depends(get_current_user)):
     return templates.TemplateResponse("mentorship_program.html", {
         "request": request,
         "current_user": current_user
     })
 
-# Explore Mentors
-@app.get("/explore", response_class=HTMLResponse)
-async def explore_mentors(request: Request, category: Optional[str] = None):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Build query based on category
-        query = """
-            SELECT u.id, u.username, u.full_name, u.profile_image,
-                   mp.experience, mp.industry, mp.job_title, mp.company,
-                   mp.rating, mp.review_count, mp.total_sessions,
-                   COUNT(DISTINCT s.id) as service_count
-            FROM users u
-            JOIN mentor_profiles mp ON u.id = mp.user_id
-            LEFT JOIN services s ON u.id = s.mentor_id AND s.is_active = TRUE
-            WHERE u.role = 'mentor' 
-              AND mp.is_approved = TRUE
-              AND u.is_active = TRUE
-        """
-        
-        params = []
-        if category:
-            query += " AND mp.industry ILIKE $1"
-            params.append(f"%{category}%")
-        
-        query += " GROUP BY u.id, mp.id ORDER BY mp.rating DESC NULLS LAST"
-        
-        mentors = await conn.fetch(query, *params)
-        
-        # Get categories for filter
-        categories = await conn.fetch("""
-            SELECT DISTINCT industry FROM mentor_profiles 
-            WHERE is_approved = TRUE ORDER BY industry
-        """)
-        
-        return templates.TemplateResponse("explore.html", {
-            "request": request,
-            "mentors": [dict(mentor) for mentor in mentors],
-            "categories": [cat['industry'] for cat in categories],
-            "selected_category": category,
-            "current_user": await get_current_user(request)
-        })
-    finally:
-        await conn.close()
-
-# Mentor Public Profile
-@app.get("/mentor/{username}", response_class=HTMLResponse)
-async def mentor_public_profile(request: Request, username: str):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Get mentor details
-        mentor = await conn.fetchrow("""
-            SELECT u.*, mp.* 
-            FROM users u
-            JOIN mentor_profiles mp ON u.id = mp.user_id
-            WHERE u.username = $1 AND u.role = 'mentor' 
-              AND mp.is_approved = TRUE AND u.is_active = TRUE
-        """, username)
-        
-        if not mentor:
-            raise HTTPException(status_code=404, detail="Mentor not found")
-        
-        # Get mentor's services
-        services = await conn.fetch("""
-            SELECT * FROM services 
-            WHERE mentor_id = $1 AND is_active = TRUE
-            ORDER BY created_at DESC
-        """, mentor['user_id'])
-        
-        # Get available dates (next 7 days)
-        available_dates = []
-        for i in range(7):
-            date = datetime.now() + timedelta(days=i)
-            available_dates.append({
-                "day_name": date.strftime("%a"),
-                "day_num": date.day,
-                "month": date.strftime("%b"),
-                "full_date": date.strftime("%Y-%m-%d")
-            })
-        
-        return templates.TemplateResponse("mentor_profile.html", {
-            "request": request,
-            "mentor": dict(mentor),
-            "services": [dict(service) for service in services],
-            "available_dates": available_dates,
-            "current_user": await get_current_user(request)
-        })
-    finally:
-        await conn.close()
-
-# Service Detail
-@app.get("/service/{service_id}", response_class=HTMLResponse)
-async def service_detail(request: Request, service_id: int):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        service = await conn.fetchrow("""
-            SELECT s.*, u.username, u.full_name, u.profile_image,
-                   mp.experience, mp.industry, mp.rating, mp.review_count
-            FROM services s
-            JOIN users u ON s.mentor_id = u.id
-            JOIN mentor_profiles mp ON u.id = mp.user_id
-            WHERE s.id = $1 AND s.is_active = TRUE
-        """, service_id)
-        
-        if not service:
-            raise HTTPException(status_code=404, detail="Service not found")
-        
-        # Get available time slots for next 7 days
-        time_slots = await conn.fetch("""
-            SELECT * FROM time_slots 
-            WHERE service_id = $1 AND slot_date >= CURRENT_DATE 
-              AND slot_date <= CURRENT_DATE + INTERVAL '7 days'
-              AND is_booked = FALSE
-            ORDER BY slot_date, start_time
-        """, service_id)
-        
-        return templates.TemplateResponse("service_detail.html", {
-            "request": request,
-            "service": dict(service),
-            "time_slots": [dict(slot) for slot in time_slots],
-            "current_user": await get_current_user(request)
-        })
-    finally:
-        await conn.close()
-
-# Registration Page
-@app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    current_user = await get_current_user(request)
-    if current_user:
-        return RedirectResponse("/dashboard", status_code=303)
-    return templates.TemplateResponse("register.html", {
+# Error handlers
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc: HTTPException):
+    return templates.TemplateResponse("404.html", {
         "request": request,
-        "current_user": current_user
-    })
+        "detail": exc.detail
+    }, status_code=404)
 
-# User Registration
-@app.post("/register")
-async def register_user(
-    request: Request,
-    username: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    full_name: str = Form(...),
-    role: str = Form("learner"),
-    phone: Optional[str] = Form(None),
-    profile_image: Optional[UploadFile] = File(None)
-):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Check if user exists
-        existing = await conn.fetchrow(
-            "SELECT id FROM users WHERE email = $1 OR username = $2",
-            email, username
-        )
-        if existing:
-            raise HTTPException(
-                status_code=400,
-                detail="Username or email already registered"
-            )
-        
-        # Hash password
-        password_hash = get_password_hash(password)
-        
-        # Handle profile image upload
-        profile_image_path = None
-        if profile_image and profile_image.filename:
-            profile_image_path = await save_upload_file(profile_image)
-        
-        # Create user
-        user_id = await conn.fetchval("""
-            INSERT INTO users (username, email, password_hash, full_name, 
-                             role, phone, profile_image, is_verified)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id
-        """, username, email, password_hash, full_name, role, phone, 
-           profile_image_path, role != 'mentor')
-        
-        # If mentor, create mentor profile (pending approval)
-        if role == 'mentor':
-            await conn.execute("""
-                INSERT INTO mentor_profiles (user_id, experience, industry, 
-                                           is_approved)
-                VALUES ($1, 0, 'General', FALSE)
-            """, user_id)
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": str(user_id)}, 
-            expires_delta=access_token_expires
-        )
-        
-        # Set cookie and redirect
-        response = RedirectResponse("/dashboard", status_code=303)
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        )
-        
-        return response
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
+@app.exception_handler(500)
+async def internal_exception_handler(request: Request, exc: HTTPException):
+    return templates.TemplateResponse("500.html", {
+        "request": request
+    }, status_code=500)
 
-# Login Page
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    current_user = await get_current_user(request)
-    if current_user:
-        return RedirectResponse("/dashboard", status_code=303)
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "current_user": current_user
-    })
-
-# User Login
-@app.post("/login")
-async def login_user(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Get user
-        user = await conn.fetchrow(
-            "SELECT * FROM users WHERE email = $1 AND is_active = TRUE",
-            email
-        )
-        
-        if not user or not verify_password(password, user['password_hash']):
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid email or password"
-            )
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": str(user['id'])}, 
-            expires_delta=access_token_expires
-        )
-        
-        # Set cookie and redirect
-        response = RedirectResponse("/dashboard", status_code=303)
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        )
-        
-        return response
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Logout
-@app.get("/logout")
-async def logout():
-    response = RedirectResponse("/", status_code=303)
-    response.delete_cookie("access_token")
-    return response
-
-# Dashboard
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    current_user = await get_current_user(request)
-    if not current_user:
-        return RedirectResponse("/login", status_code=303)
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        if current_user['role'] == 'learner':
-            # Get learner's bookings
-            bookings = await conn.fetch("""
-                SELECT b.*, s.name as service_name, s.price,
-                       u.full_name as mentor_name, u.profile_image as mentor_image
-                FROM bookings b
-                JOIN services s ON b.service_id = s.id
-                JOIN users u ON b.mentor_id = u.id
-                WHERE b.learner_id = $1
-                ORDER BY b.created_at DESC
-                LIMIT 10
-            """, current_user['id'])
-            
-            return templates.TemplateResponse("dashboard.html", {
-                "request": request,
-                "current_user": current_user,
-                "bookings": [dict(booking) for booking in bookings],
-                "user_type": "learner"
-            })
-            
-        elif current_user['role'] == 'mentor':
-            # Get mentor profile
-            mentor_profile = await conn.fetchrow(
-                "SELECT * FROM mentor_profiles WHERE user_id = $1",
-                current_user['id']
-            )
-            
-            # Get mentor's bookings
-            bookings = await conn.fetch("""
-                SELECT b.*, s.name as service_name, s.price,
-                       u.full_name as learner_name, u.profile_image as learner_image
-                FROM bookings b
-                JOIN services s ON b.service_id = s.id
-                JOIN users u ON b.learner_id = u.id
-                WHERE b.mentor_id = $1
-                ORDER BY b.created_at DESC
-                LIMIT 10
-            """, current_user['id'])
-            
-            # Get mentor's services
-            services = await conn.fetch("""
-                SELECT * FROM services WHERE mentor_id = $1
-                ORDER BY created_at DESC
-            """, current_user['id'])
-            
-            # Get earnings summary
-            earnings = await conn.fetchrow("""
-                SELECT 
-                    COUNT(*) as total_bookings,
-                    SUM(amount) as total_earnings,
-                    SUM(mentor_amount) as mentor_earnings,
-                    SUM(platform_fee) as platform_fees
-                FROM earnings 
-                WHERE mentor_id = $1 AND status = 'paid'
-            """, current_user['id'])
-            
-            return templates.TemplateResponse("dashboard.html", {
-                "request": request,
-                "current_user": current_user,
-                "mentor_profile": dict(mentor_profile) if mentor_profile else None,
-                "bookings": [dict(booking) for booking in bookings],
-                "services": [dict(service) for service in services],
-                "earnings": dict(earnings) if earnings else {},
-                "user_type": "mentor"
-            })
-            
-        elif current_user['role'] == 'admin':
-            # Admin dashboard
-            return RedirectResponse("/admin/dashboard", status_code=303)
-            
-    finally:
-        await conn.close()
-
-# Create Booking
-@app.post("/api/create-booking")
-async def create_booking(
-    request: Request,
-    service_id: int = Form(...),
-    booking_date: str = Form(...),
-    booking_time: str = Form(...),
-    notes: Optional[str] = Form(None)
-):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'learner':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Get service details
-        service = await conn.fetchrow("""
-            SELECT s.*, u.id as mentor_id, u.full_name as mentor_name
-            FROM services s
-            JOIN users u ON s.mentor_id = u.id
-            WHERE s.id = $1 AND s.is_active = TRUE
-        """, service_id)
-        
-        if not service:
-            raise HTTPException(status_code=404, detail="Service not found")
-        
-        # Create booking
-        booking_id = await conn.fetchval("""
-            INSERT INTO bookings (
-                learner_id, mentor_id, service_id, booking_date, 
-                booking_time, amount, status, payment_status, notes
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'pending', $7)
-            RETURNING id
-        """, current_user['id'], service['mentor_id'], service_id, 
-           booking_date, booking_time, service['price'], notes)
-        
-        # For now, return booking ID
-        # In production, integrate with Razorpay here
-        
-        return JSONResponse({
-            "success": True,
-            "booking_id": booking_id,
-            "amount": float(service['price']),
-            "message": "Booking created. Redirect to payment..."
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Get Available Time Slots API
-@app.post("/api/time-slots/{mentor_id}")
-async def get_time_slots(
-    mentor_id: int,
-    date: str = Form(...)
-):
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Get available time slots for the date
-        slots = await conn.fetch("""
-            SELECT ts.id, ts.start_time, ts.end_time
-            FROM time_slots ts
-            WHERE ts.mentor_id = $1 
-              AND ts.slot_date = $2::DATE
-              AND ts.is_booked = FALSE
-            ORDER BY ts.start_time
-        """, mentor_id, date)
-        
-        # Generate time slots if none exist (for demo)
-        if not slots:
-            # Generate sample time slots (9 AM to 6 PM)
-            slots_data = []
-            for hour in range(9, 18):
-                slots_data.append(f"{hour:02d}:00")
-            
-            return JSONResponse({
-                "success": True,
-                "slots": slots_data
-            })
-        
-        slots_data = [f"{slot['start_time']}" for slot in slots]
-        return JSONResponse({
-            "success": True,
-            "slots": slots_data
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Payment Page
-@app.get("/payment/{booking_id}", response_class=HTMLResponse)
-async def payment_page(request: Request, booking_id: int):
-    current_user = await get_current_user(request)
-    if not current_user:
-        return RedirectResponse(f"/login?next=/payment/{booking_id}", status_code=303)
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        booking = await conn.fetchrow("""
-            SELECT b.*, s.name as service_name, u.full_name as mentor_name
-            FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u ON b.mentor_id = u.id
-            WHERE b.id = $1 AND b.learner_id = $2
-        """, booking_id, current_user['id'])
-        
-        if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found")
-        
-        return templates.TemplateResponse("payment.html", {
-            "request": request,
-            "current_user": current_user,
-            "booking": dict(booking)
-        })
-    finally:
-        await conn.close()
-
-# Process Payment (Razorpay Integration)
-@app.post("/api/process-payment")
-async def process_payment(
-    request: Request,
-    booking_id: int = Form(...),
-    razorpay_payment_id: str = Form(...),
-    razorpay_order_id: str = Form(...),
-    razorpay_signature: str = Form(...)
-):
-    current_user = await get_current_user(request)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    # Note: In production, verify Razorpay signature here
-    # razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Update booking payment status
-        await conn.execute("""
-            UPDATE bookings 
-            SET payment_status = 'paid',
-                razorpay_payment_id = $1,
-                razorpay_order_id = $2,
-                status = 'confirmed',
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $3 AND learner_id = $4
-        """, razorpay_payment_id, razorpay_order_id, booking_id, current_user['id'])
-        
-        # Create earning record
-        booking = await conn.fetchrow(
-            "SELECT * FROM bookings WHERE id = $1", booking_id
-        )
-        
-        if booking:
-            platform_fee = float(booking['amount']) * 0.20  # 20% platform fee
-            mentor_amount = float(booking['amount']) - platform_fee
-            
-            await conn.execute("""
-                INSERT INTO earnings (
-                    mentor_id, booking_id, amount, 
-                    platform_fee, mentor_amount, status
-                )
-                VALUES ($1, $2, $3, $4, $5, 'pending')
-            """, booking['mentor_id'], booking_id, booking['amount'], 
-               platform_fee, mentor_amount)
-        
-        return JSONResponse({
-            "success": True,
-            "message": "Payment processed successfully"
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Mentor Profile Update
-@app.post("/mentor/profile/update")
-async def update_mentor_profile(
-    request: Request,
-    experience: int = Form(...),
-    industry: str = Form(...),
-    job_title: Optional[str] = Form(None),
-    company: Optional[str] = Form(None),
-    bio: Optional[str] = Form(None),
-    skills: str = Form(...),
-    linkedin_url: Optional[str] = Form(None),
-    github_url: Optional[str] = Form(None),
-    twitter_url: Optional[str] = Form(None)
-):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'mentor':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Update mentor profile
-        await conn.execute("""
-            UPDATE mentor_profiles 
-            SET experience = $1, industry = $2, job_title = $3,
-                company = $4, bio = $5, skills = $6,
-                linkedin_url = $7, github_url = $8, twitter_url = $9,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $10
-        """, experience, industry, job_title, company, bio, skills,
-           linkedin_url, github_url, twitter_url, current_user['id'])
-        
-        return RedirectResponse("/dashboard", status_code=303)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Create Service
-@app.post("/mentor/service/create")
-async def create_service(
-    request: Request,
-    name: str = Form(...),
-    description: str = Form(...),
-    price: float = Form(...),
-    duration: str = Form("1 hour"),
-    category: str = Form(...),
-    digital_product_link: Optional[str] = Form(None)
-):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'mentor':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Create service
-        await conn.execute("""
-            INSERT INTO services (
-                mentor_id, name, description, price, 
-                duration, category, digital_product_link
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-        """, current_user['id'], name, description, price, 
-           duration, category, digital_product_link)
-        
-        return RedirectResponse("/dashboard", status_code=303)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Add Time Slots
-@app.post("/mentor/time-slots/add")
-async def add_time_slots(
-    request: Request,
-    service_id: int = Form(...),
-    slot_date: str = Form(...),
-    start_time: str = Form(...),
-    end_time: str = Form(...)
-):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'mentor':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Add time slot
-        await conn.execute("""
-            INSERT INTO time_slots (
-                mentor_id, service_id, slot_date, start_time, end_time
-            )
-            VALUES ($1, $2, $3, $4, $5)
-        """, current_user['id'], service_id, slot_date, start_time, end_time)
-        
-        return JSONResponse({
-            "success": True,
-            "message": "Time slot added successfully"
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Admin Dashboard
-@app.get("/admin/dashboard", response_class=HTMLResponse)
-async def admin_dashboard(request: Request):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'admin':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Get pending mentor approvals
-        pending_mentors = await conn.fetch("""
-            SELECT u.id, u.username, u.email, u.full_name, u.created_at,
-                   mp.experience, mp.industry, mp.skills
-            FROM users u
-            JOIN mentor_profiles mp ON u.id = mp.user_id
-            WHERE u.role = 'mentor' AND mp.is_approved = FALSE
-            ORDER BY u.created_at DESC
-        """)
-        
-        # Get recent bookings
-        recent_bookings = await conn.fetch("""
-            SELECT b.*, 
-                   u1.full_name as learner_name,
-                   u2.full_name as mentor_name,
-                   s.name as service_name
-            FROM bookings b
-            JOIN users u1 ON b.learner_id = u1.id
-            JOIN users u2 ON b.mentor_id = u2.id
-            JOIN services s ON b.service_id = s.id
-            ORDER BY b.created_at DESC
-            LIMIT 20
-        """)
-        
-        # Get platform statistics
-        stats = await conn.fetchrow("""
-            SELECT 
-                (SELECT COUNT(*) FROM users WHERE role = 'learner') as total_learners,
-                (SELECT COUNT(*) FROM users WHERE role = 'mentor' AND is_active = TRUE) as total_mentors,
-                (SELECT COUNT(*) FROM bookings WHERE payment_status = 'paid') as total_bookings,
-                (SELECT SUM(amount) FROM bookings WHERE payment_status = 'paid') as total_revenue,
-                (SELECT COUNT(*) FROM mentor_profiles WHERE is_approved = FALSE) as pending_approvals
-        """)
-        
-        return templates.TemplateResponse("admin_dashboard.html", {
-            "request": request,
-            "current_user": current_user,
-            "pending_mentors": [dict(mentor) for mentor in pending_mentors],
-            "recent_bookings": [dict(booking) for booking in recent_bookings],
-            "stats": dict(stats) if stats else {}
-        })
-    finally:
-        await conn.close()
-
-# Approve Mentor
-@app.post("/admin/mentor/{mentor_id}/approve")
-async def approve_mentor(mentor_id: int, request: Request):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'admin':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        await conn.execute("""
-            UPDATE mentor_profiles 
-            SET is_approved = TRUE, updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $1
-        """, mentor_id)
-        
-        return JSONResponse({
-            "success": True,
-            "message": "Mentor approved successfully"
-        })
-    finally:
-        await conn.close()
-
-# Terms and Conditions
-@app.get("/terms", response_class=HTMLResponse)
-async def terms_page(request: Request):
-    return templates.TemplateResponse("terms.html", {
-        "request": request,
-        "current_user": await get_current_user(request)
-    })
-
-# Privacy Policy
-@app.get("/privacy", response_class=HTMLResponse)
-async def privacy_page(request: Request):
-    return templates.TemplateResponse("terms.html", {
-        "request": request,
-        "current_user": await get_current_user(request),
-        "page_type": "privacy"
-    })
-
-
-# Booking Confirmation Page
-@app.get("/booking/{booking_id}/confirmation", response_class=HTMLResponse)
-async def booking_confirmation(request: Request, booking_id: int):
-    current_user = await get_current_user(request)
-    if not current_user:
-        return RedirectResponse(f"/login?next=/booking/{booking_id}/confirmation", status_code=303)
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        booking = await conn.fetchrow("""
-            SELECT b.*, s.name as service_name, s.price as amount,
-                   u1.full_name as mentor_name, u1.profile_image as mentor_image,
-                   u2.full_name as learner_name
-            FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u1 ON b.mentor_id = u1.id
-            JOIN users u2 ON b.learner_id = u2.id
-            WHERE b.id = $1 AND (b.learner_id = $2 OR b.mentor_id = $2)
-        """, booking_id, current_user['id'])
-        
-        if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found")
-        
-        return templates.TemplateResponse("booking_confirmation.html", {
-            "request": request,
-            "current_user": current_user,
-            "booking": dict(booking)
-        })
-    finally:
-        await conn.close()
-
-# Update user profile
-@app.post("/profile/update")
-async def update_profile(
-    request: Request,
-    full_name: str = Form(...),
-    phone: Optional[str] = Form(None),
-    bio: Optional[str] = Form(None),
-    profile_image: Optional[UploadFile] = File(None)
-):
-    current_user = await get_current_user(request)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Handle profile image upload
-        profile_image_path = current_user.get('profile_image')
-        if profile_image and profile_image.filename:
-            profile_image_path = await save_upload_file(profile_image)
-        
-        # Update user
-        await conn.execute("""
-            UPDATE users 
-            SET full_name = $1, phone = $2, profile_image = $3, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $4
-        """, full_name, phone, profile_image_path, current_user['id'])
-        
-        # If mentor, update mentor profile bio
-        if current_user['role'] == 'mentor' and bio:
-            await conn.execute("""
-                UPDATE mentor_profiles 
-                SET bio = $1, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = $2
-            """, bio, current_user['id'])
-        
-        return RedirectResponse("/dashboard", status_code=303)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-# Submit review
-@app.post("/review/submit")
-async def submit_review(
-    request: Request,
-    booking_id: int = Form(...),
-    rating: int = Form(...),
-    comment: str = Form(...)
-):
-    current_user = await get_current_user(request)
-    if not current_user or current_user['role'] != 'learner':
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Check if review already exists
-        existing = await conn.fetchrow(
-            "SELECT id FROM reviews WHERE booking_id = $1",
-            booking_id
-        )
-        
-        if existing:
-            raise HTTPException(status_code=400, detail="Review already submitted")
-        
-        # Get booking details
-        booking = await conn.fetchrow("""
-            SELECT mentor_id, service_id FROM bookings 
-            WHERE id = $1 AND learner_id = $2 AND status = 'completed'
-        """, booking_id, current_user['id'])
-        
-        if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found")
-        
-        # Create review
-        await conn.execute("""
-            INSERT INTO reviews (booking_id, learner_id, mentor_id, service_id, rating, comment)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        """, booking_id, current_user['id'], booking['mentor_id'], booking['service_id'], rating, comment)
-        
-        # Update mentor rating
-        await update_mentor_rating(conn, booking['mentor_id'])
-        
-        return JSONResponse({
-            "success": True,
-            "message": "Review submitted successfully"
-        })
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
-
-async def update_mentor_rating(conn, mentor_id):
-    """Update mentor's average rating"""
-    result = await conn.fetchrow("""
-        SELECT 
-            AVG(rating) as avg_rating,
-            COUNT(*) as review_count
-        FROM reviews 
-        WHERE mentor_id = $1
-    """, mentor_id)
-    
-    if result and result['avg_rating']:
-        await conn.execute("""
-            UPDATE mentor_profiles 
-            SET rating = $1, review_count = $2, updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $3
-        """, float(result['avg_rating']), result['review_count'], mentor_id)
-
-# Cancel booking
-@app.post("/booking/{booking_id}/cancel")
-async def cancel_booking(booking_id: int, request: Request):
-    current_user = await get_current_user(request)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    conn = await asyncpg.connect(DATABASE_URL)
-    try:
-        # Check if user owns the booking
-        booking = await conn.fetchrow("""
-            SELECT * FROM bookings 
-            WHERE id = $1 AND (learner_id = $2 OR mentor_id = $2)
-              AND status NOT IN ('cancelled', 'completed')
-        """, booking_id, current_user['id'])
-        
-        if not booking:
-            raise HTTPException(status_code=404, detail="Booking not found or cannot be cancelled")
-        
-        # Check cancellation window (24 hours)
-        booking_time = datetime.combine(
-            booking['booking_date'], 
-            booking['booking_time']
-        )
-        time_diff = booking_time - datetime.now()
-        
-        if time_diff.total_seconds() < 24 * 3600:
-            raise HTTPException(
-                status_code=400, 
-                detail="Cancellation must be made at least 24 hours before the session"
-            )
-        
-        # Update booking status
-        await conn.execute("""
-            UPDATE bookings 
-            SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
-            WHERE id = $1
-        """, booking_id)
-        
-        # Refund if paid
-        if booking['payment_status'] == 'paid':
-            await conn.execute("""
-                UPDATE bookings 
-                SET payment_status = 'refunded', updated_at = CURRENT_TIMESTAMP
-                WHERE id = $1
-            """, booking_id)
-        
-        return JSONResponse({
-            "success": True,
-            "message": "Booking cancelled successfully"
-        })
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await conn.close()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
