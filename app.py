@@ -223,72 +223,7 @@ def get_db():
         yield db
     finally:
         db.close()
-# Add this function after imports and before routes
-def require_admin(current_user: User = Depends(get_current_user)):
-    """Dependency to require admin role"""
-    if not current_user or current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return current_user
-    
-def create_admin_user(db: Session):
-    """Create initial admin user if not exists"""
-    admin_email = "admin@clearq.in"
-    admin_username = "admin"
-    
-    # Check if admin already exists
-    existing_admin = db.query(User).filter(
-        (User.email == admin_email) | (User.username == admin_username)
-    ).first()
-    
-    if not existing_admin:
-        # Create admin user
-        admin = User(
-            username=admin_username,
-            email=admin_email,
-            password_hash=hash_password("Admin@123"),  # Change this in production!
-            full_name="ClearQ Administrator",
-            role="admin",
-            is_verified=True,
-            is_active=True
-        )
-        
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-        
-        print("=" * 60)
-        print("ADMIN USER CREATED SUCCESSFULLY")
-        print("=" * 60)
-        print(f"Email: {admin_email}")
-        print(f"Password: Admin@123")
-        print("=" * 60)
-        print("IMPORTANT: Change this password immediately after first login!")
-        print("=" * 60)
-        
-        return admin
-    return existing_admin
 
-# Add this to ensure admin is created on startup
-@app.on_event("startup")
-async def startup_event():
-    db = SessionLocal()
-    try:
-        admin = create_admin_user(db)
-        if admin:
-            print(f"✅ Admin user created: {admin.email}")
-        else:
-            print("✅ Admin user already exists")
-        
-        # Check if we have any mentors for sample data
-        mentor_count = db.query(User).filter(User.role == "mentor").count()
-        if mentor_count == 0:
-            print("ℹ️  No mentors found. Add mentors through admin panel.")
-        
-        print("✅ ClearQ platform is ready!")
-    except Exception as e:
-        print(f"⚠️  Startup error: {e}")
-    finally:
-        db.close()
 # Authentication functions
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -350,6 +285,72 @@ def save_profile_image(file: UploadFile, user_id: int):
 def generate_booking_uid():
     return f"BK{uuid.uuid4().hex[:8].upper()}"
 
+def create_admin_user(db: Session):
+    """Create initial admin user if not exists"""
+    admin_email = "admin@clearq.in"
+    admin_username = "admin"
+    
+    # Check if admin already exists
+    existing_admin = db.query(User).filter(
+        (User.email == admin_email) | (User.username == admin_username)
+    ).first()
+    
+    if not existing_admin:
+        # Create admin user
+        admin = User(
+            username=admin_username,
+            email=admin_email,
+            password_hash=hash_password("Admin@123"),  # Change this in production!
+            full_name="ClearQ Administrator",
+            role="admin",
+            is_verified=True,
+            is_active=True
+        )
+        
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+        
+        print("=" * 60)
+        print("ADMIN USER CREATED SUCCESSFULLY")
+        print("=" * 60)
+        print(f"Email: {admin_email}")
+        print(f"Password: Admin@123")
+        print("=" * 60)
+        print("IMPORTANT: Change this password immediately after first login!")
+        print("=" * 60)
+        
+        return admin
+    return existing_admin
+
+def require_admin(current_user: User = Depends(get_current_user)):
+    """Dependency to require admin role"""
+    if not current_user or current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+# Add this to ensure admin is created on startup
+@app.on_event("startup")
+async def startup_event():
+    db = SessionLocal()
+    try:
+        admin = create_admin_user(db)
+        if admin:
+            print(f"✅ Admin user created: {admin.email}")
+        else:
+            print("✅ Admin user already exists")
+        
+        # Check if we have any mentors for sample data
+        mentor_count = db.query(User).filter(User.role == "mentor").count()
+        if mentor_count == 0:
+            print("ℹ️  No mentors found. Add mentors through admin panel.")
+        
+        print("✅ ClearQ platform is ready!")
+    except Exception as e:
+        print(f"⚠️  Startup error: {e}")
+    finally:
+        db.close()
+
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -372,6 +373,7 @@ async def index(request: Request, db: Session = Depends(get_db), current_user: U
         "top_services": top_services,
         "now": datetime.now()
     })
+
 @app.get("/admin/setup", response_class=HTMLResponse)
 async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
     # Check if admin already exists
@@ -385,6 +387,7 @@ async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "admin": admin
     })
+
 @app.get("/explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
@@ -468,7 +471,19 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
         "reviews": reviews,
         "available_dates": availabilities
     })
-# Add these endpoints to your app.py
+
+@app.get("/service/{service_id}", response_class=HTMLResponse)
+async def service_detail(request: Request, service_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    return templates.TemplateResponse("service_detail.html", {
+        "request": request,
+        "current_user": current_user,
+        "service": service,
+        "mentor": service.mentor.user
+    })
 
 @app.get("/api/available-dates/{mentor_id}")
 async def get_available_dates(mentor_id: int, db: Session = Depends(get_db)):
@@ -724,19 +739,6 @@ async def get_dashboard_stats(
     
     return {"success": True, "stats": stats}
 
-@app.get("/service/{service_id}", response_class=HTMLResponse)
-async def service_detail(request: Request, service_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    service = db.query(Service).filter(Service.id == service_id).first()
-    if not service:
-        raise HTTPException(status_code=404, detail="Service not found")
-    
-    return templates.TemplateResponse("service_detail.html", {
-        "request": request,
-        "current_user": current_user,
-        "service": service,
-        "mentor": service.mentor.user
-    })
-
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request, current_user: User = Depends(get_current_user)):
     if current_user:
@@ -910,10 +912,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
         })
 
 @app.get("/admin/dashboard", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user or current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
+async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Get pending mentor approvals
     pending_mentors = db.query(Mentor).join(User).filter(
         Mentor.is_approved == False,
@@ -948,11 +947,8 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db), curre
 async def approve_mentor(
     mentor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
-    if not current_user or current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
     mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
     if not mentor:
         raise HTTPException(status_code=404, detail="Mentor not found")
@@ -1231,6 +1227,50 @@ async def mentorship_program(request: Request, current_user: User = Depends(get_
         "current_user": current_user
     })
 
+@app.get("/admin/change-password", response_class=HTMLResponse)
+async def change_password_page(request: Request, current_user: User = Depends(require_admin)):
+    return templates.TemplateResponse("change_password.html", {
+        "request": request,
+        "current_user": current_user
+    })
+
+@app.post("/admin/change-password")
+async def change_password(
+    request: Request,
+    current_user: User = Depends(require_admin),
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # Verify current password
+    if not verify_password(current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Check if new passwords match
+    if new_password != confirm_password:
+        raise HTTPException(status_code=400, detail="New passwords do not match")
+    
+    # Validate new password strength
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    # Update password
+    current_user.password_hash = hash_password(new_password)
+    db.commit()
+    
+    # Create notification
+    notification = Notification(
+        user_id=current_user.id,
+        title="Password Changed",
+        message="Your admin password has been successfully changed.",
+        type="success"
+    )
+    db.add(notification)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
+
 # Error handlers
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: HTTPException):
@@ -1248,6 +1288,3 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
