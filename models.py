@@ -49,12 +49,12 @@ class MentorProfile(Base):
     
     # Social URLs
     linkedin_url = Column(String(255))
-    github_url = Column(String(255))
     twitter_url = Column(String(255))
-    instagram_url = Column(String(255))
-    facebook_url = Column(String(255))
-    youtube_url = Column(String(255))
+    github_url = Column(String(255))
     portfolio_url = Column(String(255))
+    youtube_url = Column(String(255))
+    facebook_url = Column(String(255))
+    instagram_url = Column(String(255))
     website_url = Column(String(255))
     
     is_verified = Column(Boolean, default=False)
