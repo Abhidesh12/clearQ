@@ -22,6 +22,52 @@ from payment import *
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# ======= START: ADMIN CREATION CODE =======
+# Import SessionLocal if not already imported
+# Add this at the top of your imports if needed:
+# from database import SessionLocal
+
+try:
+    # 1. Create a database session
+    db = SessionLocal()  # Gets a connection to your database
+    
+    # 2. Check if an admin user already exists
+    admin_exists = db.query(User).filter(User.role == UserRole.ADMIN).first()
+    
+    if not admin_exists:
+        # 3. Create a new admin user
+        admin_user = User(
+            username="admin",                    # Login username
+            email="admin@clearq.com",            # Admin email
+            hashed_password=get_password_hash("Admin123!"),  # Hashed password
+            full_name="System Administrator",    # Display name
+            role=UserRole.ADMIN,                 # Set role as ADMIN
+            is_active=True                       # Activate the account
+        )
+        
+        # 4. Save to database
+        db.add(admin_user)
+        db.commit()  # Save changes
+        
+        # 5. Print confirmation (visible in Render logs)
+        print("✅ Default admin user created")
+        print("   Username: admin")
+        print("   Password: Admin123!")
+        print("   Login at: /login")
+    else:
+        # 6. If admin already exists
+        print("✅ Admin user already exists")
+        print(f"   Username: {admin_exists.username}")
+        print(f"   Email: {admin_exists.email}")
+    
+    # 7. Close database connection
+    db.close()
+    
+except Exception as e:
+    # 8. Handle any errors gracefully
+    print(f"⚠️ Error checking/creating admin: {e}")
+    print("Continuing without admin creation...")
+
 app = FastAPI(title="ClearQ Mentorship Platform")
 
 # Mount static files
@@ -916,5 +962,6 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
