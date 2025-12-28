@@ -866,7 +866,7 @@ def explore():
     per_page = 12
     mentors_paginated = mentors_query.paginate(page=page, per_page=per_page, error_out=False)
     
-    return render_template('explore.html',
+    return render_template('mentors.html',
                          mentors=mentors_paginated,
                          query=query,
                          domain=domain,
@@ -1572,5 +1572,6 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
