@@ -2672,8 +2672,33 @@ def create_sample_mentors():
 # ============================================================================
 
 if __name__ == '__main__':
-    # Initialize database
-    init_database()
+    # Initialize database within app context
+    with app.app_context():
+        try:
+            print("Initializing database...")
+            # Create all tables
+            db.create_all()
+            
+            # Create admin user if not exists
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@clearq.in')
+            if not User.query.filter_by(email=admin_email).first():
+                admin = User(
+                    username='admin',
+                    email=admin_email,
+                    role='admin',
+                    is_email_verified=True,
+                    is_verified=True,
+                    is_active=True
+                )
+                admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin user created")
+            
+            print("Database initialized successfully")
+            
+        except Exception as e:
+            print(f"Database initialization error: {e}")
     
     # Get configuration
     debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
@@ -2687,4 +2712,5 @@ if __name__ == '__main__':
         debug=debug,
         threaded=True
     )
+
 
