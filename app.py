@@ -5,7 +5,6 @@ import uuid
 import secrets
 import logging
 import traceback
-from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from pathlib import Path
 
@@ -38,6 +37,11 @@ from urllib.parse import urlparse, urljoin
 from flask import url_for
 from itsdangerous import URLSafeTimedSerializer
 import datetime
+from datetime import timedelta, timezone
+
+# Create a helper function for utcnow
+def utcnow():
+    return datetime.datetime.now(timezone.utc)
 
 
 # ============================================================================
@@ -225,8 +229,8 @@ class User(UserMixin, db.Model):
     github_url = db.Column(db.String(200))
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)  # Changed
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     last_login = db.Column(db.DateTime)
     email_verified_at = db.Column(db.DateTime)
     
@@ -1781,6 +1785,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
