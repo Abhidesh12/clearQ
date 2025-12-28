@@ -874,6 +874,37 @@ def mentorship_program():
     
     return render_template('mentorship_program.html',
                          featured_programs=featured_programs)
+@app.route('/explore')
+@login_required
+def explore():
+    """Explore mentors."""
+    mentors = User.query.filter_by(role='mentor', is_verified=True).all()
+    return render_template('explore.html', mentors=mentors)
+
+@app.route('/my-digital-products')
+@login_required
+def my_digital_products():
+    """User's digital products."""
+    products = DigitalProductAccess.query.filter_by(
+        user_id=current_user.id,
+        is_active=True
+    ).all()
+    return render_template('my_digital_products.html', products=products)
+
+@app.route('/my-bookings')
+@login_required
+def my_bookings():
+    """User's bookings."""
+    if current_user.role == 'mentor':
+        bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(
+            Booking.booking_date.desc()
+        ).all()
+    else:
+        bookings = Booking.query.filter_by(learner_id=current_user.id).order_by(
+            Booking.booking_date.desc()
+        ).all()
+    
+    return render_template('my_bookings.html', bookings=bookings)    
 @app.route('/enroll')
 def enroll():
     """Enrollment page for mentorship program."""
@@ -915,7 +946,68 @@ def database_setup():
         flash(f'Database setup failed: {str(e)}', 'danger')
         return redirect(url_for('index'))
 
+@app.route('/mentor/services')
+@login_required
+def mentor_services():
+    """Mentor services management."""
+    if current_user.role != 'mentor':
+        abort(403)
+    
+    services = Service.query.filter_by(mentor_id=current_user.id).all()
+    return render_template('mentor/services.html', services=services)
 
+@app.route('/mentor/calendar')
+@login_required
+def mentor_calendar():
+    """Mentor calendar."""
+    if current_user.role != 'mentor':
+        abort(403)
+    
+    # Get bookings for the next 30 days
+    from datetime import datetime, timedelta
+    start_date = datetime.utcnow()
+    end_date = start_date + timedelta(days=30)
+    
+    bookings = Booking.query.filter(
+        Booking.mentor_id == current_user.id,
+        Booking.booking_date >= start_date,
+        Booking.booking_date <= end_date,
+        Booking.status == 'confirmed'
+    ).all()
+    
+    return render_template('mentor/calendar.html', bookings=bookings)
+
+@app.route('/mentor/earnings')
+@login_required
+def mentor_earnings():
+    """Mentor earnings dashboard."""
+    if current_user.role != 'mentor':
+        abort(403)
+    
+    # Calculate earnings
+    bookings = Booking.query.filter_by(
+        mentor_id=current_user.id,
+        status='confirmed'
+    ).all()
+    
+    total_earnings = sum([b.price for b in bookings if b.price]) or 0
+    
+    return render_template('mentor/earnings.html', 
+                          bookings=bookings,
+                          total_earnings=total_earnings)
+
+@app.route('/mentor/<username>')
+def mentor_public_profile(username):
+    """Public mentor profile."""
+    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
+    mentor.profile_views = (mentor.profile_views or 0) + 1
+    db.session.commit()
+    
+    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
+    
+    return render_template('mentor/public_profile.html', 
+                          mentor=mentor, 
+                          services=services)
 @app.route('/explore')
 def explore():
     """Explore mentors page."""
@@ -1785,6 +1877,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
