@@ -556,6 +556,8 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
         return False
     
     try:
+        logger.info(f"Attempting to send email to {to} via {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']}")
+        
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = app.config['MAIL_DEFAULT_SENDER']
@@ -566,7 +568,9 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
         
         # CRITICAL: Add timeout and handle connection properly
-        timeout = 10  # seconds
+        timeout = 10
+        
+        logger.info(f"Connecting to SMTP server...")
         
         if app.config['MAIL_USE_SSL']:
             server = smtplib.SMTP_SSL(
@@ -574,37 +578,56 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
                 app.config['MAIL_PORT'],
                 timeout=timeout
             )
+            logger.info(f"Connected via SSL on port {app.config['MAIL_PORT']}")
         else:
             server = smtplib.SMTP(
                 app.config['MAIL_SERVER'], 
                 app.config['MAIL_PORT'],
                 timeout=timeout
             )
+            logger.info(f"Connected via SMTP on port {app.config['MAIL_PORT']}")
         
         if app.config['MAIL_USE_TLS'] and not app.config['MAIL_USE_SSL']:
+            logger.info("Starting TLS...")
             server.starttls()
+            logger.info("TLS started")
         
+        logger.info("Logging in to SMTP server...")
         server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+        logger.info("SMTP login successful")
+        
+        logger.info("Sending email message...")
         server.send_message(msg)
         server.quit()
         
-        logger.info(f"Email sent successfully to {to}")
+        logger.info(f"✓ Email sent successfully to {to}")
         return True
         
     except Exception as e:
-        logger.error(f"Failed to send email to {to}: {str(e)}")
+        logger.error(f"✗ FAILED to send email to {to}: {str(e)}")
+        logger.error(f"SMTP Config: Server={app.config.get('MAIL_SERVER')}, "
+                    f"Port={app.config.get('MAIL_PORT')}, "
+                    f"SSL={app.config.get('MAIL_USE_SSL')}, "
+                    f"TLS={app.config.get('MAIL_USE_TLS')}")
         return False
-
-def send_verification_email(user) -> bool:
-    """Send email verification link."""
-    # Create application context for url_for
-    with app.app_context():
-        token = serializer.dumps(user.email, salt='email-verify')
-        verification_url = url_for('verify_email', token=token, _external=True)
+def send_verification_email_thread(user):
+    """Thread-safe email sending with proper context."""
+    try:
+        logger.info(f"Starting email thread for user {user.email}")
         
-        subject = 'Verify Your Email - ClearQ'
-        
-        body = f"""Welcome to ClearQ!
+        # Create app context for the thread
+        with app.app_context():
+            logger.info(f"App context created for {user.email}")
+            
+            token = serializer.dumps(user.email, salt='email-verify')
+            logger.info(f"Token generated for {user.email}")
+            
+            verification_url = url_for('verify_email', token=token, _external=True)
+            logger.info(f"Verification URL: {verification_url}")
+            
+            subject = 'Verify Your Email - ClearQ'
+            
+            body = f"""Welcome to ClearQ!
 
 Please verify your email address by clicking the link below:
 {verification_url}
@@ -614,9 +637,16 @@ This link will expire in 24 hours.
 Best regards,
 The ClearQ Team
 """
-        
-        return send_email(user.email, subject, body)
-
+            
+            result = send_email(user.email, subject, body)
+            
+            if result:
+                logger.info(f"✓ Email successfully queued for {user.email}")
+            else:
+                logger.error(f"✗ Email failed to send for {user.email}")
+                
+    except Exception as e:
+        logger.error(f"✗ Thread crash for {user.email}: {str(e)}", exc_info=True)
 
 # ============================================================================
 # DECORATORS
@@ -1677,6 +1707,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
