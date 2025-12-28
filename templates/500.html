@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - ClearQ{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
+    <div class="text-center max-w-md">
+        <div class="relative mb-8">
+            <div class="text-9xl font-bold text-gray-200">500</div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-48 h-48 rounded-full bg-gradient-to-r from-orange-100 to-red-100 opacity-50 blur-xl"></div>
+            </div>
+        </div>
+        
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Something went wrong</h1>
+        
+        <p class="text-gray-600 mb-6">
+            We're experiencing technical difficulties. Our team has been notified and is working to fix the issue.
+        </p>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded-r-lg">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        Error Reference: <code class="bg-yellow-100 px-2 py-1 rounded">ERR-{{ now.timestamp()|int }}</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            <button onclick="window.location.reload()" 
+                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all">
+                <i class="fas fa-redo mr-2"></i>
+                Try Again
+            </button>
+            
+            <a href="/" 
+               class="block w-full py-3 border-2 border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                <i class="fas fa-home mr-2"></i>
+                Go to Homepage
+            </a>
+            
+            <div class="pt-6 border-t border-gray-200">
+                <p class="text-sm text-gray-600 mb-3">If the problem persists, please contact us:</p>
+                <div class="space-y-2">
+                    <a href="mailto:support@clearq.in" 
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 mx-2">
+                        <i class="fas fa-envelope mr-2"></i>
+                        Email Support
+                    </a>
+                    <span class="text-gray-400">•</span>
+                    <a href="tel:+911234567890" 
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 mx-2">
+                        <i class="fas fa-phone mr-2"></i>
+                        Call Support
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-12">
+            <h3 class="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Service Status</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span class="text-sm text-gray-700">Platform API</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Operational
+                    </span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span class="text-sm text-gray-700">Payment Gateway</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Operational
+                    </span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span class="text-sm text-gray-700">Database</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Maintenance
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
