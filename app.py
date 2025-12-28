@@ -1270,69 +1270,85 @@ def resend_verification():
 @login_required
 def dashboard():
     """User dashboard."""
-    if current_user.role == 'admin':
-        return admin_dashboard()
-    elif current_user.role == 'mentor':
-        return mentor_dashboard()
-    else:
-        return learner_dashboard()
-
-
-def admin_dashboard():
-    """Admin dashboard."""
     try:
-        stats = {
-            'total_users': User.query.count(),
-            'total_mentors': User.query.filter_by(role='mentor').count(),
-            'total_learners': User.query.filter_by(role='learner').count(),
-            'pending_mentors': User.query.filter_by(role='mentor', is_verified=False).count(),
-            'total_bookings': Booking.query.count(),
-        }
-    except Exception as e:
-        logger.error(f"Error getting admin stats: {e}")
-        stats = {}
-    
-    return render_template('admin/dashboard.html', stats=stats)
-
-
-def mentor_dashboard():
-    """Mentor dashboard."""
-    try:
-        stats = {
-            'total_bookings': Booking.query.filter_by(mentor_id=current_user.id).count(),
-            'pending_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='pending').count(),
-            'confirmed_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').count(),
-            'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count(),
-        }
-    except Exception as e:
-        logger.error(f"Error getting mentor stats: {e}")
-        stats = {}
-    
-    return render_template('mentor/dashboard.html', stats=stats)
-
-
-def learner_dashboard():
-    """Learner dashboard."""
-    try:
-        stats = {
-            'total_bookings': Booking.query.filter_by(learner_id=current_user.id).count(),
-            'upcoming_bookings': Booking.query.filter(
+        if current_user.role == 'admin':
+            # Admin stats
+            stats = {
+                'total_users': User.query.count(),
+                'total_mentors': User.query.filter_by(role='mentor').count(),
+                'total_learners': User.query.filter_by(role='learner').count(),
+                'pending_mentors': User.query.filter_by(role='mentor', is_verified=False).count(),
+                'total_bookings': Booking.query.count(),
+            }
+            upcoming_bookings = []
+            recommended_mentors = []
+            
+        elif current_user.role == 'mentor':
+            # Mentor stats
+            stats = {
+                'total_bookings': Booking.query.filter_by(mentor_id=current_user.id).count(),
+                'pending_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='pending').count(),
+                'confirmed_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').count(),
+                'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count(),
+                'total_earnings': sum([b.price for b in Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').all() if b.price]),
+                'total_sessions': Booking.query.filter_by(mentor_id=current_user.id, status='confirmed').count(),
+            }
+            
+            # Get upcoming bookings for mentor
+            upcoming_bookings = Booking.query.filter(
+                Booking.mentor_id == current_user.id,
+                Booking.status == 'confirmed',
+                Booking.booking_date >= datetime.utcnow()
+            ).order_by(Booking.booking_date).limit(5).all()
+            
+            recommended_mentors = []
+            
+        else:
+            # Learner stats
+            stats = {
+                'total_bookings': Booking.query.filter_by(learner_id=current_user.id).count(),
+                'upcoming_bookings': Booking.query.filter(
+                    Booking.learner_id == current_user.id,
+                    Booking.status == 'confirmed',
+                    Booking.booking_date >= datetime.utcnow()
+                ).count(),
+                'digital_products': DigitalProductAccess.query.filter_by(
+                    user_id=current_user.id,
+                    is_active=True
+                ).count(),
+                'completed_sessions': Booking.query.filter(
+                    Booking.learner_id == current_user.id,
+                    Booking.status == 'completed'
+                ).count(),
+                'total_spent': sum([b.price for b in Booking.query.filter_by(learner_id=current_user.id, status='confirmed').all() if b.price]),
+            }
+            
+            # Get upcoming bookings for learner
+            upcoming_bookings = Booking.query.filter(
                 Booking.learner_id == current_user.id,
                 Booking.status == 'confirmed',
                 Booking.booking_date >= datetime.utcnow()
-            ).count(),
-            'digital_products': DigitalProductAccess.query.filter_by(
-                user_id=current_user.id,
-                is_active=True
-            ).count(),
-        }
+            ).order_by(Booking.booking_date).limit(5).all()
+            
+            # Get recommended mentors for learner
+            recommended_mentors = User.query.filter_by(
+                role='mentor', 
+                is_verified=True
+            ).order_by(func.random()).limit(3).all()
+            
     except Exception as e:
-        logger.error(f"Error getting learner stats: {e}")
+        logger.error(f"Error getting dashboard data: {e}")
         stats = {}
+        upcoming_bookings = []
+        recommended_mentors = []
     
-    return render_template('learner/dashboard.html', stats=stats)
-
-
+    # Use the single dashboard template
+    return render_template(
+        'dashboard.html',
+        stats=stats,
+        upcoming_bookings=upcoming_bookings,
+        recommended_mentors=recommended_mentors
+    )
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -1707,6 +1723,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
