@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }} - {{ mentor.full_name }} - ClearQ{% endblock %}
+
+{% block content %}
+<style>
+    .service-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .service-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 40px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+    
+    .service-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 32px;
+    }
+    
+    .service-info h1 {
+        margin: 0 0 10px 0;
+        font-size: 2rem;
+        color: #1e293b;
+    }
+    
+    .service-mentor {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .mentor-avatar {
+        width: 40px;
+        height: 40px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .service-price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin: 20px 0;
+    }
+    
+    .service-details {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 40px;
+    }
+    
+    .service-description {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    
+    .booking-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        position: sticky;
+        top: 100px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .detail-icon {
+        width: 40px;
+        height: 40px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+    }
+    
+    .book-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+    
+    .calendar {
+        margin: 20px 0;
+    }
+    
+    .time-slots {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 15px 0;
+    }
+    
+    .time-slot {
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .time-slot:hover {
+        border-color: #667eea;
+        background: #f8fafc;
+    }
+    
+    .time-slot.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+    }
+</style>
+
+<div class="service-container">
+    <div class="service-header">
+        <div class="service-icon">
+            <i class="fas fa-handshake"></i>
+        </div>
+        <div class="service-info">
+            <h1>{{ service.name }}</h1>
+            <div class="service-mentor">
+                <div class="mentor-avatar">
+                    {{ mentor.full_name[0] if mentor.full_name else mentor.username[0] }}
+                </div>
+                <div>
+                    <div style="font-weight: 600;">{{ mentor.full_name if mentor.full_name else mentor.username }}</div>
+                    <div style="color: #64748b; font-size: 14px;">
+                        {{ mentor.mentor_profile.job_title if mentor.mentor_profile.job_title else 'Expert Mentor' }}
+                    </div>
+                </div>
+            </div>
+            <div class="service-price">₹{{ service.price }}</div>
+        </div>
+    </div>
+    
+    <div class="service-details">
+        <!-- Left Column: Service Details -->
+        <div class="service-description">
+            <h2 style="margin-bottom: 20px; color: #1e293b;">Service Details</h2>
+            <div style="line-height: 1.6; color: #475569; margin-bottom: 30px;">
+                {{ service.description or 'No description provided.' }}
+            </div>
+            
+            <h3 style="margin-bottom: 20px; color: #1e293b;">What's Included</h3>
+            
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 5px;">Duration</div>
+                    <div style="color: #64748b;">{{ service.duration_minutes }} minutes session</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 5px;">Format</div>
+                    <div style="color: #64748b;">1-on-1 Video Call</div>
+                </div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 5px;">Expertise Level</div>
+                    <div style="color: #64748b;">All levels welcome</div>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 40px; margin-bottom: 20px; color: #1e293b;">What You'll Learn</h3>
+            <ul style="color: #475569; padding-left: 20px; line-height: 1.6;">
+                <li>Personalized feedback and guidance</li>
+                <li>Practical insights from industry experience</li>
+                <li>Actionable next steps for your career</li>
+                <li>Answers to your specific questions</li>
+                <li>Networking opportunities</li>
+            </ul>
+        </div>
+        
+        <!-- Right Column: Booking -->
+        <div class="booking-card">
+            <h2 style="margin-bottom: 20px; color: #1e293b;">Book This Service</h2>
+            
+            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #64748b;">Service Fee:</span>
+                    <span style="font-weight: 600; color: #1e293b;">₹{{ service.price }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #64748b;">Duration:</span>
+                    <span style="color: #1e293b;">{{ service.duration_minutes }} minutes</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 600; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                    <span>Total:</span>
+                    <span style="color: #667eea; font-size: 1.2rem;">₹{{ service.price }}</span>
+                </div>
+            </div>
+            
+            <div class="calendar">
+                <h3 style="margin-bottom: 15px; color: #1e293b;">Select Date & Time</h3>
+                
+                <div style="margin-bottom: 15px;">
+                    <input type="date" id="bookingDate" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                
+                <div id="timeSlotsContainer" class="time-slots">
+                    <!-- Time slots will be loaded here -->
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #64748b;">
+                        <i class="fas fa-calendar-alt" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>Select a date to view available time slots</p>
+                    </div>
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'learner' %}
+                <button class="book-btn" onclick="bookService()">
+                    <i class="fas fa-calendar-check"></i> Book Now
+                </button>
+                {% else %}
+                <div style="background: #fef3c7; padding: 15px; border-radius: 10px; text-align: center; color: #92400e;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Only learners can book sessions
+                </div>
+                {% endif %}
+            {% else %}
+            <a href="{{ url_for('login_page') }}?next={{ request.path }}" 
+               style="display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: 600;">
+                <i class="fas fa-sign-in-alt"></i> Login to Book
+            </a>
+            {% endif %}
+            
+            <div style="margin-top: 20px; font-size: 14px; color: #64748b; text-align: center;">
+                <i class="fas fa-shield-alt"></i> Secure payment • 24-hour cancellation
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingDateInput = document.getElementById('bookingDate');
+    const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+    
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    bookingDateInput.min = today;
+    
+    // Set initial date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    bookingDateInput.value = tomorrow.toISOString().split('T')[0];
+    
+    // Load time slots for initial date
+    loadTimeSlots(bookingDateInput.value);
+    
+    // Load time slots when date changes
+    bookingDateInput.addEventListener('change', function() {
+        loadTimeSlots(this.value);
+    });
+});
+
+let selectedTimeSlot = null;
+
+function loadTimeSlots(date) {
+    const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+    
+    timeSlotsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 30px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+            <p>Loading available time slots...</p>
+        </div>
+    `;
+    
+    // In a real application, you would fetch from your API
+    // For demo, we'll generate some mock slots
+    setTimeout(() => {
+        const mockSlots = generateMockTimeSlots(date);
+        displayTimeSlots(mockSlots);
+    }, 500);
+}
+
+function generateMockTimeSlots(date) {
+    const slots = [];
+    const times = ['09:00', '11:00', '14:00', '16:00', '18:00'];
+    
+    times.forEach(time => {
+        slots.push({
+            id: `slot_${date.replace(/-/g, '')}_${time.replace(':', '')}`,
+            time: time,
+            available: Math.random() > 0.3 // 70% chance of being available
+        });
+    });
+    
+    return slots;
+}
+
+function displayTimeSlots(slots) {
+    const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+    timeSlotsContainer.innerHTML = '';
+    
+    if (slots.length === 0) {
+        timeSlotsContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #64748b;">
+                <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                <p>No time slots available for this date</p>
+            </div>
+        `;
+        return;
+    }
+    
+    slots.forEach(slot => {
+        const slotElement = document.createElement('div');
+        slotElement.className = 'time-slot';
+        slotElement.textContent = slot.time;
+        slotElement.dataset.slotId = slot.id;
+        
+        if (!slot.available) {
+            slotElement.style.opacity = '0.5';
+            slotElement.style.cursor = 'not-allowed';
+            slotElement.title = 'Already booked';
+        } else {
+            slotElement.addEventListener('click', function() {
+                selectTimeSlot(this, slot);
+            });
+        }
+        
+        timeSlotsContainer.appendChild(slotElement);
+    });
+}
+
+function selectTimeSlot(element, slot) {
+    // Deselect previous
+    document.querySelectorAll('.time-slot').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Select new
+    element.classList.add('selected');
+    selectedTimeSlot = slot;
+}
+
+function bookService() {
+    if (!selectedTimeSlot) {
+        alert('Please select a time slot');
+        return;
+    }
+    
+    const date = document.getElementById('bookingDate').value;
+    
+    if (confirm(`Confirm booking for ${date} at ${selectedTimeSlot.time}?`)) {
+        // In real app, submit to backend
+        window.location.href = `/book/{{ service.id }}?date=${date}&time=${selectedTimeSlot.time}`;
+    }
+}
+</script>
+{% endblock %}
