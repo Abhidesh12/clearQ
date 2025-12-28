@@ -1324,7 +1324,25 @@ def index():
                          featured_mentors=featured_mentors,
                          featured_services=featured_services,
                          stats=stats)
-
+@app.route('/mentorship-program')
+def mentorship_program():
+    """Mentorship program page."""
+    # Get featured mentorship programs
+    featured_programs = Service.query.filter_by(
+        is_active=True,
+        is_featured=True
+    ).order_by(Service.created_at.desc()).limit(6).all()
+    
+    # Get stats
+    stats = {
+        'total_programs': Service.query.filter_by(is_active=True).count(),
+        'active_mentors': User.query.filter_by(role='mentor', is_verified=True).count(),
+        'success_rate': 95
+    }
+    
+    return render_template('mentorship_program.html',
+                         featured_programs=featured_programs,
+                         stats=stats)
 @app.route('/explore', methods=['GET', 'POST'])
 def explore():
     """Explore mentors and services."""
@@ -2718,3 +2736,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('FLASK_PORT', 5000))
     
     app.run(host=host, port=port, debug=debug, threaded=True)
+
