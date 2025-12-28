@@ -561,18 +561,25 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
         msg['From'] = app.config['MAIL_DEFAULT_SENDER']
         msg['To'] = to
         
-        # Attach plain text version
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        
-        # Attach HTML version if provided
         if html_body:
             msg.attach(MIMEText(html_body, 'html', 'utf-8'))
         
-        # Connect to SMTP server
+        # CRITICAL: Add timeout and handle connection properly
+        timeout = 10  # seconds
+        
         if app.config['MAIL_USE_SSL']:
-            server = smtplib.SMTP_SSL(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+            server = smtplib.SMTP_SSL(
+                app.config['MAIL_SERVER'], 
+                app.config['MAIL_PORT'],
+                timeout=timeout
+            )
         else:
-            server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+            server = smtplib.SMTP(
+                app.config['MAIL_SERVER'], 
+                app.config['MAIL_PORT'],
+                timeout=timeout
+            )
         
         if app.config['MAIL_USE_TLS'] and not app.config['MAIL_USE_SSL']:
             server.starttls()
@@ -585,9 +592,8 @@ def send_email(to: str, subject: str, body: str, html_body: Optional[str] = None
         return True
         
     except Exception as e:
-        logger.error(f"Failed to send email to {to}: {e}")
+        logger.error(f"Failed to send email to {to}: {str(e)}")
         return False
-
 
 def send_verification_email(user) -> bool:
     """Send email verification link."""
@@ -1034,11 +1040,16 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            # Send verification email
-            if send_verification_email(user):
-                flash('Registration successful! Please check your email to verify your account.', 'success')
-            else:
-                flash('Registration successful! Please log in to resend verification email.', 'warning')
+            # FIX: Send verification email in background thread
+            import threading
+            email_thread = threading.Thread(
+                target=send_verification_email, 
+                args=(user,),
+                daemon=True  # Thread won't block app shutdown
+            )
+            email_thread.start()
+            
+            flash('Registration successful! Please check your email to verify your account.', 'success')
             
             # Auto-login for learners
             if role == 'learner':
@@ -1053,7 +1064,6 @@ def register():
             flash('Registration failed. Please try again.', 'danger')
     
     return render_template('register.html')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
@@ -1596,6 +1606,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
