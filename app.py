@@ -287,7 +287,7 @@ class Service(db.Model):
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)  # Fixed
     
     # Relationships
     mentor = db.relationship('User', backref=db.backref('services', lazy=True))
@@ -323,7 +323,7 @@ class Booking(db.Model):
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relationships
     mentor = db.relationship('User', foreign_keys=[mentor_id], backref='mentor_bookings')
@@ -345,7 +345,7 @@ class DigitalProductAccess(db.Model):
     payment_id = db.Column(db.Integer)
     
     # Access details
-    access_granted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    access_granted_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     expires_at = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
     
@@ -375,7 +375,7 @@ class Review(db.Model):
     is_approved = db.Column(db.Boolean, default=True)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     
     # Relationships
     mentor = db.relationship('User', foreign_keys=[mentor_id], backref='mentor_reviews')
@@ -402,7 +402,7 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     read_at = db.Column(db.DateTime)
     
     # Relationship
@@ -472,7 +472,7 @@ def save_profile_image(file, user_id: int) -> Optional[str]:
         return None
     
     # Create secure filename
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    timestamp =utcnow().strftime('%Y%m%d_%H%M%S')
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"user_{user_id}_{timestamp}.{ext}"
     
@@ -1160,7 +1160,7 @@ def login():
                 return redirect(url_for('resend_verification'))
             else:
                 login_user(user, remember=remember)
-                user.last_login = datetime.utcnow()
+                user.last_login = utcnow()
                 db.session.commit()
                 
                 flash('Logged in successfully!', 'success')
@@ -1268,7 +1268,7 @@ def verify_email(token):
             flash('Email is already verified.', 'info')
         else:
             user.is_email_verified = True
-            user.email_verified_at = datetime.utcnow()
+            user.email_verified_at =utcnow()
             db.session.commit()
             flash('Email verified successfully!', 'success')
             
@@ -1353,7 +1353,7 @@ def dashboard():
             upcoming_bookings = Booking.query.filter(
                 Booking.mentor_id == current_user.id,
                 Booking.status == 'confirmed',
-                Booking.booking_date >= datetime.utcnow()
+                Booking.booking_date >= utcnow()
             ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
             
             recommended_mentors = []
@@ -1372,7 +1372,7 @@ def dashboard():
                 'upcoming_bookings': Booking.query.filter(
                     Booking.learner_id == current_user.id,
                     Booking.status == 'confirmed',
-                    Booking.booking_date >= datetime.utcnow()
+                    Booking.booking_date >=utcnow()
                 ).count() if hasattr(app, 'Booking') else 0,
                 'digital_products': DigitalProductAccess.query.filter_by(
                     user_id=current_user.id,
@@ -1389,7 +1389,7 @@ def dashboard():
             upcoming_bookings = Booking.query.filter(
                 Booking.learner_id == current_user.id,
                 Booking.status == 'confirmed',
-                Booking.booking_date >= datetime.utcnow()
+                Booking.booking_date >= utcnow()
             ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
             
             # Get recommended mentors for learner
@@ -1651,7 +1651,7 @@ def api_health():
         
         return jsonify({
             'status': 'healthy',
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': utcnow().isoformat(),
             'database': 'connected',
             'services': {
                 'razorpay': razorpay_client is not None,
@@ -1661,7 +1661,7 @@ def api_health():
     except Exception as e:
         return jsonify({
             'status': 'unhealthy',
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': utcnow().isoformat(),
             'error': str(e)
         }), 500
 
@@ -1785,6 +1785,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
