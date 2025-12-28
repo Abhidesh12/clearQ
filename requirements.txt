@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
+psycopg2-binary
 alembic
 python-dotenv
 python-multipart
@@ -17,3 +18,4 @@ celery
 httpx
 stripe
 sendgrid
+
