@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}Learner Dashboard - ClearQ{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .upcoming-sessions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .session-card {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .session-info h4 {
+        margin: 0 0 10px 0;
+        color: #1e293b;
+    }
+    
+    .session-mentor {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .mentor-avatar {
+        width: 40px;
+        height: 40px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    .session-time {
+        color: #64748b;
+        font-size: 14px;
+    }
+    
+    .session-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-join {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .btn-cancel {
+        padding: 10px 20px;
+        background: #f1f5f9;
+        color: #64748b;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        margin-top: 20px;
+    }
+    
+    .booking-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .booking-table th,
+    .booking-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .booking-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .status-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #d1ecf1; color: #0c5460; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #64748b;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        color: #e2e8f0;
+        margin-bottom: 20px;
+    }
+    
+    .find-mentor-btn {
+        display: inline-block;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        margin-top: 20px;
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1 style="margin-bottom: 10px;">Welcome back, {{ current_user.full_name if current_user.full_name else current_user.username }}!</h1>
+        <p>Track your learning progress and upcoming sessions</p>
+        <div style="margin-top: 20px;">
+            <a href="/explore" class="btn" style="background: white; color: #667eea; margin-right: 10px;">
+                <i class="fas fa-search"></i> Find Mentors
+            </a>
+            <a href="/profile/edit" class="btn" style="background: rgba(255,255,255,0.2); color: white;">
+                <i class="fas fa-user-edit"></i> Edit Profile
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ bookings|length }}</div>
+            <div class="stat-label">Total Sessions</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">
+                {{ bookings|selectattr('status', 'equalto', 'completed')|list|length }}
+            </div>
+            <div class="stat-label">Completed</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">
+                {{ bookings|selectattr('status', 'equalto', 'confirmed')|list|length }}
+            </div>
+            <div class="stat-label">Upcoming</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">
+                {{ current_user.learner_profile.reviews_written|length if current_user.learner_profile else 0 }}
+            </div>
+            <div class="stat-label">Reviews Written</div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Sessions -->
+    <div class="upcoming-sessions">
+        <h2 style="margin-bottom: 25px; color: #1e293b;">Upcoming Sessions</h2>
+        
+        {% set upcoming_bookings = bookings|selectattr('status', 'equalto', 'confirmed')|list %}
+        
+        {% if upcoming_bookings %}
+            {% for booking in upcoming_bookings[:3] %}
+            <div class="session-card">
+                <div class="session-info">
+                    <h4>{{ booking.service.name if booking.service else 'Mentorship Session' }}</h4>
+                    <div class="session-mentor">
+                        <div class="mentor-avatar">
+                            {{ booking.mentor.full_name[0] if booking.mentor and booking.mentor.full_name else 'M' }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">{{ booking.mentor.full_name if booking.mentor else 'Mentor' }}</div>
+                            <div class="session-time">
+                                <i class="far fa-clock"></i>
+                                {{ booking.scheduled_for.strftime('%d %b %Y, %I:%M %p') if booking.scheduled_for else 'TBD' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="session-actions">
+                    <button class="btn-join" onclick="joinSession('{{ booking.id }}')">
+                        <i class="fas fa-video"></i> Join Session
+                    </button>
+                    <button class="btn-cancel" onclick="cancelBooking('{{ booking.id }}')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if upcoming_bookings|length > 3 %}
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="#all-bookings" style="color: #667eea; text-decoration: none;">
+                    View all {{ upcoming_bookings|length }} upcoming sessions <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="far fa-calendar"></i>
+            </div>
+            <h3 style="color: #64748b; margin-bottom: 10px;">No Upcoming Sessions</h3>
+            <p>You don't have any scheduled sessions yet.</p>
+            <a href="/explore" class="find-mentor-btn">
+                <i class="fas fa-search"></i> Find a Mentor
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- All Bookings Table -->
+    <div class="upcoming-sessions" id="all-bookings">
+        <h2 style="margin-bottom: 25px; color: #1e293b;">All Bookings</h2>
+        
+        {% if bookings %}
+        <div class="table-container">
+            <table class="booking-table">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Mentor</th>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                    <tr>
+                        <td style="font-family: monospace;">{{ booking.booking_id }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 30px; height: 30px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                                    {{ booking.mentor.full_name[0] if booking.mentor and booking.mentor.full_name else 'M' }}
+                                </div>
+                                {{ booking.mentor.full_name if booking.mentor else 'Mentor' }}
+                            </div>
+                        </td>
+                        <td>{{ booking.service.name if booking.service else 'Session' }}</td>
+                        <td>
+                            {% if booking.scheduled_for %}
+                            {{ booking.scheduled_for.strftime('%d %b %Y, %I:%M %p') }}
+                            {% else %}
+                            Not scheduled
+                            {% endif %}
+                        </td>
+                        <td>₹{{ booking.amount }}</td>
+                        <td>
+                            <span class="status-badge status-{{ booking.status }}">
+                                {{ booking.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                {% if booking.status == 'confirmed' %}
+                                <button onclick="joinSession('{{ booking.id }}')" 
+                                        style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                    <i class="fas fa-video"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if booking.status == 'completed' and not booking.review %}
+                                <button onclick="writeReview('{{ booking.id }}')" 
+                                        style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                {% endif %}
+                                
+                                <a href="/payment/{{ booking.id }}" 
+                                   style="padding: 6px 12px; background: #f1f5f9; color: #475569; text-decoration: none; border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="far fa-calendar-alt"></i>
+            </div>
+            <h3 style="color: #64748b; margin-bottom: 10px;">No Bookings Yet</h3>
+            <p>Start your mentorship journey by booking your first session.</p>
+            <a href="/explore" class="find-mentor-btn">
+                <i class="fas fa-search"></i> Explore Mentors
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function joinSession(bookingId) {
+    // Generate meeting link (in real app, integrate with video service)
+    const meetingLink = `https://meet.clearq.in/${bookingId}`;
+    window.open(meetingLink, '_blank');
+    
+    // Mark as joined
+    fetch(`/api/booking/${bookingId}/join`, {
+        method: 'POST'
+    });
+}
+
+function cancelBooking(bookingId) {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+        fetch(`/api/booking/${bookingId}/cancel`, {
+            method: 'POST'
+        }).then(response => {
+            if (response.ok) {
+                alert('Booking cancelled successfully');
+                location.reload();
+            } else {
+                alert('Failed to cancel booking');
+            }
+        });
+    }
+}
+
+function writeReview(bookingId) {
+    // Show review modal
+    const reviewText = prompt('Please write your review (1-5 stars):');
+    if (reviewText && reviewText.trim()) {
+        const rating = parseInt(prompt('Please rate from 1 to 5 stars:'));
+        if (rating >= 1 && rating <= 5) {
+            submitReview(bookingId, rating, reviewText);
+        }
+    }
+}
+
+async function submitReview(bookingId, rating, comment) {
+    try {
+        const response = await fetch('/api/review', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                rating: rating,
+                comment: comment
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('Review submitted successfully!');
+            location.reload();
+        } else {
+            alert('Failed to submit review: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Review submission error:', error);
+        alert('An error occurred while submitting your review');
+    }
+}
+</script>
+{% endblock %}
