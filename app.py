@@ -1,9 +1,3 @@
-"""
-ClearQ Mentorship Platform - Production-Ready Flask Application
-Version: 2.0.0
-Author: Professional Development Team
-"""
-
 import os
 import json
 import re
@@ -747,10 +741,13 @@ def truncate(text: str, length: int = 100, ellipsis: str = '...') -> str:
 def before_request():
     """Check database connection before each request."""
     try:
-        db.session.execute('SELECT 1')
+        # Test database connection - IMPORTANT: Use text() function
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
     except Exception as e:
         logger.error(f"Database connection error: {e}")
         try:
+            # Try to create tables if they don't exist
             db.create_all()
             logger.info("Database tables created on-demand")
         except Exception as create_error:
@@ -1562,3 +1559,4 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
