@@ -754,7 +754,7 @@
                     <a href="{{ url_for('explore') }}" class="nav-link">
                         Explore Mentors
                     </a>
-                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else '#' }}" 
+                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else url_for('explore') }}" 
                        class="nav-link">
                         Programs
                     </a>
@@ -829,7 +829,7 @@
                     <a href="{{ url_for('explore') }}" class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
                         Explore Mentors
                     </a>
-                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else '#' }}" 
+                    <a href="{{ url_for('mentorship_program') if 'mentorship_program' in url_for.__code__.co_names else url_for('explore') }}" 
                        class="block py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg px-3">
                         Programs
                     </a>
@@ -989,7 +989,7 @@
             
             <!-- Copyright -->
             <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500">
-                <p>&copy; {{ now.year if now is defined else '2024' }} ClearQ.in. All rights reserved.</p>
+                <p>&copy; <span id="currentYear">2024</span> ClearQ.in. All rights reserved.</p>
                 <p class="mt-2 text-sm">Made with <i class="fas fa-heart text-red-500 mx-1" aria-label="love"></i> for the community</p>
             </div>
         </div>
@@ -1205,10 +1205,10 @@
                 });
             }
             
-            // Add current year to copyright
-            const yearElement = document.querySelector('footer p:first-of-type');
-            if (yearElement) {
-                yearElement.innerHTML = yearElement.innerHTML.replace('{{ now.year if now is defined else \'2024\' }}', new Date().getFullYear());
+            // Update copyright year
+            const currentYearElement = document.getElementById('currentYear');
+            if (currentYearElement) {
+                currentYearElement.textContent = new Date().getFullYear();
             }
             
             // Print button functionality
