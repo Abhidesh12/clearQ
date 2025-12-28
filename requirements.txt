@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 sqlalchemy
-alembic
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
@@ -10,4 +9,3 @@ razorpay
 python-dateutil
 jinja2
 psycopg2-binary
-email-validator
