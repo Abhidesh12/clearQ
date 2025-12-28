@@ -224,6 +224,12 @@ def get_db():
     finally:
         db.close()
 # Add this function after imports and before routes
+def require_admin(current_user: User = Depends(get_current_user)):
+    """Dependency to require admin role"""
+    if not current_user or current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+    
 def create_admin_user(db: Session):
     """Create initial admin user if not exists"""
     admin_email = "admin@clearq.in"
@@ -267,7 +273,20 @@ def create_admin_user(db: Session):
 async def startup_event():
     db = SessionLocal()
     try:
-        create_admin_user(db)
+        admin = create_admin_user(db)
+        if admin:
+            print(f"✅ Admin user created: {admin.email}")
+        else:
+            print("✅ Admin user already exists")
+        
+        # Check if we have any mentors for sample data
+        mentor_count = db.query(User).filter(User.role == "mentor").count()
+        if mentor_count == 0:
+            print("ℹ️  No mentors found. Add mentors through admin panel.")
+        
+        print("✅ ClearQ platform is ready!")
+    except Exception as e:
+        print(f"⚠️  Startup error: {e}")
     finally:
         db.close()
 # Authentication functions
@@ -353,7 +372,19 @@ async def index(request: Request, db: Session = Depends(get_db), current_user: U
         "top_services": top_services,
         "now": datetime.now()
     })
-
+@app.get("/admin/setup", response_class=HTMLResponse)
+async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
+    # Check if admin already exists
+    admin = db.query(User).filter(User.email == "admin@clearq.in").first()
+    
+    if not admin:
+        # Create admin if doesn't exist
+        admin = create_admin_user(db)
+    
+    return templates.TemplateResponse("admin_setup.html", {
+        "request": request,
+        "admin": admin
+    })
 @app.get("/explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
@@ -1217,5 +1248,6 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
