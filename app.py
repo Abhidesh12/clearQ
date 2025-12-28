@@ -1330,7 +1330,8 @@ def enroll():
     # You can show all services or a specific enrollment page
     services = Service.query.filter_by(is_active=True).limit(6).all()
     
-    return render_template('enroll.html', services=services)                         
+    return render_template('enroll.html', services=services)     
+    
 @app.route('/mentorship-program')
 def mentorship_program():
     """Mentorship program page."""
@@ -1410,7 +1411,7 @@ def explore():
     if query and request.method == 'GET':
         recommendations = get_ai_recommendations(query, limit=3)
     
-    return render_template('explore.html',
+    return render_template('mentors.html',
                          mentors=mentors,
                          query=query,
                          domain=domain,
@@ -2743,5 +2744,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('FLASK_PORT', 5000))
     
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
