@@ -76,8 +76,16 @@ app = Flask(
     static_folder=str(STATIC_DIR)
 )
 
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-
+# Replace line 79 (or wherever serializer is created) with:
+secret_key = app.config.get('SECRET_KEY')
+if not secret_key:
+    # Generate a default for development/debugging
+    import secrets
+    secret_key = secrets.token_hex(32)
+    app.config['SECRET_KEY'] = secret_key
+    print(f"⚠️  WARNING: Using auto-generated SECRET_KEY. Set SECRET_KEY in environment for production.")
+    
+serializer = URLSafeTimedSerializer(secret_key)
 # ============================================================================
 # SECURITY CONFIGURATION
 # ============================================================================
@@ -1774,6 +1782,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
