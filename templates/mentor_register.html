@@ -193,7 +193,28 @@
         gap: 15px;
         margin-top: 10px;
     }
-    
+    .social-input-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+}
+
+.social-input-preview i {
+    font-size: 16px;
+}
+
+.preview-text {
+    color: #475569;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
     .submit-btn {
         width: 100%;
         padding: 16px;
@@ -380,7 +401,109 @@
                     </div>
                 </div>
             </div>
-            
+            <!-- Social Links Section -->
+<div class="form-section">
+    <div class="section-title">
+        <i class="fas fa-share-alt"></i>
+        <span>Social Links (Optional)</span>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">LinkedIn URL</label>
+            <input type="url" name="linkedin_url" class="form-input" 
+                   placeholder="https://linkedin.com/in/yourprofile"
+                   value="{{ mentor_profile.linkedin_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="linkedin_url">
+                <i class="fab fa-linkedin text-blue-600"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">GitHub URL</label>
+            <input type="url" name="github_url" class="form-input" 
+                   placeholder="https://github.com/yourusername"
+                   value="{{ mentor_profile.github_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="github_url">
+                <i class="fab fa-github text-gray-800"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Twitter URL</label>
+            <input type="url" name="twitter_url" class="form-input" 
+                   placeholder="https://twitter.com/yourusername"
+                   value="{{ mentor_profile.twitter_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="twitter_url">
+                <i class="fab fa-twitter text-blue-400"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Instagram URL</label>
+            <input type="url" name="instagram_url" class="form-input" 
+                   placeholder="https://instagram.com/yourusername"
+                   value="{{ mentor_profile.instagram_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="instagram_url">
+                <i class="fab fa-instagram text-pink-600"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Personal Website</label>
+            <input type="url" name="website_url" class="form-input" 
+                   placeholder="https://yourwebsite.com"
+                   value="{{ mentor_profile.website_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="website_url">
+                <i class="fas fa-globe text-green-600"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Portfolio URL</label>
+            <input type="url" name="portfolio_url" class="form-input" 
+                   placeholder="https://yourportfolio.com"
+                   value="{{ mentor_profile.portfolio_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="portfolio_url">
+                <i class="fas fa-briefcase text-purple-600"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Facebook URL</label>
+            <input type="url" name="facebook_url" class="form-input" 
+                   placeholder="https://facebook.com/yourprofile"
+                   value="{{ mentor_profile.facebook_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="facebook_url">
+                <i class="fab fa-facebook text-blue-700"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">YouTube URL</label>
+            <input type="url" name="youtube_url" class="form-input" 
+                   placeholder="https://youtube.com/@yourchannel"
+                   value="{{ mentor_profile.youtube_url if mentor_profile else '' }}">
+            <div class="social-input-preview" data-for="youtube_url">
+                <i class="fab fa-youtube text-red-600"></i>
+                <span class="preview-text"></span>
+            </div>
+        </div>
+    </div>
+</div>
             <!-- Profile Photo -->
             <div class="form-section">
                 <div class="section-title">
