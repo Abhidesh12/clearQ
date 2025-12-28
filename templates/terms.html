@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service - ClearQ{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Terms of Service</h1>
+            <p class="text-lg text-gray-600">Last updated: {{ now.strftime('%B %d, %Y') if now else 'December 1, 2024' }}</p>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+            <div class="prose prose-lg max-w-none">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Welcome to ClearQ</h2>
+                    <p class="text-gray-700">
+                        These Terms of Service ("Terms") govern your access to and use of the ClearQ platform 
+                        ("Platform"), including any content, functionality, and services offered on or through 
+                        the Platform. Please read these Terms carefully before using the Platform.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h3>
+                    <p class="text-gray-700 mb-4">
+                        By accessing or using the Platform, you agree to be bound by these Terms and our 
+                        Privacy Policy. If you do not agree to these Terms or the Privacy Policy, you may not 
+                        access or use the Platform.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">2. Description of Service</h3>
+                    <p class="text-gray-700 mb-4">
+                        ClearQ is a mentorship platform that connects learners ("Learners") with experienced 
+                        professionals ("Mentors") for one-on-one sessions, career guidance, and professional 
+                        development services.
+                    </p>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                        <li>Mentors offer their expertise and guidance through scheduled sessions</li>
+                        <li>Learners book and pay for sessions with Mentors</li>
+                        <li>ClearQ facilitates the connection and provides the platform infrastructure</li>
+                        <li>All payments are processed through secure third-party payment processors</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">3. User Accounts</h3>
+                    <p class="text-gray-700 mb-4">
+                        To use certain features of the Platform, you must register for an account. You agree to:
+                    </p>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                        <li>Provide accurate, current, and complete information</li>
+                        <li>Maintain the security of your account credentials</li>
+                        <li>Notify us immediately of any unauthorized access or use</li>
+                        <li>Accept responsibility for all activities under your account</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">4. Mentor Responsibilities</h3>
+                    <p class="text-gray-700 mb-4">
+                        If you register as a Mentor, you agree to:
+                    </p>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                        <li>Provide accurate information about your qualifications and experience</li>
+                        <li>Maintain professional conduct during all sessions</li>
+                        <li>Honor scheduled appointments and provide reasonable notice for cancellations</li>
+                        <li>Not provide any guarantees of employment, promotions, or specific outcomes</li>
+                        <li>Comply with all applicable laws and regulations</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">5. Learner Responsibilities</h3>
+                    <p class="text-gray-700 mb-4">
+                        If you register as a Learner, you agree to:
+                    </p>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                        <li>Provide accurate information about your background and goals</li>
+                        <li>Show up for scheduled sessions on time</li>
+                        <li>Treat Mentors with respect and professionalism</li>
+                        <li>Provide reasonable notice for cancellations</li>
+                        <li>Not record sessions without explicit permission</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">6. Payments and Fees</h3>
+                    <p class="text-gray-700 mb-4">
+                        ClearQ charges a service fee for each booking. The fee structure is as follows:
+                    </p>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                        <li>Mentors receive 80% of the session fee</li>
+                        <li>ClearQ retains 20% as a platform service fee</li>
+                        <li>All payments are processed through Razorpay</li>
+                        <li>Refunds are subject to our Cancellation Policy</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">7. Cancellation and Refund Policy</h3>
+                    <p class="text-gray-700 mb-4">
+                        <strong>Cancellation by Learner:</strong> You may cancel a booking up to 24 hours before 
+                        the scheduled session for a full refund. Cancellations within 24 hours are subject to a 
+                        50% cancellation fee.
+                    </p>
+                    <p class="text-gray-700 mb-4">
+                        <strong>Cancellation by Mentor:</strong> If a Mentor cancels a session, you will receive 
+                        a full refund and may book a session with another Mentor.
+                    </p>
+                    <p class="text-gray-700 mb-4">
+                        <strong>No-show Policy:</strong> If you fail to show up for a scheduled session without 
+                        prior notice, no refund will be provided.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">8. Intellectual Property</h3>
+                    <p class="text-gray-700 mb-4">
+                        All content on the Platform, including text, graphics, logos, and software, is the 
+                        property of ClearQ or its licensors and is protected by copyright and other intellectual 
+                        property laws.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">9. Limitation of Liability</h3>
+                    <p class="text-gray-700 mb-4">
+                        ClearQ is not responsible for any advice, guidance, or information provided by Mentors. 
+                        Mentors are independent professionals, not employees of ClearQ. The Platform is provided 
+                        "as is" without warranties of any kind.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">10. Changes to Terms</h3>
+                    <p class="text-gray-700 mb-4">
+                        We may modify these Terms at any time. We will notify you of significant changes by 
+                        posting the new Terms on the Platform. Your continued use after such changes constitutes 
+                        acceptance of the modified Terms.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">11. Contact Information</h3>
+                    <p class="text-gray-700">
+                        If you have any questions about these Terms, please contact us at:
+                    </p>
+                    <p class="text-gray-700 mt-2">
+                        Email: legal@clearq.in<br>
+                        Address: ClearQ Technologies, Bangalore, India
+                    </p>
+                </div>
+                
+                <div class="mt-12 pt-8 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <p class="text-gray-600">
+                            By using ClearQ, you acknowledge that you have read and agree to these Terms of Service.
+                        </p>
+                        <button onclick="window.print()" 
+                                class="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-print mr-2"></i>
+                            Print Terms
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
