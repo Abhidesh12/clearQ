@@ -129,7 +129,70 @@ async def index(request: Request):
         "request": request,
         "current_user": getattr(request.state, 'current_user', None)
     })
+# Emergency admin creation endpoint
+@app.get("/create-admin")
+async def create_admin_emergency(db: Session = Depends(get_db)):
+    """
+    Emergency endpoint to create admin user.
+    Remove this after use for security.
+    """
+    # Check if admin already exists
+    existing_admin = db.query(User).filter(
+        (User.username == "admin") | (User.role == UserRole.ADMIN)
+    ).first()
+    
+    if existing_admin:
+        return JSONResponse({
+            "status": "exists",
+            "message": "Admin user already exists",
+            "username": existing_admin.username,
+            "email": existing_admin.email,
+            "role": existing_admin.role.value if hasattr(existing_admin.role, 'value') else str(existing_admin.role)
+        })
+    
+    # Create new admin
+    new_admin = User(
+        username="admin",
+        email="admin@clearq.com",
+        hashed_password=get_password_hash("Admin123!"),
+        full_name="System Administrator",
+        role=UserRole.ADMIN,
+        is_active=True
+    )
+    
+    db.add(new_admin)
+    db.commit()
+    
+    return JSONResponse({
+        "status": "created",
+        "message": "Admin user created successfully!",
+        "credentials": {
+            "username": "admin",
+            "password": "Admin123!",
+            "email": "admin@clearq.com"
+        },
+        "instructions": {
+            "login_url": "/login",
+            "dashboard": "/dashboard/admin",
+            "security_note": "CHANGE PASSWORD IMMEDIATELY AFTER LOGIN!"
+        }
+    })
 
+@app.get("/list-users")
+async def list_users(db: Session = Depends(get_db)):
+    """List all users in the system"""
+    users = db.query(User).all()
+    user_list = []
+    for user in users:
+        user_list.append({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
+            "full_name": user.full_name,
+            "is_active": user.is_active
+        })
+    return JSONResponse(user_list)
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {
@@ -961,6 +1024,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
