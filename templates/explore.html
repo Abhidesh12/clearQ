@@ -3,302 +3,1028 @@
 {% block title %}Find Mentors - ClearQ{% endblock %}
 
 {% block content %}
-<style>
-    .explore-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 60px 0;
-        margin-bottom: 40px;
-    }
-    
-    .search-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0 20px;
-    }
-    
-    .search-box {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        margin-top: 20px;
-    }
-    
-    .search-form {
-        display: flex;
-        gap: 10px;
-    }
-    
-    .search-input {
-        flex: 1;
-        padding: 15px 20px;
-        border: 2px solid #e2e8f0;
-        border-radius: 10px;
-        font-size: 16px;
-    }
-    
-    .search-btn {
-        padding: 15px 30px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    
-    .filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 20px 0;
-    }
-    
-    .filter-chip {
-        padding: 8px 16px;
-        background: #f1f5f9;
-        border-radius: 20px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .filter-chip.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .mentor-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 25px;
-        padding: 20px;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .mentor-card {
-        background: white;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
-        position: relative;
-    }
-    
-    .mentor-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-    }
-    
-    .mentor-badge {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: #10b981;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    
-    .mentor-image {
-        height: 200px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 60px;
-    }
-    
-    .mentor-info {
-        padding: 20px;
-    }
-    
-    .mentor-name {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 5px;
-    }
-    
-    .mentor-title {
-        color: #64748b;
-        margin-bottom: 10px;
-    }
-    
-    .mentor-skills {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin-bottom: 15px;
-    }
-    
-    .skill-tag {
-        background: #f1f5f9;
-        padding: 4px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        color: #475569;
-    }
-    
-    .mentor-rating {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        color: #f59e0b;
-        margin-bottom: 15px;
-    }
-    
-    .mentor-price {
-        font-size: 24px;
-        font-weight: 700;
-        color: #667eea;
-    }
-    
-    .view-profile-btn {
-        display: block;
-        width: 100%;
-        padding: 12px;
-        text-align: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 10px;
-        margin-top: 15px;
-        font-weight: 600;
-    }
-</style>
-
-<div class="explore-header">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 10px;">Find Your Perfect Mentor</h1>
-        <p style="font-size: 1.2rem; opacity: 0.9;">Connect with verified experts who can guide you to success</p>
-    </div>
-</div>
-
-<div class="search-container">
-    <div class="search-box">
-        <form action="{{ url_for('explore') }}" method="get" class="search-form">
-            <input type="text" 
-                   name="search" 
-                   class="search-input" 
-                   placeholder="Search by skill, industry, or name..."
-                   value="{{ search or '' }}">
-            <button type="submit" class="search-btn">
-                <i class="fas fa-search"></i> Search
-            </button>
-        </form>
-        
-        <div class="filters">
-            <div class="filter-chip {% if not category %}active{% endif %}" 
-                 onclick="window.location.href='{{ url_for('explore') }}'">
-                All Mentors
-            </div>
-            <div class="filter-chip {% if category == 'engineering' %}active{% endif %}" 
-                 onclick="window.location.href='{{ url_for('explore') }}?category=engineering'">
-                Engineering
-            </div>
-            <div class="filter-chip {% if category == 'design' %}active{% endif %}" 
-                 onclick="window.location.href='{{ url_for('explore') }}?category=design'">
-                Design
-            </div>
-            <div class="filter-chip {% if category == 'business' %}active{% endif %}" 
-                 onclick="window.location.href='{{ url_for('explore') }}?category=business'">
-                Business
-            </div>
-            <div class="filter-chip {% if category == 'data_science' %}active{% endif %}" 
-                 onclick="window.location.href='{{ url_for('explore') }}?category=data_science'">
-                Data Science
+<div class="explore-page">
+    <!-- Hero Section -->
+    <div class="explore-hero">
+        <div class="container">
+            <h1 class="hero-title">Find Your Perfect Mentor</h1>
+            <p class="hero-subtitle">Connect with verified experts who can accelerate your growth and career</p>
+            
+            <!-- Search Bar -->
+            <div class="search-container">
+                <form action="{{ url_for('explore') }}" method="get" class="search-form">
+                    <div class="search-input-group">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               name="search" 
+                               class="search-input" 
+                               placeholder="Search by skill, industry, or name..."
+                               value="{{ search or '' }}"
+                               autocomplete="off">
+                        <div class="search-actions">
+                            <button type="button" class="filter-toggle" onclick="toggleFilters()">
+                                <i class="fas fa-filter"></i> Filters
+                            </button>
+                            <button type="submit" class="search-btn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Filters -->
+                    <div class="quick-filters">
+                        <div class="filter-chip {% if not category %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}'">
+                            All Mentors
+                        </div>
+                        <div class="filter-chip {% if category == 'technology' %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}?category=technology'">
+                            <i class="fas fa-laptop-code"></i> Technology
+                        </div>
+                        <div class="filter-chip {% if category == 'business' %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}?category=business'">
+                            <i class="fas fa-chart-line"></i> Business
+                        </div>
+                        <div class="filter-chip {% if category == 'design' %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}?category=design'">
+                            <i class="fas fa-palette"></i> Design
+                        </div>
+                        <div class="filter-chip {% if category == 'data_science' %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}?category=data_science'">
+                            <i class="fas fa-chart-bar"></i> Data Science
+                        </div>
+                        <div class="filter-chip {% if category == 'marketing' %}active{% endif %}" 
+                             onclick="window.location.href='{{ url_for('explore') }}?category=marketing'">
+                            <i class="fas fa-bullhorn"></i> Marketing
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Advanced Filters Panel -->
+                <div class="advanced-filters" id="advancedFilters">
+                    <div class="filters-header">
+                        <h4>Advanced Filters</h4>
+                        <button type="button" class="close-filters" onclick="toggleFilters()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="filters-body">
+                        <div class="filter-section">
+                            <h5>Experience Level</h5>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="entry">
+                                    <span>Entry Level (0-2 years)</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="mid">
+                                    <span>Mid Level (3-7 years)</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="experience" value="senior">
+                                    <span>Senior Level (8+ years)</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <h5>Price Range (₹/hour)</h5>
+                            <div class="price-range">
+                                <div class="price-inputs">
+                                    <input type="number" placeholder="Min" class="price-input">
+                                    <span>to</span>
+                                    <input type="number" placeholder="Max" class="price-input">
+                                </div>
+                                <div class="price-slider">
+                                    <div class="slider-track"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <h5>Rating</h5>
+                            <div class="rating-filter">
+                                {% for i in range(5, 0, -1) %}
+                                <label class="rating-option">
+                                    <input type="radio" name="rating" value="{{ i }}">
+                                    <div class="stars">
+                                        {% for j in range(i) %}
+                                        <i class="fas fa-star"></i>
+                                        {% endfor %}
+                                        {% for j in range(5-i) %}
+                                        <i class="far fa-star"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <span>& above</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="filter-section">
+                            <h5>Availability</h5>
+                            <div class="filter-options">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="availability" value="immediate">
+                                    <span>Immediate Availability</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="availability" value="weekdays">
+                                    <span>Weekdays</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="availability" value="weekends">
+                                    <span>Weekends</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-actions">
+                            <button type="button" class="btn btn-outline" onclick="clearFilters()">
+                                Clear All
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<div class="mentor-grid">
-    {% for mentor in mentors %}
-    <div class="mentor-card">
-        {% if mentor.mentor_profile.is_verified %}
-        <div class="mentor-badge">
-            <i class="fas fa-check-circle"></i> Verified
+    
+    <!-- Results Section -->
+    <div class="container">
+        <div class="results-header">
+            <div class="results-info">
+                <h2>Available Mentors</h2>
+                <p class="results-count">{{ mentors|length }} mentors found</p>
+            </div>
+            <div class="sort-options">
+                <select class="sort-select" onchange="sortMentors(this.value)">
+                    <option value="recommended">Recommended</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                    <option value="experience">Most Experienced</option>
+                </select>
+            </div>
+        </div>
+        
+        {% if mentors %}
+        <div class="mentor-grid">
+            {% for mentor in mentors %}
+            <div class="mentor-card" data-rating="{{ mentor.mentor_profile.rating or 0 }}" 
+                 data-price="{{ mentor.mentor_profile.hourly_rate or 0 }}"
+                 data-experience="{{ mentor.mentor_profile.experience or 0 }}">
+                <div class="card-header">
+                    {% if mentor.mentor_profile.is_verified %}
+                    <div class="verified-badge">
+                        <i class="fas fa-check-circle"></i> Verified
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Online Status -->
+                    <div class="online-status {% if mentor.is_online %}online{% else %}offline{% endif %}">
+                        <i class="fas fa-circle"></i>
+                        {{ 'Online' if mentor.is_online else 'Offline' }}
+                    </div>
+                    
+                    <!-- Mentor Image -->
+                    <div class="mentor-image">
+                        {% if mentor.profile_image %}
+                        <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
+                             alt="{{ mentor.full_name }}" 
+                             class="profile-img">
+                        {% else %}
+                        <div class="avatar-placeholder">
+                            {{ mentor.full_name[0] if mentor.full_name else mentor.username[0] }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <h3 class="mentor-name">{{ mentor.full_name if mentor.full_name else mentor.username }}</h3>
+                    <p class="mentor-title">
+                        {{ mentor.mentor_profile.job_title if mentor.mentor_profile.job_title else 'Expert Mentor' }}
+                    </p>
+                    
+                    {% if mentor.mentor_profile.company %}
+                    <p class="mentor-company">
+                        <i class="fas fa-building"></i> {{ mentor.mentor_profile.company }}
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Rating -->
+                    <div class="mentor-rating">
+                        <div class="stars">
+                            {% set rating = mentor.mentor_profile.rating or 4.5 %}
+                            {% for i in range(5) %}
+                                {% if i < rating|int %}
+                                <i class="fas fa-star filled"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="rating-text">
+                            {{ rating|float }} ({{ mentor.mentor_profile.total_reviews or 0 }} reviews)
+                        </span>
+                    </div>
+                    
+                    <!-- Skills -->
+                    <div class="mentor-skills">
+                        {% if mentor.mentor_profile.skills %}
+                            {% set skills = mentor.mentor_profile.skills.split(',')[:3] %}
+                            {% for skill in skills %}
+                            <span class="skill-tag">{{ skill.strip() }}</span>
+                            {% endfor %}
+                            {% if mentor.mentor_profile.skills.split(',')|length > 3 %}
+                            <span class="skill-more">+{{ mentor.mentor_profile.skills.split(',')|length - 3 }} more</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Experience & Price -->
+                    <div class="mentor-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-briefcase"></i>
+                            <span>{{ mentor.mentor_profile.experience or 'N/A' }} experience</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-rupee-sign"></i>
+                            <span>₹{{ mentor.mentor_profile.hourly_rate or 0 }}/hour</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Bio Excerpt -->
+                    <p class="mentor-bio">
+                        {{ mentor.mentor_profile.bio|truncate(120) if mentor.mentor_profile.bio else 'Experienced mentor ready to help you achieve your goals.' }}
+                    </p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="mentor-actions">
+                        <a href="{{ url_for('mentor_profile_view', mentor_username=mentor.username) }}" 
+                           class="btn btn-primary btn-block">
+                            <i class="fas fa-user"></i> View Profile
+                        </a>
+                        {% if current_user.is_authenticated and current_user.id != mentor.id %}
+                        <a href="{{ url_for('book_session', mentor_id=mentor.id) }}" 
+                           class="btn btn-outline btn-block">
+                            <i class="fas fa-calendar"></i> Book Session
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3>No mentors found</h3>
+            <p class="empty-text">Try adjusting your search criteria or check back later</p>
+            <div class="empty-actions">
+                <button class="btn btn-primary" onclick="clearFilters()">
+                    Clear Filters
+                </button>
+                <a href="{{ url_for('explore') }}" class="btn btn-outline">
+                    View All Mentors
+                </a>
+            </div>
         </div>
         {% endif %}
         
-        <div class="mentor-image">
-            {% if mentor.profile_image %}
-            <img src="{{ url_for('static', filename=mentor.profile_image) }}" 
-                 alt="{{ mentor.full_name }}" 
-                 style="width: 100%; height: 100%; object-fit: cover;">
-            {% else %}
-            {{ mentor.full_name[0] if mentor.full_name else mentor.username[0] }}
-            {% endif %}
+        <!-- Pagination -->
+        {% if mentors and mentors|length > 12 %}
+        <div class="pagination">
+            <button class="pagination-btn prev" disabled>
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <div class="pagination-pages">
+                <span class="page active">1</span>
+                <span class="page">2</span>
+                <span class="page">3</span>
+                <span class="dots">...</span>
+                <span class="page">10</span>
+            </div>
+            <button class="pagination-btn next">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
-        
-        <div class="mentor-info">
-            <div class="mentor-name">{{ mentor.full_name if mentor.full_name else mentor.username }}</div>
-            <div class="mentor-title">
-                {{ mentor.mentor_profile.job_title if mentor.mentor_profile.job_title else 'Expert Mentor' }}
-                {% if mentor.mentor_profile.company %}
-                at {{ mentor.mentor_profile.company }}
-                {% endif %}
-            </div>
-            
-            <div class="mentor-skills">
-                {% if mentor.mentor_profile.skills %}
-                    {% set skills = mentor.mentor_profile.skills.split(',')[:3] %}
-                    {% for skill in skills %}
-                    <span class="skill-tag">{{ skill.strip() }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
-            
-            <div class="mentor-rating">
-                {% set rating = mentor.mentor_profile.rating or 4.5 %}
-                {% for i in range(5) %}
-                {% if i < rating|int %}
-                <i class="fas fa-star"></i>
-                {% else %}
-                <i class="far fa-star"></i>
-                {% endif %}
-                {% endfor %}
-                <span style="color: #64748b; margin-left: 5px;">
-                    ({{ mentor.mentor_profile.total_reviews or 0 }} reviews)
-                </span>
-            </div>
-            
-            <div class="mentor-price">₹{{ mentor.mentor_profile.hourly_rate or 0 }}/hour</div>
-            
-            <a href="{{ url_for('mentor_profile', mentor_username=mentor.username) }}" 
-               class="view-profile-btn">
-                View Profile
-            </a>
-        </div>
+        {% endif %}
     </div>
-    {% else %}
-    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
-        <div style="font-size: 80px; color: #e2e8f0; margin-bottom: 20px;">
-            <i class="fas fa-user-friends"></i>
-        </div>
-        <h3 style="color: #64748b; margin-bottom: 10px;">No mentors found</h3>
-        <p style="color: #94a3b8;">Try adjusting your search criteria</p>
-    </div>
-    {% endfor %}
 </div>
 
+<style>
+.explore-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.explore-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.explore-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+
+.search-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.search-input-group {
+    background: white;
+    border-radius: 15px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.search-icon {
+    color: #667eea;
+    margin: 0 15px;
+    font-size: 1.2rem;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    padding: 15px 10px;
+    font-size: 16px;
+    outline: none;
+}
+
+.search-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-toggle, .search-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.filter-toggle {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.filter-toggle:hover {
+    background: #e2e8f0;
+}
+
+.search-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.quick-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.filter-chip {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+}
+
+.filter-chip:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.filter-chip.active {
+    background: white;
+    color: #667eea;
+}
+
+.advanced-filters {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    margin-top: 20px;
+    z-index: 100;
+    display: none;
+}
+
+.advanced-filters.show {
+    display: block;
+}
+
+.filters-header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-filters {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.filters-body {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.filter-section {
+    margin-bottom: 25px;
+}
+
+.filter-section h5 {
+    margin-bottom: 12px;
+    color: #1e293b;
+}
+
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.filter-option:hover {
+    background: #f8fafc;
+}
+
+.price-range {
+    margin-top: 10px;
+}
+
+.price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.price-input {
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 100px;
+}
+
+.rating-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rating-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.rating-option:hover {
+    background: #f8fafc;
+}
+
+.stars {
+    color: #f59e0b;
+}
+
+.filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #e2e8f0;
+    color: #64748b;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 40px 0 30px;
+    padding: 0 20px;
+}
+
+.results-count {
+    color: #64748b;
+    margin-top: 5px;
+}
+
+.sort-select {
+    padding: 10px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.mentor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    padding: 0 20px;
+}
+
+.mentor-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.mentor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    position: relative;
+    height: 180px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.verified-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: #10b981;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.online-status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.online-status.online {
+    color: #10b981;
+}
+
+.online-status.offline {
+    color: #64748b;
+}
+
+.mentor-image {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid white;
+    overflow: hidden;
+    background: white;
+}
+
+.profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.card-body {
+    padding: 50px 20px 20px;
+}
+
+.mentor-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.mentor-title {
+    color: #667eea;
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.mentor-company {
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.mentor-rating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.rating-text {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.mentor-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.skill-tag {
+    background: #f1f5f9;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.skill-more {
+    color: #667eea;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.mentor-meta {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 15px;
+    padding: 15px 0;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.mentor-bio {
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.mentor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.empty-text {
+    color: #64748b;
+    margin-bottom: 30px;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 40px 0;
+}
+
+.pagination-btn {
+    padding: 10px 20px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-pages {
+    display: flex;
+    gap: 10px;
+}
+
+.page {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.page:hover {
+    background: #f1f5f9;
+}
+
+.page.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .search-input-group {
+        flex-direction: column;
+        padding: 20px;
+    }
+    
+    .search-actions {
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .filter-toggle, .search-btn {
+        flex: 1;
+    }
+    
+    .quick-filters {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+    
+    .mentor-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .sort-select {
+        width: 100%;
+    }
+}
+</style>
+
 <script>
+// Toggle advanced filters
+function toggleFilters() {
+    const filters = document.getElementById('advancedFilters');
+    filters.classList.toggle('show');
+}
+
+// Clear all filters
+function clearFilters() {
+    document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(input => {
+        input.checked = false;
+    });
+    document.querySelectorAll('.price-input').forEach(input => {
+        input.value = '';
+    });
+    window.location.href = '{{ url_for("explore") }}';
+}
+
+// Apply filters
+function applyFilters() {
+    const filters = {
+        experience: [],
+        minPrice: document.querySelector('.price-input:first-child').value,
+        maxPrice: document.querySelector('.price-input:last-child').value,
+        rating: document.querySelector('input[name="rating"]:checked')?.value,
+        availability: []
+    };
+    
+    document.querySelectorAll('input[name="experience"]:checked').forEach(cb => {
+        filters.experience.push(cb.value);
+    });
+    
+    document.querySelectorAll('input[name="availability"]:checked').forEach(cb => {
+        filters.availability.push(cb.value);
+    });
+    
+    // Build query string
+    const params = new URLSearchParams();
+    if (filters.experience.length) params.append('experience', filters.experience.join(','));
+    if (filters.minPrice) params.append('min_price', filters.minPrice);
+    if (filters.maxPrice) params.append('max_price', filters.maxPrice);
+    if (filters.rating) params.append('min_rating', filters.rating);
+    if (filters.availability.length) params.append('availability', filters.availability.join(','));
+    
+    window.location.href = '{{ url_for("explore") }}?' + params.toString();
+}
+
+// Sort mentors
+function sortMentors(value) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('sort', value);
+    window.location.href = '{{ url_for("explore") }}?' + params.toString();
+}
+
+// Initialize with animations
 document.addEventListener('DOMContentLoaded', function() {
-    // Add animation to cards
-    const cards = document.querySelectorAll('.mentor-card');
-    cards.forEach((card, index) => {
+    // Animate mentor cards on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    
+    document.querySelectorAll('.mentor-card').forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.5s ease';
+        observer.observe(card);
+    });
+    
+    // Close filters when clicking outside
+    document.addEventListener('click', function(event) {
+        const filters = document.getElementById('advancedFilters');
+        const filterToggle = document.querySelector('.filter-toggle');
         
-        setTimeout(() => {
-            card.style.transition = 'all 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
+        if (filters.classList.contains('show') && 
+            !filters.contains(event.target) && 
+            !filterToggle.contains(event.target)) {
+            filters.classList.remove('show');
+        }
     });
 });
 </script>
