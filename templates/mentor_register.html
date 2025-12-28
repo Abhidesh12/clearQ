@@ -151,70 +151,40 @@
         font-size: 12px;
     }
     
-    .availability-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 10px;
-        margin-top: 20px;
-    }
-    
-    .day-checkbox {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .day-checkbox input {
-        display: none;
-    }
-    
-    .day-label {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f8fafc;
-        color: #64748b;
-        cursor: pointer;
-        font-weight: 500;
-    }
-    
-    .day-checkbox input:checked + .day-label {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .time-inputs {
+    .social-urls-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 15px;
-        margin-top: 10px;
+        margin-top: 15px;
     }
-    .social-input-preview {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 8px 12px;
-    background: #f8fafc;
-    border-radius: 8px;
-    font-size: 14px;
-    display: none;
-}
-
-.social-input-preview i {
-    font-size: 16px;
-}
-
-.preview-text {
-    color: #475569;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    
+    .social-input-group {
+        position: relative;
+    }
+    
+    .social-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .social-input {
+        width: 100%;
+        padding: 12px 16px 12px 40px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+    
+    .social-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
     .submit-btn {
         width: 100%;
         padding: 16px;
@@ -237,7 +207,7 @@
 <div class="mentor-register-container">
     <div class="register-header">
         <h1 style="margin-bottom: 10px; color: #1e293b;">Complete Your Mentor Profile</h1>
-        <p style="color: #64748b;">Tell learners about your expertise and set up your availability</p>
+        <p style="color: #64748b;">Tell learners about your expertise and connect your social profiles</p>
     </div>
     
     <!-- Progress Steps -->
@@ -252,7 +222,7 @@
         </div>
         <div class="progress-step">
             <div class="step-number">3</div>
-            <div style="font-size: 14px; color: #64748b;">Availability</div>
+            <div style="font-size: 14px; color: #64748b;">Social Links</div>
         </div>
         <div class="progress-step">
             <div class="step-number">4</div>
@@ -274,13 +244,17 @@
                     <div class="form-group">
                         <label class="form-label">Current Job Title *</label>
                         <input type="text" name="job_title" class="form-input" 
-                               placeholder="e.g., Senior Software Engineer" required>
+                               placeholder="e.g., Senior Software Engineer" 
+                               value="{{ mentor_profile.job_title if mentor_profile else '' }}" 
+                               required>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Company *</label>
                         <input type="text" name="company" class="form-input" 
-                               placeholder="e.g., Google, Microsoft" required>
+                               placeholder="e.g., Google, Microsoft" 
+                               value="{{ mentor_profile.company if mentor_profile else '' }}" 
+                               required>
                     </div>
                 </div>
                 
@@ -288,21 +262,23 @@
                     <div class="form-group">
                         <label class="form-label">Years of Experience *</label>
                         <input type="number" name="experience_years" class="form-input" 
-                               placeholder="5" min="1" max="50" required>
+                               placeholder="5" min="1" max="50" 
+                               value="{{ mentor_profile.experience_years if mentor_profile else '' }}" 
+                               required>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Industry *</label>
                         <select name="industry" class="form-input" required>
                             <option value="">Select Industry</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Healthcare">Healthcare</option>
-                            <option value="Education">Education</option>
-                            <option value="Marketing">Marketing</option>
-                            <option value="Design">Design</option>
-                            <option value="Business">Business</option>
-                            <option value="Other">Other</option>
+                            <option value="Technology" {% if mentor_profile and mentor_profile.industry == 'Technology' %}selected{% endif %}>Technology</option>
+                            <option value="Finance" {% if mentor_profile and mentor_profile.industry == 'Finance' %}selected{% endif %}>Finance</option>
+                            <option value="Healthcare" {% if mentor_profile and mentor_profile.industry == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                            <option value="Education" {% if mentor_profile and mentor_profile.industry == 'Education' %}selected{% endif %}>Education</option>
+                            <option value="Marketing" {% if mentor_profile and mentor_profile.industry == 'Marketing' %}selected{% endif %}>Marketing</option>
+                            <option value="Design" {% if mentor_profile and mentor_profile.industry == 'Design' %}selected{% endif %}>Design</option>
+                            <option value="Business" {% if mentor_profile and mentor_profile.industry == 'Business' %}selected{% endif %}>Business</option>
+                            <option value="Other" {% if mentor_profile and mentor_profile.industry == 'Other' %}selected{% endif %}>Other</option>
                         </select>
                     </div>
                 </div>
@@ -311,7 +287,7 @@
                     <label class="form-label">Professional Bio *</label>
                     <textarea name="bio" class="form-textarea" 
                               placeholder="Tell learners about your background, achievements, and what you're passionate about..."
-                              required></textarea>
+                              required>{{ current_user.bio if current_user.bio else '' }}</textarea>
                 </div>
             </div>
             
@@ -327,7 +303,9 @@
                     <input type="text" id="skillsInput" class="skills-input" 
                            placeholder="Add skills (e.g., Python, React, Product Management)">
                     <div class="skills-tags" id="skillsTags"></div>
-                    <input type="hidden" name="skills" id="skillsHidden" required>
+                    <input type="hidden" name="skills" id="skillsHidden" 
+                           value="{{ mentor_profile.skills if mentor_profile else '' }}" 
+                           required>
                     <div style="font-size: 12px; color: #64748b; margin-top: 5px;">
                         Press Enter to add skills. Add at least 3 skills.
                     </div>
@@ -337,7 +315,9 @@
                     <div class="form-group">
                         <label class="form-label">Hourly Rate (₹) *</label>
                         <input type="number" name="hourly_rate" class="form-input" 
-                               placeholder="1000" min="100" step="100" required>
+                               placeholder="1000" min="100" step="100" 
+                               value="{{ mentor_profile.hourly_rate if mentor_profile else '' }}" 
+                               required>
                     </div>
                     
                     <div class="form-group">
@@ -374,136 +354,124 @@
                 </div>
             </div>
             
-            <!-- Contact & Links -->
+            <!-- Social Links -->
             <div class="form-section">
                 <div class="section-title">
-                    <i class="fas fa-link"></i>
-                    <span>Contact & Links</span>
+                    <i class="fas fa-share-alt"></i>
+                    <span>Social Profiles & Links</span>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">LinkedIn Profile</label>
-                    <input type="url" name="linkedin_url" class="form-input" 
-                           placeholder="https://linkedin.com/in/yourprofile">
-                </div>
+                <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">
+                    Add your social profiles to help learners connect with you.
+                </p>
                 
-                <div class="form-row">
+                <div class="social-urls-grid">
+                    <!-- LinkedIn -->
                     <div class="form-group">
-                        <label class="form-label">GitHub Profile</label>
-                        <input type="url" name="github_url" class="form-input" 
-                               placeholder="https://github.com/yourusername">
+                        <label class="form-label">LinkedIn</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-linkedin"></i>
+                            </div>
+                            <input type="url" name="linkedin_url" class="social-input" 
+                                   placeholder="https://linkedin.com/in/username"
+                                   value="{{ mentor_profile.linkedin_url if mentor_profile else '' }}">
+                        </div>
                     </div>
                     
+                    <!-- Twitter -->
                     <div class="form-group">
-                        <label class="form-label">Portfolio Website</label>
-                        <input type="url" name="portfolio_url" class="form-input" 
-                               placeholder="https://yourportfolio.com">
+                        <label class="form-label">Twitter / X</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-twitter"></i>
+                            </div>
+                            <input type="url" name="twitter_url" class="social-input" 
+                                   placeholder="https://twitter.com/username"
+                                   value="{{ mentor_profile.twitter_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- GitHub -->
+                    <div class="form-group">
+                        <label class="form-label">GitHub</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-github"></i>
+                            </div>
+                            <input type="url" name="github_url" class="social-input" 
+                                   placeholder="https://github.com/username"
+                                   value="{{ mentor_profile.github_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Portfolio -->
+                    <div class="form-group">
+                        <label class="form-label">Portfolio</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <input type="url" name="portfolio_url" class="social-input" 
+                                   placeholder="https://yourportfolio.com"
+                                   value="{{ mentor_profile.portfolio_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- YouTube -->
+                    <div class="form-group">
+                        <label class="form-label">YouTube</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-youtube"></i>
+                            </div>
+                            <input type="url" name="youtube_url" class="social-input" 
+                                   placeholder="https://youtube.com/c/username"
+                                   value="{{ mentor_profile.youtube_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Facebook -->
+                    <div class="form-group">
+                        <label class="form-label">Facebook</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-facebook"></i>
+                            </div>
+                            <input type="url" name="facebook_url" class="social-input" 
+                                   placeholder="https://facebook.com/username"
+                                   value="{{ mentor_profile.facebook_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Instagram -->
+                    <div class="form-group">
+                        <label class="form-label">Instagram</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fab fa-instagram"></i>
+                            </div>
+                            <input type="url" name="instagram_url" class="social-input" 
+                                   placeholder="https://instagram.com/username"
+                                   value="{{ mentor_profile.instagram_url if mentor_profile else '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Website -->
+                    <div class="form-group">
+                        <label class="form-label">Personal Website</label>
+                        <div class="social-input-group">
+                            <div class="social-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <input type="url" name="website_url" class="social-input" 
+                                   placeholder="https://yourwebsite.com"
+                                   value="{{ mentor_profile.website_url if mentor_profile else '' }}">
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- Social Links Section -->
-<div class="form-section">
-    <div class="section-title">
-        <i class="fas fa-share-alt"></i>
-        <span>Social Links (Optional)</span>
-    </div>
-    
-    <div class="form-row">
-        <div class="form-group">
-            <label class="form-label">LinkedIn URL</label>
-            <input type="url" name="linkedin_url" class="form-input" 
-                   placeholder="https://linkedin.com/in/yourprofile"
-                   value="{{ mentor_profile.linkedin_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="linkedin_url">
-                <i class="fab fa-linkedin text-blue-600"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">GitHub URL</label>
-            <input type="url" name="github_url" class="form-input" 
-                   placeholder="https://github.com/yourusername"
-                   value="{{ mentor_profile.github_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="github_url">
-                <i class="fab fa-github text-gray-800"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="form-row">
-        <div class="form-group">
-            <label class="form-label">Twitter URL</label>
-            <input type="url" name="twitter_url" class="form-input" 
-                   placeholder="https://twitter.com/yourusername"
-                   value="{{ mentor_profile.twitter_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="twitter_url">
-                <i class="fab fa-twitter text-blue-400"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Instagram URL</label>
-            <input type="url" name="instagram_url" class="form-input" 
-                   placeholder="https://instagram.com/yourusername"
-                   value="{{ mentor_profile.instagram_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="instagram_url">
-                <i class="fab fa-instagram text-pink-600"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="form-row">
-        <div class="form-group">
-            <label class="form-label">Personal Website</label>
-            <input type="url" name="website_url" class="form-input" 
-                   placeholder="https://yourwebsite.com"
-                   value="{{ mentor_profile.website_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="website_url">
-                <i class="fas fa-globe text-green-600"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Portfolio URL</label>
-            <input type="url" name="portfolio_url" class="form-input" 
-                   placeholder="https://yourportfolio.com"
-                   value="{{ mentor_profile.portfolio_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="portfolio_url">
-                <i class="fas fa-briefcase text-purple-600"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="form-row">
-        <div class="form-group">
-            <label class="form-label">Facebook URL</label>
-            <input type="url" name="facebook_url" class="form-input" 
-                   placeholder="https://facebook.com/yourprofile"
-                   value="{{ mentor_profile.facebook_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="facebook_url">
-                <i class="fab fa-facebook text-blue-700"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">YouTube URL</label>
-            <input type="url" name="youtube_url" class="form-input" 
-                   placeholder="https://youtube.com/@yourchannel"
-                   value="{{ mentor_profile.youtube_url if mentor_profile else '' }}">
-            <div class="social-input-preview" data-for="youtube_url">
-                <i class="fab fa-youtube text-red-600"></i>
-                <span class="preview-text"></span>
-            </div>
-        </div>
-    </div>
-</div>
+            
             <!-- Profile Photo -->
             <div class="form-section">
                 <div class="section-title">
@@ -517,16 +485,29 @@
                     <div style="font-size: 12px; color: #64748b; margin-top: 5px;">
                         Recommended size: 400x400px. Max file size: 2MB.
                     </div>
+                    {% if current_user.profile_image %}
+                    <div style="margin-top: 10px;">
+                        <img src="{{ url_for('static', filename=current_user.profile_image) }}" 
+                             alt="Current profile" 
+                             style="width: 100px; height: 100px; border-radius: 10px; object-fit: cover;">
+                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">Current profile photo</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
             <!-- Submit -->
             <div style="text-align: center; margin-top: 40px;">
                 <button type="submit" class="submit-btn">
-                    <i class="fas fa-check-circle"></i> Complete Registration
+                    <i class="fas fa-check-circle"></i> 
+                    {% if mentor_profile %}Update Profile{% else %}Complete Registration{% endif %}
                 </button>
                 <div style="font-size: 14px; color: #64748b; margin-top: 15px;">
+                    {% if mentor_profile and mentor_profile.verification_status == 'pending' %}
+                    Your profile is under review by our team.
+                    {% elif not mentor_profile %}
                     Your profile will be reviewed by our team within 24-48 hours.
+                    {% endif %}
                 </div>
             </div>
         </form>
@@ -540,6 +521,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const skillsInput = document.getElementById('skillsInput');
     const skillsTags = document.getElementById('skillsTags');
     const skillsHidden = document.getElementById('skillsHidden');
+    
+    // Initialize skills from existing data
+    const existingSkills = skillsHidden.value;
+    if (existingSkills) {
+        skills = existingSkills.split(',').map(s => s.trim()).filter(s => s);
+        updateSkillsDisplay();
+    }
     
     // Add skill on Enter
     skillsInput.addEventListener('keypress', function(e) {
@@ -575,19 +563,9 @@ document.addEventListener('DOMContentLoaded', function() {
         skillsHidden.value = skills.join(',');
     }
     
-    // Initialize with current skills if any
-    const currentSkills = "{{ current_user.mentor_profile.skills if current_user.mentor_profile.skills else '' }}";
-    if (currentSkills) {
-        skills = currentSkills.split(',').map(s => s.trim());
-        updateSkillsDisplay();
-    }
+    // Make removeSkill available globally
+    window.removeSkill = removeSkill;
 });
-
-// Make removeSkill available globally
-window.removeSkill = function(skill) {
-    skills = skills.filter(s => s !== skill);
-    updateSkillsDisplay();
-};
 
 // Form validation
 const form = document.querySelector('form');
@@ -609,7 +587,7 @@ form.addEventListener('submit', function(e) {
     
     // Show loading state
     const submitBtn = this.querySelector('.submit-btn');
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     submitBtn.disabled = true;
 });
 </script>
