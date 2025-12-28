@@ -391,6 +391,261 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
         "reviews": reviews,
         "available_dates": availabilities
     })
+# Add these endpoints to your app.py
+
+@app.get("/api/available-dates/{mentor_id}")
+async def get_available_dates(mentor_id: int, db: Session = Depends(get_db)):
+    mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+    
+    # Generate next 14 days
+    available_dates = []
+    today = datetime.now().date()
+    
+    for i in range(1, 15):
+        date = today + timedelta(days=i)
+        # Check if mentor has availability for this day
+        day_of_week = date.weekday()  # Monday=0, Sunday=6
+        
+        # Check mentor's recurring availability
+        availability = db.query(Availability).filter(
+            Availability.mentor_id == mentor_id,
+            Availability.day_of_week == day_of_week
+        ).first()
+        
+        if availability:
+            available_dates.append({
+                "full_date": date.isoformat(),
+                "day": date.day,
+                "month": date.strftime("%B"),
+                "dayName": date.strftime("%A")
+            })
+    
+    return {"success": True, "dates": available_dates}
+
+@app.get("/profile/edit", response_class=HTMLResponse)
+async def edit_profile(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    return templates.TemplateResponse("edit_profile.html", {
+        "request": request,
+        "current_user": current_user
+    })
+
+@app.post("/profile/update")
+async def update_profile(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    full_name: str = Form(None),
+    bio: str = Form(None),
+    phone: str = Form(None),
+    profile_image: UploadFile = File(None)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Update user details
+    if full_name:
+        current_user.full_name = full_name
+    if bio:
+        current_user.bio = bio
+    if phone:
+        current_user.phone = phone
+    
+    # Update profile image if provided
+    if profile_image and profile_image.filename:
+        image_path = save_profile_image(profile_image, current_user.id)
+        current_user.profile_image = image_path
+    
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.post("/mentor/profile/update")
+async def update_mentor_profile(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    experience: int = Form(...),
+    industry: str = Form(...),
+    job_title: str = Form(...),
+    company: str = Form(None),
+    skills: str = Form(...),
+    linkedin_url: str = Form(None),
+    twitter_url: str = Form(None),
+    github_url: str = Form(None),
+    website_url: str = Form(None),
+    hourly_rate: float = Form(...)
+):
+    if not current_user or current_user.role != "mentor":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    mentor = current_user.mentor
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+    
+    # Update mentor details
+    mentor.experience = experience
+    mentor.industry = industry
+    mentor.job_title = job_title
+    mentor.company = company
+    mentor.skills = skills
+    mentor.linkedin_url = linkedin_url
+    mentor.twitter_url = twitter_url
+    mentor.github_url = github_url
+    mentor.website_url = website_url
+    mentor.hourly_rate = hourly_rate
+    
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.post("/api/services/create")
+async def create_service(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    name: str = Form(...),
+    description: str = Form(...),
+    category: str = Form(...),
+    price: float = Form(...),
+    duration: int = Form(...),
+    is_digital: bool = Form(False),
+    digital_product_url: str = Form(None)
+):
+    if not current_user or current_user.role != "mentor":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    mentor = current_user.mentor
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+    
+    service = Service(
+        mentor_id=mentor.id,
+        name=name,
+        description=description,
+        category=category,
+        price=price,
+        duration=duration,
+        is_digital=is_digital,
+        digital_product_url=digital_product_url
+    )
+    
+    db.add(service)
+    db.commit()
+    
+    return {"success": True, "service_id": service.id}
+
+@app.post("/api/availability/update")
+async def update_availability(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    availability_data: str = Form(...)  # JSON string of availability slots
+):
+    if not current_user or current_user.role != "mentor":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    mentor = current_user.mentor
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+    
+    # Parse availability data
+    try:
+        availability = json.loads(availability_data)
+        
+        # Delete existing availability
+        db.query(Availability).filter(Availability.mentor_id == mentor.id).delete()
+        
+        # Add new availability
+        for slot in availability:
+            avail = Availability(
+                mentor_id=mentor.id,
+                day_of_week=slot["day"],
+                start_time=slot["start"],
+                end_time=slot["end"],
+                is_recurring=True
+            )
+            db.add(avail)
+        
+        db.commit()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid availability data: {str(e)}")
+
+@app.get("/api/dashboard/stats")
+async def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    stats = {}
+    
+    if current_user.role == "mentor":
+        mentor = current_user.mentor
+        if mentor:
+            # Calculate earnings for last 30 days
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+            recent_earnings = db.query(func.sum(Booking.amount)).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed",
+                Booking.created_at >= thirty_days_ago
+            ).scalar() or 0
+            
+            # Get total sessions
+            total_sessions = db.query(Booking).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed"
+            ).count()
+            
+            # Get upcoming sessions
+            upcoming_sessions = db.query(Booking).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "confirmed",
+                Booking.scheduled_for >= datetime.now()
+            ).count()
+            
+            stats = {
+                "recent_earnings": recent_earnings,
+                "total_sessions": total_sessions,
+                "upcoming_sessions": upcoming_sessions,
+                "conversion_rate": 0.75  # This would be calculated from actual data
+            }
+    
+    elif current_user.role == "learner":
+        # Get learner stats
+        total_bookings = db.query(Booking).filter(
+            Booking.user_id == current_user.id
+        ).count()
+        
+        completed_sessions = db.query(Booking).filter(
+            Booking.user_id == current_user.id,
+            Booking.status == "completed"
+        ).count()
+        
+        upcoming_sessions = db.query(Booking).filter(
+            Booking.user_id == current_user.id,
+            Booking.status == "confirmed",
+            Booking.scheduled_for >= datetime.now()
+        ).count()
+        
+        stats = {
+            "total_bookings": total_bookings,
+            "completed_sessions": completed_sessions,
+            "upcoming_sessions": upcoming_sessions,
+            "total_spent": 0  # This would be calculated from actual data
+        }
+    
+    return {"success": True, "stats": stats}
 
 @app.get("/service/{service_id}", response_class=HTMLResponse)
 async def service_detail(request: Request, service_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -916,3 +1171,4 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
