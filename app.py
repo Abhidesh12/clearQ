@@ -834,6 +834,10 @@ def before_request():
             logger.error(f"Failed to create tables: {create_error}")
 
 
+# ============================================================================
+# APPLICATION ROUTES
+# ============================================================================
+
 @app.route('/')
 def index():
     """Home page."""
@@ -874,140 +878,7 @@ def mentorship_program():
     
     return render_template('mentorship_program.html',
                          featured_programs=featured_programs)
-@app.route('/explore')
-@login_required
-def explore():
-    """Explore mentors."""
-    mentors = User.query.filter_by(role='mentor', is_verified=True).all()
-    return render_template('explore.html', mentors=mentors)
 
-@app.route('/my-digital-products')
-@login_required
-def my_digital_products():
-    """User's digital products."""
-    products = DigitalProductAccess.query.filter_by(
-        user_id=current_user.id,
-        is_active=True
-    ).all()
-    return render_template('my_digital_products.html', products=products)
-
-@app.route('/my-bookings')
-@login_required
-def my_bookings():
-    """User's bookings."""
-    if current_user.role == 'mentor':
-        bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(
-            Booking.booking_date.desc()
-        ).all()
-    else:
-        bookings = Booking.query.filter_by(learner_id=current_user.id).order_by(
-            Booking.booking_date.desc()
-        ).all()
-    
-    return render_template('my_bookings.html', bookings=bookings)    
-@app.route('/enroll')
-def enroll():
-    """Enrollment page for mentorship program."""
-    # Get active services
-    try:
-        services = Service.query.filter_by(is_active=True).limit(6).all()
-    except Exception as e:
-        logger.error(f"Error getting services: {e}")
-        services = []
-    
-    return render_template('enroll.html', services=services)
-    
-@app.route('/database-setup')
-def database_setup():
-    """Manual database setup endpoint."""
-    try:
-        db.create_all()
-        flash('Database tables created successfully!', 'success')
-        
-        # Create admin user if not exists
-        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@clearq.in')
-        if not User.query.filter_by(email=admin_email).first():
-            admin = User(
-                username='admin',
-                email=admin_email,
-                role='admin',
-                is_email_verified=True,
-                is_verified=True,
-                is_active=True
-            )
-            admin.set_password(os.environ.get('ADMIN_PASSWORD', 'Admin@123'))
-            db.session.add(admin)
-            db.session.commit()
-            flash('Admin user created!', 'success')
-        
-        return redirect(url_for('index'))
-    except Exception as e:
-        logger.error(f"Database setup error: {e}")
-        flash(f'Database setup failed: {str(e)}', 'danger')
-        return redirect(url_for('index'))
-
-@app.route('/mentor/services')
-@login_required
-def mentor_services():
-    """Mentor services management."""
-    if current_user.role != 'mentor':
-        abort(403)
-    
-    services = Service.query.filter_by(mentor_id=current_user.id).all()
-    return render_template('mentor/services.html', services=services)
-
-@app.route('/mentor/calendar')
-@login_required
-def mentor_calendar():
-    """Mentor calendar."""
-    if current_user.role != 'mentor':
-        abort(403)
-    
-    # Get bookings for the next 30 days
-    from datetime import datetime, timedelta
-    start_date = datetime.utcnow()
-    end_date = start_date + timedelta(days=30)
-    
-    bookings = Booking.query.filter(
-        Booking.mentor_id == current_user.id,
-        Booking.booking_date >= start_date,
-        Booking.booking_date <= end_date,
-        Booking.status == 'confirmed'
-    ).all()
-    
-    return render_template('mentor/calendar.html', bookings=bookings)
-
-@app.route('/mentor/earnings')
-@login_required
-def mentor_earnings():
-    """Mentor earnings dashboard."""
-    if current_user.role != 'mentor':
-        abort(403)
-    
-    # Calculate earnings
-    bookings = Booking.query.filter_by(
-        mentor_id=current_user.id,
-        status='confirmed'
-    ).all()
-    
-    total_earnings = sum([b.price for b in bookings if b.price]) or 0
-    
-    return render_template('mentor/earnings.html', 
-                          bookings=bookings,
-                          total_earnings=total_earnings)
-
-@app.route('/mentor/<username>')
-def mentor_public_profile(username):
-    """Public mentor profile."""
-    mentor = User.query.filter_by(username=username, role='mentor').first_or_404()
-    mentor.profile_views = (mentor.profile_views or 0) + 1
-    db.session.commit()
-    
-    services = Service.query.filter_by(mentor_id=mentor.id, is_active=True).all()
-    
-    return render_template('mentor/public_profile.html', 
-                          mentor=mentor, 
-                          services=services)
 @app.route('/explore')
 def explore():
     """Explore mentors page."""
@@ -1069,6 +940,115 @@ def explore():
                          domains=domains,
                          sort=sort)
 
+@app.route('/my-digital-products')
+@login_required
+def my_digital_products():
+    """User's digital products."""
+    products = DigitalProductAccess.query.filter_by(
+        user_id=current_user.id,
+        is_active=True
+    ).all()
+    return render_template('my_digital_products.html', products=products)
+
+@app.route('/my-bookings')
+@login_required
+def my_bookings():
+    """User's bookings."""
+    if current_user.role == 'mentor':
+        bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(
+            Booking.booking_date.desc()
+        ).all()
+    else:
+        bookings = Booking.query.filter_by(learner_id=current_user.id).order_by(
+            Booking.booking_date.desc()
+        ).all()
+    
+    return render_template('my_bookings.html', bookings=bookings)
+
+@app.route('/enroll')
+def enroll():
+    """Enrollment page for mentorship program."""
+    try:
+        services = Service.query.filter_by(is_active=True).limit(6).all()
+    except Exception as e:
+        logger.error(f"Error getting services: {e}")
+        services = []
+    
+    return render_template('enroll.html', services=services)
+
+@app.route('/database-setup')
+def database_setup():
+    """Manual database setup endpoint."""
+    try:
+        db.create_all()
+        flash('Database tables created successfully!', 'success')
+        
+        # Create admin user if not exists
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@clearq.in')
+        if not User.query.filter_by(email=admin_email).first():
+            admin = User(
+                username='admin',
+                email=admin_email,
+                role='admin',
+                is_email_verified=True,
+                is_verified=True,
+                is_active=True
+            )
+            admin.set_password(os.environ.get('ADMIN_PASSWORD', 'Admin@123'))
+            db.session.add(admin)
+            db.session.commit()
+            flash('Admin user created!', 'success')
+        
+        return redirect(url_for('index'))
+    except Exception as e:
+        logger.error(f"Database setup error: {e}")
+        flash(f'Database setup failed: {str(e)}', 'danger')
+        return redirect(url_for('index'))
+
+@app.route('/mentor/services')
+@login_required
+@mentor_required
+def mentor_services():
+    """Mentor services management."""
+    services = Service.query.filter_by(mentor_id=current_user.id).all()
+    return render_template('mentor/services.html', services=services)
+
+@app.route('/mentor/calendar')
+@login_required
+@mentor_required
+def mentor_calendar():
+    """Mentor calendar."""
+    # Get bookings for the next 30 days
+    from datetime import datetime, timedelta
+    start_date = datetime.utcnow()
+    end_date = start_date + timedelta(days=30)
+    
+    bookings = Booking.query.filter(
+        Booking.mentor_id == current_user.id,
+        Booking.booking_date >= start_date,
+        Booking.booking_date <= end_date,
+        Booking.status == 'confirmed'
+    ).all()
+    
+    return render_template('mentor/calendar.html', bookings=bookings)
+
+@app.route('/mentor/earnings')
+@login_required
+@mentor_required
+def mentor_earnings():
+    """Mentor earnings dashboard."""
+    # Calculate earnings
+    bookings = Booking.query.filter_by(
+        mentor_id=current_user.id,
+        status='confirmed'
+    ).all()
+    
+    total_earnings = sum([b.price for b in bookings if b.price]) or 0
+    
+    return render_template('mentor/earnings.html', 
+                          bookings=bookings,
+                          total_earnings=total_earnings)
+
 @app.route('/mentor/<username>')
 def mentor_public_profile(username):
     """Public mentor profile page."""
@@ -1107,7 +1087,6 @@ def mentor_public_profile(username):
                          services=services,
                          reviews=reviews)
 
-
 @app.route('/service/<int:service_id>')
 def service_detail(service_id):
     """Service detail page."""
@@ -1142,7 +1121,6 @@ def service_detail(service_id):
                          mentor=mentor,
                          has_access=has_access,
                          reviews=reviews)
-
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
@@ -1206,10 +1184,10 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            # FIX: Use the thread wrapper instead of send_verification_email directly
+            # Send verification email
             import threading
             email_thread = threading.Thread(
-                target=send_verification_email_thread,  # Changed to thread wrapper
+                target=send_verification_email_thread,
                 args=(user,),
                 daemon=True
             )
@@ -1230,6 +1208,7 @@ def register():
             flash('Registration failed. Please try again.', 'danger')
     
     return render_template('register.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login():
@@ -1302,6 +1281,7 @@ The ClearQ Team
         return redirect(url_for('login'))
     
     return render_template('forgot_password.html')
+
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     """Reset password with valid token."""
@@ -1335,7 +1315,8 @@ def reset_password(token):
         
     except Exception as e:
         flash('Invalid or expired reset link.', 'danger')
-        return redirect(url_for('login'))    
+        return redirect(url_for('login'))
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -1344,13 +1325,12 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-
 @app.route('/verify-email/<token>')
 def verify_email(token):
     """Verify email address."""
     try:
         email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
-        user = User.query.filter_by(email=email).first()  # Changed from first_or_404()
+        user = User.query.filter_by(email=email).first()
         
         if not user:
             flash('Invalid verification link. User not found.', 'danger')
@@ -1360,7 +1340,7 @@ def verify_email(token):
             flash('Email is already verified.', 'info')
         else:
             user.is_email_verified = True
-            user.email_verified_at =utcnow()
+            user.email_verified_at = utcnow()
             db.session.commit()
             flash('Email verified successfully!', 'success')
             
@@ -1401,14 +1381,11 @@ def resend_verification():
     
     return redirect(url_for('dashboard'))
 
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
     """User dashboard."""
     try:
-        # Import datetime if not already imported
-        from datetime import datetime
         from sqlalchemy import func
         
         if current_user.role == 'admin':
@@ -1418,7 +1395,7 @@ def dashboard():
                 'total_mentors': User.query.filter_by(role='mentor').count() or 0,
                 'total_learners': User.query.filter_by(role='learner').count() or 0,
                 'pending_mentors': User.query.filter_by(role='mentor', is_verified=False).count() or 0,
-                'total_bookings': Booking.query.count() if hasattr(app, 'Booking') else 0,
+                'total_bookings': Booking.query.count() or 0,
             }
             upcoming_bookings = []
             recommended_mentors = []
@@ -1428,7 +1405,7 @@ def dashboard():
             confirmed_bookings = Booking.query.filter_by(
                 mentor_id=current_user.id, 
                 status='confirmed'
-            ).all() if hasattr(app, 'Booking') else []
+            ).all()
             
             earnings = sum([b.price for b in confirmed_bookings if b and b.price]) or 0
             
@@ -1436,7 +1413,7 @@ def dashboard():
                 'total_bookings': Booking.query.filter_by(mentor_id=current_user.id).count() or 0,
                 'pending_bookings': Booking.query.filter_by(mentor_id=current_user.id, status='pending').count() or 0,
                 'confirmed_bookings': len(confirmed_bookings),
-                'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count() if hasattr(app, 'Service') else 0,
+                'total_services': Service.query.filter_by(mentor_id=current_user.id, is_active=True).count() or 0,
                 'total_earnings': earnings,
                 'total_sessions': len(confirmed_bookings),
             }
@@ -1446,7 +1423,7 @@ def dashboard():
                 Booking.mentor_id == current_user.id,
                 Booking.status == 'confirmed',
                 Booking.booking_date >= utcnow()
-            ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
+            ).order_by(Booking.booking_date).limit(5).all()
             
             recommended_mentors = []
             
@@ -1455,7 +1432,7 @@ def dashboard():
             confirmed_bookings = Booking.query.filter_by(
                 learner_id=current_user.id, 
                 status='confirmed'
-            ).all() if hasattr(app, 'Booking') else []
+            ).all()
             
             total_spent = sum([b.price for b in confirmed_bookings if b and b.price]) or 0
             
@@ -1464,16 +1441,16 @@ def dashboard():
                 'upcoming_bookings': Booking.query.filter(
                     Booking.learner_id == current_user.id,
                     Booking.status == 'confirmed',
-                    Booking.booking_date >=utcnow()
-                ).count() if hasattr(app, 'Booking') else 0,
+                    Booking.booking_date >= utcnow()
+                ).count() or 0,
                 'digital_products': DigitalProductAccess.query.filter_by(
                     user_id=current_user.id,
                     is_active=True
-                ).count() if hasattr(app, 'DigitalProductAccess') else 0,
+                ).count() or 0,
                 'completed_sessions': Booking.query.filter(
                     Booking.learner_id == current_user.id,
                     Booking.status == 'completed'
-                ).count() if hasattr(app, 'Booking') else 0,
+                ).count() or 0,
                 'total_spent': total_spent,
             }
             
@@ -1482,7 +1459,7 @@ def dashboard():
                 Booking.learner_id == current_user.id,
                 Booking.status == 'confirmed',
                 Booking.booking_date >= utcnow()
-            ).order_by(Booking.booking_date).limit(5).all() if hasattr(app, 'Booking') else []
+            ).order_by(Booking.booking_date).limit(5).all()
             
             # Get recommended mentors for learner
             recommended_mentors = User.query.filter_by(
@@ -1503,6 +1480,7 @@ def dashboard():
         upcoming_bookings=upcoming_bookings,
         recommended_mentors=recommended_mentors
     )
+
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -1543,23 +1521,6 @@ def profile():
         return redirect(url_for('profile'))
     
     return render_template('profile.html')
-
-
-@app.route('/my-bookings')
-@login_required
-def my_bookings():
-    """User's bookings."""
-    try:
-        if current_user.role == 'mentor':
-            bookings = Booking.query.filter_by(mentor_id=current_user.id).order_by(Booking.created_at.desc()).all()
-        else:
-            bookings = Booking.query.filter_by(learner_id=current_user.id).order_by(Booking.created_at.desc()).all()
-    except Exception as e:
-        logger.error(f"Error getting bookings: {e}")
-        bookings = []
-    
-    return render_template('my_bookings.html', bookings=bookings)
-
 
 @app.route('/book/<int:service_id>', methods=['POST'])
 @login_required
@@ -1617,7 +1578,6 @@ def book_service(service_id):
         flash('Error creating booking. Please try again.', 'danger')
         return redirect(url_for('service_detail', service_id=service_id))
 
-
 @app.route('/payment/<int:booking_id>')
 @login_required
 @verified_email_required
@@ -1668,6 +1628,33 @@ def create_payment(booking_id):
         flash('Payment gateway not configured. Please contact support.', 'danger')
         return redirect(url_for('dashboard'))
 
+@app.route('/payment/verify', methods=['POST'])
+@login_required
+def verify_payment():
+    """Verify payment webhook."""
+    data = request.form
+    params_dict = {}
+    
+    for key in data:
+        params_dict[key] = data[key]
+    
+    try:
+        razorpay_client.utility.verify_payment_signature(params_dict)
+        
+        booking = Booking.query.filter_by(razorpay_order_id=data['razorpay_order_id']).first()
+        if booking:
+            booking.payment_status = 'success'
+            booking.razorpay_payment_id = data['razorpay_payment_id']
+            booking.razorpay_signature = data['razorpay_signature']
+            booking.status = 'confirmed'
+            db.session.commit()
+            
+            flash('Payment successful! Your booking is confirmed.', 'success')
+            return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Payment verification failed: {e}")
+    
+    return jsonify({'success': False}), 400
 
 # ============================================================================
 # ADMIN ROUTES
@@ -1699,7 +1686,6 @@ def admin_mentors():
     
     return render_template('admin/mentors.html', mentors=mentors, status=status)
 
-
 @app.route('/admin/verify-mentor/<int:mentor_id>')
 @login_required
 @admin_required
@@ -1730,7 +1716,6 @@ def admin_verify_mentor(mentor_id):
     
     return redirect(url_for('admin_mentors'))
 
-
 # ============================================================================
 # API ENDPOINTS
 # ============================================================================
@@ -1756,7 +1741,6 @@ def api_health():
             'timestamp': utcnow().isoformat(),
             'error': str(e)
         }), 500
-
 
 @app.route('/api/notifications')
 @login_required
@@ -1787,6 +1771,29 @@ def api_notifications():
         logger.error(f"Notifications API error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/generate-meeting-link/<int:booking_id>', methods=['POST'])
+@login_required
+def generate_meeting_link(booking_id):
+    """Generate meeting link for a booking."""
+    booking = Booking.query.get_or_404(booking_id)
+    
+    # Check if user is authorized
+    if current_user.id not in [booking.mentor_id, booking.learner_id]:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    # Generate meeting link (using Jitsi Meet for example)
+    import uuid
+    meeting_id = str(uuid.uuid4())
+    meeting_link = f"https://meet.jit.si/ClearQ-{meeting_id}"
+    
+    booking.meeting_link = meeting_link
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Meeting link generated',
+        'meeting_link': meeting_link
+    })
 
 # ============================================================================
 # UTILITY ROUTES
@@ -1797,24 +1804,20 @@ def terms():
     """Terms of service."""
     return render_template('legal/terms.html')
 
-
 @app.route('/privacy')
 def privacy():
     """Privacy policy."""
     return render_template('legal/privacy.html')
-
 
 @app.route('/contact')
 def contact():
     """Contact page."""
     return render_template('contact.html')
 
-
 @app.route('/about')
 def about():
     """About page."""
     return render_template('about.html')
-
 
 @app.route('/faq')
 def faq():
@@ -1877,6 +1880,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
