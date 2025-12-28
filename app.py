@@ -1078,3 +1078,206 @@ async def privacy_page(request: Request):
         "current_user": await get_current_user(request),
         "page_type": "privacy"
     })
+
+
+# Booking Confirmation Page
+@app.get("/booking/{booking_id}/confirmation", response_class=HTMLResponse)
+async def booking_confirmation(request: Request, booking_id: int):
+    current_user = await get_current_user(request)
+    if not current_user:
+        return RedirectResponse(f"/login?next=/booking/{booking_id}/confirmation", status_code=303)
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        booking = await conn.fetchrow("""
+            SELECT b.*, s.name as service_name, s.price as amount,
+                   u1.full_name as mentor_name, u1.profile_image as mentor_image,
+                   u2.full_name as learner_name
+            FROM bookings b
+            JOIN services s ON b.service_id = s.id
+            JOIN users u1 ON b.mentor_id = u1.id
+            JOIN users u2 ON b.learner_id = u2.id
+            WHERE b.id = $1 AND (b.learner_id = $2 OR b.mentor_id = $2)
+        """, booking_id, current_user['id'])
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        return templates.TemplateResponse("booking_confirmation.html", {
+            "request": request,
+            "current_user": current_user,
+            "booking": dict(booking)
+        })
+    finally:
+        await conn.close()
+
+# Update user profile
+@app.post("/profile/update")
+async def update_profile(
+    request: Request,
+    full_name: str = Form(...),
+    phone: Optional[str] = Form(None),
+    bio: Optional[str] = Form(None),
+    profile_image: Optional[UploadFile] = File(None)
+):
+    current_user = await get_current_user(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        # Handle profile image upload
+        profile_image_path = current_user.get('profile_image')
+        if profile_image and profile_image.filename:
+            profile_image_path = await save_upload_file(profile_image)
+        
+        # Update user
+        await conn.execute("""
+            UPDATE users 
+            SET full_name = $1, phone = $2, profile_image = $3, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+        """, full_name, phone, profile_image_path, current_user['id'])
+        
+        # If mentor, update mentor profile bio
+        if current_user['role'] == 'mentor' and bio:
+            await conn.execute("""
+                UPDATE mentor_profiles 
+                SET bio = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $2
+            """, bio, current_user['id'])
+        
+        return RedirectResponse("/dashboard", status_code=303)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await conn.close()
+
+# Submit review
+@app.post("/review/submit")
+async def submit_review(
+    request: Request,
+    booking_id: int = Form(...),
+    rating: int = Form(...),
+    comment: str = Form(...)
+):
+    current_user = await get_current_user(request)
+    if not current_user or current_user['role'] != 'learner':
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        # Check if review already exists
+        existing = await conn.fetchrow(
+            "SELECT id FROM reviews WHERE booking_id = $1",
+            booking_id
+        )
+        
+        if existing:
+            raise HTTPException(status_code=400, detail="Review already submitted")
+        
+        # Get booking details
+        booking = await conn.fetchrow("""
+            SELECT mentor_id, service_id FROM bookings 
+            WHERE id = $1 AND learner_id = $2 AND status = 'completed'
+        """, booking_id, current_user['id'])
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        # Create review
+        await conn.execute("""
+            INSERT INTO reviews (booking_id, learner_id, mentor_id, service_id, rating, comment)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        """, booking_id, current_user['id'], booking['mentor_id'], booking['service_id'], rating, comment)
+        
+        # Update mentor rating
+        await update_mentor_rating(conn, booking['mentor_id'])
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Review submitted successfully"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await conn.close()
+
+async def update_mentor_rating(conn, mentor_id):
+    """Update mentor's average rating"""
+    result = await conn.fetchrow("""
+        SELECT 
+            AVG(rating) as avg_rating,
+            COUNT(*) as review_count
+        FROM reviews 
+        WHERE mentor_id = $1
+    """, mentor_id)
+    
+    if result and result['avg_rating']:
+        await conn.execute("""
+            UPDATE mentor_profiles 
+            SET rating = $1, review_count = $2, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $3
+        """, float(result['avg_rating']), result['review_count'], mentor_id)
+
+# Cancel booking
+@app.post("/booking/{booking_id}/cancel")
+async def cancel_booking(booking_id: int, request: Request):
+    current_user = await get_current_user(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    try:
+        # Check if user owns the booking
+        booking = await conn.fetchrow("""
+            SELECT * FROM bookings 
+            WHERE id = $1 AND (learner_id = $2 OR mentor_id = $2)
+              AND status NOT IN ('cancelled', 'completed')
+        """, booking_id, current_user['id'])
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found or cannot be cancelled")
+        
+        # Check cancellation window (24 hours)
+        booking_time = datetime.combine(
+            booking['booking_date'], 
+            booking['booking_time']
+        )
+        time_diff = booking_time - datetime.now()
+        
+        if time_diff.total_seconds() < 24 * 3600:
+            raise HTTPException(
+                status_code=400, 
+                detail="Cancellation must be made at least 24 hours before the session"
+            )
+        
+        # Update booking status
+        await conn.execute("""
+            UPDATE bookings 
+            SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+        """, booking_id)
+        
+        # Refund if paid
+        if booking['payment_status'] == 'paid':
+            await conn.execute("""
+                UPDATE bookings 
+                SET payment_status = 'refunded', updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+            """, booking_id)
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Booking cancelled successfully"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await conn.close()
