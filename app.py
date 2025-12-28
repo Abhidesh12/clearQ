@@ -1324,6 +1324,13 @@ def index():
                          featured_mentors=featured_mentors,
                          featured_services=featured_services,
                          stats=stats)
+@app.route('/enroll')
+def enroll():
+    """Enrollment page for mentorship program."""
+    # You can show all services or a specific enrollment page
+    services = Service.query.filter_by(is_active=True).limit(6).all()
+    
+    return render_template('enroll.html', services=services)                         
 @app.route('/mentorship-program')
 def mentorship_program():
     """Mentorship program page."""
@@ -2736,4 +2743,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('FLASK_PORT', 5000))
     
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
