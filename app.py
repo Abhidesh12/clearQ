@@ -286,8 +286,8 @@ class Service(db.Model):
     is_featured = db.Column(db.Boolean, default=False)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     mentor = db.relationship('User', backref=db.backref('services', lazy=True))
@@ -322,8 +322,8 @@ class Booking(db.Model):
     razorpay_signature = db.Column(db.String(255))
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     mentor = db.relationship('User', foreign_keys=[mentor_id], backref='mentor_bookings')
@@ -1785,6 +1785,7 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
 
 
 
