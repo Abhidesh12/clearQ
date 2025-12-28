@@ -6,6 +6,7 @@ alembic
 python-dotenv
 python-multipart
 email-validator
+bcrypt
 passlib[bcrypt]
 jinja2
 python-jose[cryptography]
@@ -19,5 +20,6 @@ celery
 httpx
 stripe
 sendgrid
+
 
 
