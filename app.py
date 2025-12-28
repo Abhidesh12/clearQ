@@ -1441,12 +1441,15 @@ def handle_exception(error):
     # For web requests, show error page
     return render_template('errors/500.html'), 500
     
+    
+from sqlalchemy import text
+
 @app.before_request
 def before_request():
     """Check database connection before each request."""
     try:
-        # Test database connection
-        db.session.execute('SELECT 1')
+        # Test database connection - use text() for raw SQL
+        db.session.execute(text('SELECT 1'))
     except Exception as e:
         logger.error(f"Database connection error: {e}")
         try:
@@ -1455,9 +1458,6 @@ def before_request():
             logger.info("Database tables created on-demand")
         except Exception as create_error:
             logger.error(f"Failed to create tables: {create_error}")
-            # Return a maintenance page or error
-            if request.path != '/database-setup':
-                return render_template('errors/database.html'), 500
 # ============================================================================
 # ROUTES
 # ============================================================================
@@ -1621,10 +1621,10 @@ def explore():
     else:
         mentors_query = mentors_query.order_by(User.created_at.desc())
     
-    # Get mentors
+    # Get mentors with pagination
     page = request.args.get('page', 1, type=int)
     per_page = 12
-    mentors = mentors_query.paginate(page=page, per_page=per_page, error_out=False)
+    mentors_paginated = mentors_query.paginate(page=page, per_page=per_page, error_out=False)
     
     # Get unique domains for filter dropdown
     try:
@@ -1644,13 +1644,12 @@ def explore():
         recommendations = get_ai_recommendations(query, limit=3)
     
     return render_template('mentors.html',
-                         mentors=mentors,
+                         mentors=mentors_paginated,
                          query=query,
                          domain=domain,
                          domains=domains,
                          recommendations=recommendations,
                          sort=sort)
-
 @app.route('/mentor/<username>')
 def mentor_public_profile(username):
     """Public mentor profile page."""
@@ -3188,3 +3187,4 @@ if __name__ == '__main__':
     
     print(f"🚀 Starting ClearQ on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug, threaded=True)
+
