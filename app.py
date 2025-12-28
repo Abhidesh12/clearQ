@@ -92,7 +92,68 @@ async def register_page(request: Request):
         "request": request,
         "current_user": getattr(request.state, 'current_user', None)
     })
-
+@app.post("/mentor/profile/update")
+async def update_mentor_profile(
+    request: Request,
+    job_title: Optional[str] = Form(None),
+    company: Optional[str] = Form(None),
+    experience_years: Optional[int] = Form(None),
+    industry: Optional[str] = Form(None),
+    skills: Optional[str] = Form(None),
+    hourly_rate: Optional[float] = Form(None),
+    linkedin_url: Optional[str] = Form(None),
+    twitter_url: Optional[str] = Form(None),
+    github_url: Optional[str] = Form(None),
+    portfolio_url: Optional[str] = Form(None),
+    youtube_url: Optional[str] = Form(None),
+    facebook_url: Optional[str] = Form(None),
+    instagram_url: Optional[str] = Form(None),
+    website_url: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
+    current_user = getattr(request.state, 'current_user', None)
+    if not current_user or current_user.role != UserRole.MENTOR:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    mentor = db.query(MentorProfile).filter(MentorProfile.user_id == current_user.id).first()
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+    
+    # Update mentor profile fields if provided
+    if job_title is not None:
+        mentor.job_title = job_title
+    if company is not None:
+        mentor.company = company
+    if experience_years is not None:
+        mentor.experience_years = experience_years
+    if industry is not None:
+        mentor.industry = industry
+    if skills is not None:
+        mentor.skills = skills
+    if hourly_rate is not None:
+        mentor.hourly_rate = hourly_rate
+    
+    # Social URLs
+    if linkedin_url is not None:
+        mentor.linkedin_url = linkedin_url
+    if twitter_url is not None:
+        mentor.twitter_url = twitter_url
+    if github_url is not None:
+        mentor.github_url = github_url
+    if portfolio_url is not None:
+        mentor.portfolio_url = portfolio_url
+    if youtube_url is not None:
+        mentor.youtube_url = youtube_url
+    if facebook_url is not None:
+        mentor.facebook_url = facebook_url
+    if instagram_url is not None:
+        mentor.instagram_url = instagram_url
+    if website_url is not None:
+        mentor.website_url = website_url
+    
+    db.commit()
+    
+    return JSONResponse({"success": True, "message": "Profile updated successfully"})
 @app.post("/register")
 async def register(
     request: Request,
@@ -690,8 +751,13 @@ async def mentor_register(
     skills: str = Form(...),
     hourly_rate: float = Form(...),
     linkedin_url: Optional[str] = Form(None),
+    twitter_url: Optional[str] = Form(None),
     github_url: Optional[str] = Form(None),
     portfolio_url: Optional[str] = Form(None),
+    youtube_url: Optional[str] = Form(None),
+    facebook_url: Optional[str] = Form(None),
+    instagram_url: Optional[str] = Form(None),
+    website_url: Optional[str] = Form(None),
     bio: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -712,9 +778,17 @@ async def mentor_register(
     mentor.industry = industry
     mentor.skills = skills
     mentor.hourly_rate = hourly_rate
+    
+    # Social URLs
     mentor.linkedin_url = linkedin_url
+    mentor.twitter_url = twitter_url
     mentor.github_url = github_url
     mentor.portfolio_url = portfolio_url
+    mentor.youtube_url = youtube_url
+    mentor.facebook_url = facebook_url
+    mentor.instagram_url = instagram_url
+    mentor.website_url = website_url
+    
     mentor.verification_status = "pending"
     
     # Update user bio
@@ -725,7 +799,6 @@ async def mentor_register(
     db.commit()
     
     return RedirectResponse(url="/dashboard/mentor", status_code=303)
-
 # Mentorship Program Page
 @app.get("/mentorship-program", response_class=HTMLResponse)
 async def mentorship_program(request: Request):
@@ -844,3 +917,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
