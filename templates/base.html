@@ -410,14 +410,10 @@
                                     {{ (current_user.full_name[0] if current_user.full_name else current_user.username[0])|upper if current_user.full_name or current_user.username else 'U' }}
                                     {% endif %}
                                 </div>
-                                <div>
-                                    <p class="font-medium text-gray-900">{{ current_user.username if current_user.username else 'User' }}</p>
-                                    <p class="text-sm text-gray-500">
-    {% if current_user and hasattr(current_user, 'email') %}
-        {{ current_user.email }}
-    {% endif %}
-</p>
-                                    </div>
+                            <div>
+                                    <p class="font-medium text-gray-900">{{ current_user.username if current_user and current_user.username else 'User' }}</p>
+                                    <p class="text-sm text-gray-500">{{ current_user.email if current_user and current_user.email }}</p>
+                         </div>
                             </div>
                             <a href="/profile/edit" 
                                class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50 mb-2"
@@ -882,5 +878,6 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
 
 
