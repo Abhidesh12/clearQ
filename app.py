@@ -35,6 +35,28 @@ Base = declarative_base()
 
 # Templates
 templates = Jinja2Templates(directory="templates")
+def url_for(endpoint: str, **kwargs) -> str:
+    """
+    Flask-style url_for for Jinja2 templates.
+    Map endpoint names to URLs.
+    """
+    routes = {
+        'home': '/',
+        'dashboard': '/dashboard',
+        'mentorship_program': '/mentorship-program',
+        'enroll': '/enroll',
+        'login': '/login',
+        'register': '/register',
+        'logout': '/logout',
+        # Add all your other routes here
+    }
+    return routes.get(endpoint, '/')
+
+# Add Flask-like globals to Jinja2 environment
+templates.env.globals.update({
+    "url_for": url_for,
+    "get_flashed_messages": lambda: [],  # Returns empty list for flash messages
+})
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -1520,6 +1542,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
