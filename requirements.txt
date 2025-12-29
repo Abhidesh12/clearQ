@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 jinja2
+fastapi-jinja
 python-multipart
 sqlalchemy
 psycopg2-binary
@@ -13,3 +14,4 @@ bcrypt
 pillow
 email-validator
 python-dateutil
+
