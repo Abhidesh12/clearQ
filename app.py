@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 import razorpay
 from PIL import Image
 import io
+from sqlalchemy import Column, Integer, String, Text, Boolean, Float, ForeignKey, Enum, DateTime
 
 # Load environment variables
 load_dotenv()
@@ -96,7 +97,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships - SIMPLIFIED to avoid ambiguity
     bookings_as_user = relationship("Booking", back_populates="user", foreign_keys="[Booking.user_id]")
@@ -189,7 +190,6 @@ class Booking(Base):
     id = Column(Integer, primary_key=True, index=True)
     booking_uid = Column(String(50), unique=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    learner_id = Column(Integer, ForeignKey("learners.id"))
     mentor_id = Column(Integer, ForeignKey("mentors.id"))
     service_id = Column(Integer, ForeignKey("services.id"))
     scheduled_for = Column(DateTime(timezone=True))
@@ -1938,6 +1938,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
