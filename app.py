@@ -388,7 +388,7 @@ async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
         "admin": admin
     })
 
-@app.get("/explore", response_class=HTMLResponse)
+@app.get("/explore",name="explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
     db: Session = Depends(get_db),
@@ -1288,3 +1288,4 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
