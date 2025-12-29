@@ -113,7 +113,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    mentor_profile = relationship("Mentor", back_populates="user", uselist=False)
+    mentor_profile = relationship("Mentor", back_populates="user", foreign_keys="[Mentor.user_id]")
     learner_profile = relationship("Learner", back_populates="user", uselist=False)
     bookings_as_user = relationship("Booking", back_populates="user", foreign_keys="[Booking.user_id]")
     reviews_written = relationship("Review", back_populates="reviewer", foreign_keys="[Review.user_id]")
@@ -1168,3 +1168,4 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
