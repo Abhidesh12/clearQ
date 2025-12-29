@@ -992,7 +992,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
         return RedirectResponse(url="/admin/dashboard", status_code=303)
     
     # Get user's bookings
-    bookings = db.query(Booking).filter(Booking.user_id == current_user.id).order_by(Booking.scheduled_for.desc()).limit(10).all()
+    bookings = db.query(Booking).filter(Booking.user_id == current_user.id).order_by(Booking.scheduled_for.desc()).all()
     
     # Get notifications
     notifications = db.query(Notification).filter(
@@ -1000,48 +1000,154 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
         Notification.is_read == False
     ).order_by(Notification.created_at.desc()).all()
     
+    # Initialize variables with default values
+    mentor = None
+    upcoming_sessions = []
+    earnings = 0
+    total_earnings = 0
+    monthly_earnings = 0
+    completed_sessions = 0
+    avg_earnings = 0
+    available_balance = 0
+    transactions = []
+    services = []
+    reviews = []
+    average_rating = 0
+    total_reviews = 0
+    rating_distribution = {}
+    is_mentor = False
+    
     if current_user.role == "mentor":
+        is_mentor = True
         # Get mentor-specific data
         mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
         if mentor:
+            # Get upcoming sessions
             upcoming_sessions = db.query(Booking).filter(
                 Booking.mentor_id == mentor.id,
                 Booking.status.in_(["confirmed"]),
                 Booking.scheduled_for >= datetime.now()
             ).order_by(Booking.scheduled_for).limit(10).all()
             
-            earnings = db.query(func.sum(Booking.amount)).filter(
+            # Calculate earnings
+            earnings_result = db.query(func.sum(Booking.amount)).filter(
                 Booking.mentor_id == mentor.id,
                 Booking.status == "completed"
-            ).scalar() or 0
+            ).scalar()
+            earnings = earnings_result or 0
             
-            return templates.TemplateResponse("dashboard.html", {
-                "request": request,
-                "current_user": current_user,
-                "bookings": bookings,
-                "notifications": notifications,
-                "upcoming_sessions": upcoming_sessions,
-                "earnings": earnings,
-                "is_mentor": True,
-                "mentor": mentor
-            })
+            # Calculate monthly earnings (last 30 days)
+            monthly_result = db.query(func.sum(Booking.amount)).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed",
+                Booking.scheduled_for >= datetime.now() - timedelta(days=30)
+            ).scalar()
+            monthly_earnings = monthly_result or 0
+            
+            # Get total completed sessions
+            completed_count = db.query(func.count(Booking.id)).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed"
+            ).scalar()
+            completed_sessions = completed_count or 0
+            
+            # Calculate average earnings per session
+            avg_earnings = earnings / completed_sessions if completed_sessions > 0 else 0
+            
+            # Available balance (assuming 80% after platform fee)
+            available_balance = earnings * 0.8
+            
+            # Get services
+            services = db.query(Service).filter(Service.mentor_id == mentor.id).all()
+            
+            # Get reviews for mentor
+            reviews = db.query(Review).filter(
+                Review.mentor_id == mentor.id
+            ).order_by(Review.created_at.desc()).limit(10).all()
+            
+            # Calculate average rating
+            if reviews:
+                total_reviews = len(reviews)
+                total_rating = sum(review.rating for review in reviews)
+                average_rating = round(total_rating / total_reviews, 1)
+                
+                # Calculate rating distribution
+                rating_distribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+                for review in reviews:
+                    if review.rating in rating_distribution:
+                        rating_distribution[review.rating] += 1
+            
+            # Create sample transactions (replace with actual Transaction model if you have one)
+            transactions = []
+            # Get recent completed bookings as transactions
+            recent_completed = db.query(Booking).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed"
+            ).order_by(Booking.scheduled_for.desc()).limit(5).all()
+            
+            for booking in recent_completed:
+                transactions.append({
+                    "description": f"Session with {booking.user.username if booking.user else 'Student'}",
+                    "date": booking.scheduled_for,
+                    "amount": booking.amount or 0,
+                    "type": "credit"
+                })
+            
+            # Add platform fee transaction (example)
+            if earnings > 0:
+                transactions.append({
+                    "description": "Platform Service Fee",
+                    "date": datetime.now(),
+                    "amount": earnings * 0.2,  # 20% platform fee
+                    "type": "debit"
+                })
+            
+            total_earnings = earnings
+    else:
+        # Learner dashboard
+        upcoming_sessions = db.query(Booking).filter(
+            Booking.user_id == current_user.id,
+            Booking.status.in_(["confirmed"]),
+            Booking.scheduled_for >= datetime.now()
+        ).order_by(Booking.scheduled_for).limit(10).all()
+        
+        # Get learner's reviews
+        learner = db.query(Learner).filter(Learner.user_id == current_user.id).first()
+        if learner:
+            reviews = db.query(Review).filter(
+                Review.learner_id == learner.id
+            ).order_by(Review.created_at.desc()).limit(10).all()
+            
+            if reviews:
+                total_reviews = len(reviews)
+                total_rating = sum(review.rating for review in reviews)
+                average_rating = round(total_rating / total_reviews, 1)
     
-    # Learner dashboard or fallback for mentor without profile
-    upcoming_sessions = db.query(Booking).filter(
-        Booking.user_id == current_user.id,
-        Booking.status.in_(["confirmed"]),
-        Booking.scheduled_for >= datetime.now()
-    ).order_by(Booking.scheduled_for).limit(10).all()
+    # Get all bookings for stats (both mentor and learner)
+    total_bookings = len(bookings)
     
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "current_user": current_user,
-        "bookings": bookings,
         "notifications": notifications,
+        "bookings": bookings,
+        "total_bookings": total_bookings,
         "upcoming_sessions": upcoming_sessions,
-        "is_mentor": False
+        "services": services,
+        "earnings": earnings,
+        "total_earnings": total_earnings,
+        "monthly_earnings": monthly_earnings,
+        "completed_sessions": completed_sessions,
+        "avg_earnings": avg_earnings,
+        "available_balance": available_balance,
+        "transactions": transactions,
+        "reviews": reviews,
+        "average_rating": average_rating,
+        "total_reviews": total_reviews,
+        "rating_distribution": rating_distribution,
+        "is_mentor": is_mentor,
+        "mentor": mentor
     })
-
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Get pending mentor approvals
@@ -1558,6 +1664,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
