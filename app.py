@@ -259,6 +259,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         return None
     
     user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        # Add is_authenticated attribute to user object
+        user.is_authenticated = True
     return user
 
 # Utility functions
@@ -1517,5 +1520,6 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
