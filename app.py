@@ -649,36 +649,45 @@ async def edit_profile(
         "mentor_profile": mentor_profile,
         "learner_profile": learner_profile
     })
-
+    
 @app.post("/profile/update")
 async def update_profile(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    full_name: str = Form(None),
-    bio: str = Form(None),
-    phone: str = Form(None),
-    profile_image: UploadFile = File(None)
+    current_user: User = Depends(get_current_user)
 ):
     if not current_user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        return RedirectResponse(url="/login", status_code=303)
     
-    # Update user details
-    if full_name:
-        current_user.full_name = full_name
-    if bio:
-        current_user.bio = bio
-    if phone:
-        current_user.phone = phone
+    form_data = await request.form()
     
-    # Update profile image if provided
-    if profile_image and profile_image.filename:
-        image_path = save_profile_image(profile_image, current_user.id)
-        current_user.profile_image = image_path
+    # Update user basic info
+    current_user.full_name = form_data.get("first_name", "") + " " + form_data.get("last_name", "")
+    current_user.username = form_data.get("username", current_user.username)
+    current_user.email = form_data.get("email", current_user.email)
+    current_user.bio = form_data.get("bio", current_user.bio)
+    current_user.phone = form_data.get("phone", current_user.phone)
+    current_user.location = form_data.get("location", current_user.location)
+    current_user.linkedin = form_data.get("linkedin", current_user.linkedin)
+    current_user.github = form_data.get("github", current_user.github)
+    current_user.website = form_data.get("website", current_user.website)
+    
+    # Handle role-specific updates
+    if current_user.role == "mentor":
+        mentor_profile = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+        if mentor_profile:
+            mentor_profile.expertise = form_data.get("expertise", mentor_profile.expertise)
+            mentor_profile.hourly_rate = float(form_data.get("hourly_rate", mentor_profile.hourly_rate or 0))
+            mentor_profile.experience = int(form_data.get("experience", mentor_profile.experience or 0))
+    elif current_user.role == "learner":
+        learner_profile = db.query(Learner).filter(Learner.user_id == current_user.id).first()
+        if learner_profile:
+            learner_profile.learning_goals = form_data.get("learning_goals", learner_profile.learning_goals)
+            learner_profile.skill_level = form_data.get("skill_level", learner_profile.skill_level)
     
     db.commit()
     
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url="/dashboard?success=Profile updated successfully", status_code=303)
 
 @app.post("/mentor/profile/update")
 async def update_mentor_profile(
@@ -1684,6 +1693,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
