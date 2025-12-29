@@ -90,6 +90,30 @@
             top: 0;
         }
 
+        /* Screen reader only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        .sr-only.focus\:not-sr-only:focus {
+            position: static;
+            width: auto;
+            height: auto;
+            padding: inherit;
+            margin: inherit;
+            overflow: visible;
+            clip: auto;
+            white-space: normal;
+        }
+
         /* Reduced motion preferences */
         @media (prefers-reduced-motion: reduce) {
             *,
@@ -188,6 +212,25 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
     </style>
     
     <!-- Custom Tailwind Configuration -->
@@ -226,14 +269,14 @@
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
     <!-- Skip to main content (Accessibility) -->
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <a href="#main-content" class="skip-to-content sr-only focus:not-sr-only">Skip to main content</a>
 
     <!-- Modern Header -->
     <header id="mainHeader" class="bg-white/85 backdrop-blur-xl sticky top-0 z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
-                <a href="{{ url_for('index') }}" class="flex-shrink-0 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg p-1">
+                <a href="/" class="flex-shrink-0 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg p-1">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                         <i class="fas fa-graduation-cap text-white text-sm" aria-hidden="true"></i>
                     </div>
@@ -242,7 +285,7 @@
 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-8" aria-label="Main navigation">
-                    <a href="{{ url_for('explore') }}" 
+                    <a href="/explore" 
                        class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
                         Find Mentors
                     </a>
@@ -255,13 +298,13 @@
                         Categories
                     </a>
                     
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard') }}" 
+                    {% if current_user and current_user.is_authenticated %}
+                        <a href="/dashboard" 
                            class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
                             Dashboard
                         </a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('dashboard') }}" 
+                            <a href="/admin/dashboard" 
                                class="text-gray-700 hover:text-primary font-medium transition-colors focus:outline-none focus:text-primary">
                                 Admin
                             </a>
@@ -274,7 +317,7 @@
                                 </div>
                                 <span class="text-sm text-gray-600">Hi, {{ current_user.username if current_user.username else 'User' }}</span>
                             </div>
-                            <a href="{{ url_for('logout') }}" 
+                            <a href="/logout" 
                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                                 Logout
                             </a>
@@ -285,7 +328,7 @@
                                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 Log In
                             </a>
-                            <a href="/explore" 
+                            <a href="/register" 
                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium hover:shadow-lg hover:shadow-primary/25 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
                                 Get Started
                             </a>
@@ -310,7 +353,7 @@
                  aria-label="Mobile navigation"
                  aria-hidden="true">
                 <div class="py-4 space-y-3">
-                    <a href="{{ url_for('explore') }}" 
+                    <a href="/explore" 
                        class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                        role="menuitem">
                         Find Mentors
@@ -326,14 +369,14 @@
                         Categories
                     </a>
                     
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard') }}" 
+                    {% if current_user and current_user.is_authenticated %}
+                        <a href="/dashboard" 
                            class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                            role="menuitem">
                             Dashboard
                         </a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('dashboard') }}" 
+                            <a href="/admin/dashboard" 
                                class="block py-2 text-gray-700 hover:text-primary px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                                role="menuitem">
                                 Admin
@@ -349,7 +392,7 @@
                                     <p class="font-medium text-gray-900">{{ current_user.username if current_user.username else 'User' }}</p>
                                 </div>
                             </div>
-                            <a href="{{ url_for('logout') }}" 
+                            <a href="/logout" 
                                class="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium mx-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                                role="menuitem">
                                 Logout
@@ -362,7 +405,7 @@
                                role="menuitem">
                                 Log In
                             </a>
-                            <a href="/explore" 
+                            <a href="/register" 
                                class="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium mx-4 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                                role="menuitem">
                                 Get Started
@@ -374,49 +417,30 @@
         </div>
     </header>
 
-    <!-- Flash Messages -->
-<!-- Update the flash messages section in base.html -->
-{% with messages = get_flashed_messages(with_categories=true) %}
+    <!-- Messages Display -->
     {% if messages %}
         <div class="max-w-7xl mx-auto mt-4 px-4" role="alert" aria-live="polite" aria-atomic="true">
-            {% for category, message in messages %}
+            {% for message in messages %}
                 <div class="reveal active bg-gradient-to-r 
-                    {% if category == 'error' or category == 'danger' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
-                    {% elif category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
-                    {% elif category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
+                    {% if message.category == 'error' or message.category == 'danger' %}from-red-50 to-red-100 border-l-4 border-red-500 text-red-700
+                    {% elif message.category == 'warning' %}from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 text-yellow-700
+                    {% elif message.category == 'success' %}from-green-50 to-green-100 border-l-4 border-green-500 text-green-700
                     {% else %}from-blue-50 to-blue-100 border-l-4 border-blue-500 text-blue-700{% endif %} 
                     p-4 rounded-lg shadow-sm mb-2">
                     <div class="flex items-center">
                         <i class="fas 
-                            {% if category == 'error' or category == 'danger' %}fa-exclamation-circle
-                            {% elif category == 'warning' %}fa-exclamation-triangle
-                            {% elif category == 'success' %}fa-check-circle
+                            {% if message.category == 'error' or message.category == 'danger' %}fa-exclamation-circle
+                            {% elif message.category == 'warning' %}fa-exclamation-triangle
+                            {% elif message.category == 'success' %}fa-check-circle
                             {% else %}fa-info-circle{% endif %} 
                             mr-3" aria-hidden="true"></i>
-                        <p class="font-medium">{{ message|escape }}</p>
+                        <p class="font-medium">{{ message.text|escape }}</p>
                     </div>
                 </div>
             {% endfor %}
         </div>
     {% endif %}
-{% endwith %}
 
-<!-- Add CSRF protection script -->
-<script>
-    // Add CSRF token to all forms
-    document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            if (!form.querySelector('input[name="csrf_token"]')) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrf_token';
-                csrfInput.value = '{{ csrf_token() if csrf_token else "" }}';
-                form.appendChild(csrfInput);
-            }
-        });
-    });
-</script>
     <!-- Main Content Block -->
     <main id="main-content" class="flex-grow" tabindex="-1">
         {% block content %}{% endblock %}
@@ -428,7 +452,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Company Info -->
                 <div>
-                    <a href="{{ url_for('index') }}" class="flex items-center space-x-2 mb-6 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-dark rounded-lg p-1 inline-block">
+                    <a href="/" class="flex items-center space-x-2 mb-6 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-dark rounded-lg p-1 inline-block">
                         <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                             <i class="fas fa-graduation-cap text-white" aria-hidden="true"></i>
                         </div>
@@ -460,11 +484,11 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-6">Quick Links</h3>
                     <ul class="space-y-3">
-                        <li><a href="{{ url_for('explore') }}" 
+                        <li><a href="/explore" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Find Mentors
                         </a></li>
-                        <li><a href="/explore" 
+                        <li><a href="/register" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Become a Mentor
                         </a></li>
@@ -510,11 +534,11 @@
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             support@clearq.in
                         </a></li>
-                        <li><a href="{{ url_for('privacy') if 'privacy' in url_for('privacy') else '#' }}" 
+                        <li><a href="/privacy" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Privacy Policy
                         </a></li>
-                        <li><a href="{{ url_for('terms') if 'terms' in url_for('terms') else '#' }}" 
+                        <li><a href="/terms" 
                                class="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-white">
                             Terms of Service
                         </a></li>
@@ -529,7 +553,7 @@
             <!-- Copyright -->
             <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
                 <div class="flex flex-col md:flex-row justify-between items-center">
-                    <p>&copy; {{ now.year if now is defined else '2024' }} ClearQ.in. All rights reserved.</p>
+                    <p>&copy; {% if now %}{{ now.year }}{% else %}2024{% endif %} ClearQ.in. All rights reserved.</p>
                     <p class="mt-2 md:mt-0">
                         Made with <i class="fas fa-heart text-red-500 mx-1" aria-label="love"></i> for the community
                     </p>
@@ -778,13 +802,23 @@
                     document.body.classList.remove('focus-visible');
                 });
             }
+
+            // Handle messages display
+            const messages = document.querySelectorAll('[role="alert"]');
+            if (messages.length > 0) {
+                setTimeout(function() {
+                    messages.forEach(function(message) {
+                        message.style.transition = 'opacity 0.5s ease';
+                        message.style.opacity = '0';
+                        setTimeout(function() {
+                            message.style.display = 'none';
+                        }, 500);
+                    });
+                }, 5000);
+            }
         });
     </script>
     
     {% block scripts %}{% endblock %}
 </body>
 </html>
-
-
-
-
