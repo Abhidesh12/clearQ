@@ -54,7 +54,7 @@ RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
-# Database Models - FIXED RELATIONSHIPS
+# Database Models - FIXED with explicit foreign_keys
 class User(Base):
     __tablename__ = "users"
     
@@ -72,10 +72,10 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships - FIXED: Remove ambiguous relationships
-    bookings = relationship("Booking", back_populates="user")
-    reviews_written = relationship("Review", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")
+    # Relationships - SIMPLIFIED to avoid ambiguity
+    bookings_as_user = relationship("Booking", back_populates="user", foreign_keys="[Booking.user_id]")
+    reviews_written = relationship("Review", back_populates="user", foreign_keys="[Review.user_id]")
+    notifications = relationship("Notification", back_populates="user", foreign_keys="[Notification.user_id]")
 
 class Mentor(Base):
     __tablename__ = "mentors"
@@ -99,12 +99,13 @@ class Mentor(Base):
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Relationships - FIXED: Specify foreign_keys where needed
-    user = relationship("User", backref=backref("mentor_profile", uselist=False))
+    # Relationships with explicit foreign_keys
+    user = relationship("User", foreign_keys=[user_id], backref=backref("mentor_profile", uselist=False))
     services = relationship("Service", back_populates="mentor")
     availabilities = relationship("Availability", back_populates="mentor")
     bookings = relationship("Booking", back_populates="mentor")
     reviews = relationship("Review", back_populates="mentor")
+    approver = relationship("User", foreign_keys=[approved_by])
 
 class Learner(Base):
     __tablename__ = "learners"
@@ -116,7 +117,7 @@ class Learner(Base):
     interests = Column(Text)  # Comma separated interests
     
     # Relationships
-    user = relationship("User", backref=backref("learner_profile", uselist=False))
+    user = relationship("User", foreign_keys=[user_id], backref=backref("learner_profile", uselist=False))
     bookings = relationship("Booking", back_populates="learner")
 
 class Service(Base):
@@ -140,7 +141,6 @@ class Service(Base):
     
     # Relationships
     mentor = relationship("Mentor", back_populates="services")
-    bookings = relationship("Booking", back_populates="service")
 
 class Availability(Base):
     __tablename__ = "availabilities"
@@ -178,11 +178,11 @@ class Booking(Base):
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relationships
-    user = relationship("User", back_populates="bookings")
+    # Relationships with explicit foreign_keys
+    user = relationship("User", foreign_keys=[user_id], back_populates="bookings_as_user")
     learner = relationship("Learner", back_populates="bookings")
     mentor = relationship("Mentor", back_populates="bookings")
-    service = relationship("Service", back_populates="bookings")
+    service = relationship("Service")
     review = relationship("Review", back_populates="booking", uselist=False)
 
 class Review(Base):
@@ -197,10 +197,10 @@ class Review(Base):
     is_verified = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relationships
+    # Relationships with explicit foreign_keys
     booking = relationship("Booking", back_populates="review")
     mentor = relationship("Mentor", back_populates="reviews")
-    user = relationship("User", back_populates="reviews_written")
+    user = relationship("User", foreign_keys=[user_id], back_populates="reviews_written")
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -214,7 +214,7 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    user = relationship("User", back_populates="notifications")
+    user = relationship("User", foreign_keys=[user_id], back_populates="notifications")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -332,18 +332,6 @@ def require_admin(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
-# Helper function to get mentor object from user
-def get_mentor_for_user(user: User, db: Session):
-    if user.role == "mentor":
-        return db.query(Mentor).filter(Mentor.user_id == user.id).first()
-    return None
-
-# Helper function to get learner object from user
-def get_learner_for_user(user: User, db: Session):
-    if user.role == "learner":
-        return db.query(Learner).filter(Learner.user_id == user.id).first()
-    return None
-
 # Add this to ensure admin is created on startup
 @app.on_event("startup")
 async def startup_event():
@@ -369,29 +357,30 @@ async def startup_event():
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Get featured mentors - FIXED: Simplified query
-    featured_mentors_query = db.query(Mentor).filter(
+    # Get featured mentors
+    featured_mentors = db.query(Mentor).filter(
         Mentor.is_approved == True
-    ).order_by(Mentor.rating.desc()).limit(6)
+    ).order_by(Mentor.rating.desc()).limit(6).all()
     
-    featured_mentors = []
-    for mentor in featured_mentors_query.all():
+    # Get user info for each mentor
+    for mentor in featured_mentors:
         user = db.query(User).filter(User.id == mentor.user_id, User.is_active == True).first()
         if user:
-            mentor.user = user
-            featured_mentors.append(mentor)
+            setattr(mentor, 'user', user)
     
     # Get top services
     top_services = db.query(Service).filter(
         Service.is_active == True
     ).order_by(Service.price).limit(8).all()
     
-    # Add mentor user to each service
+    # Get mentor info for each service
     for service in top_services:
-        mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id, Mentor.is_approved == True).first()
+        mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id).first()
         if mentor:
-            service.mentor = mentor
-            service.mentor.user = db.query(User).filter(User.id == mentor.user_id).first()
+            setattr(service, 'mentor', mentor)
+            user = db.query(User).filter(User.id == mentor.user_id).first()
+            if user:
+                setattr(mentor, 'user', user)
     
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -439,7 +428,8 @@ async def explore_mentors(
     for mentor in mentors_result:
         user = db.query(User).filter(User.id == mentor.user_id, User.is_active == True).first()
         if user:
-            mentor.user = user
+            # Set user as attribute
+            setattr(mentor, 'user', user)
             
             # Apply category filter if specified
             if category:
@@ -495,7 +485,8 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
     if not mentor:
         raise HTTPException(status_code=404, detail="Mentor profile not found")
     
-    mentor.user = user
+    # Set user as attribute
+    setattr(mentor, 'user', user)
     
     services = db.query(Service).filter(
         Service.mentor_id == mentor.id,
@@ -506,6 +497,12 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
         Review.mentor_id == mentor.id,
         Review.is_verified == True
     ).order_by(Review.created_at.desc()).limit(10).all()
+    
+    # Get user info for each review
+    for review in reviews:
+        review_user = db.query(User).filter(User.id == review.user_id).first()
+        if review_user:
+            setattr(review, 'user', review_user)
     
     # Get upcoming availability (next 7 days)
     availabilities = []
@@ -522,7 +519,6 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
         "request": request,
         "current_user": current_user,
         "mentor": mentor,
-        "user": user,
         "services": services,
         "reviews": reviews,
         "available_dates": availabilities
@@ -537,7 +533,8 @@ async def service_detail(request: Request, service_id: int, db: Session = Depend
     mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id).first()
     if mentor:
         user = db.query(User).filter(User.id == mentor.user_id).first()
-        mentor.user = user
+        if user:
+            setattr(mentor, 'user', user)
     
     return templates.TemplateResponse("service_detail.html", {
         "request": request,
@@ -997,13 +994,30 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Get pending mentor approvals
-    pending_mentors = db.query(Mentor).join(User).filter(
-        Mentor.is_approved == False,
-        User.is_active == True
-    ).all()
+    pending_mentors_query = db.query(Mentor).filter(Mentor.is_approved == False).all()
+    pending_mentors = []
+    
+    for mentor in pending_mentors_query:
+        user = db.query(User).filter(User.id == mentor.user_id, User.is_active == True).first()
+        if user:
+            setattr(mentor, 'user', user)
+            pending_mentors.append(mentor)
     
     # Get recent bookings
     recent_bookings = db.query(Booking).order_by(Booking.created_at.desc()).limit(10).all()
+    
+    # Get user info for each booking
+    for booking in recent_bookings:
+        user = db.query(User).filter(User.id == booking.user_id).first()
+        if user:
+            setattr(booking, 'user', user)
+        
+        mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
+        if mentor:
+            setattr(booking, 'mentor', mentor)
+            mentor_user = db.query(User).filter(User.id == mentor.user_id).first()
+            if mentor_user:
+                setattr(mentor, 'user', mentor_user)
     
     # Get platform stats
     total_users = db.query(User).count()
@@ -1118,9 +1132,16 @@ async def create_booking(
         'notes': {
             'booking_id': str(booking.id),
             'service': service.name,
-            'mentor': service.mentor.user.full_name if service.mentor and service.mentor.user else "Mentor"
+            'mentor': "Mentor"  # We'll get this from the service later
         }
     }
+    
+    # Get mentor info for the note
+    mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id).first()
+    if mentor:
+        user = db.query(User).filter(User.id == mentor.user_id).first()
+        if user:
+            order_data['notes']['mentor'] = user.full_name
     
     try:
         if razorpay_client:
@@ -1185,11 +1206,14 @@ async def verify_payment(
         # Create notifications
         mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
         if mentor:
+            mentor_user = db.query(User).filter(User.id == mentor.user_id).first()
+            mentor_name = mentor_user.full_name if mentor_user else "mentor"
+            
             # For learner
             learner_notification = Notification(
                 user_id=current_user.id,
                 title="Booking Confirmed",
-                message=f"Your booking with {mentor.user.full_name if mentor.user else 'mentor'} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+                message=f"Your booking with {mentor_name} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
                 type="success"
             )
             
@@ -1243,11 +1267,14 @@ async def verify_payment(
     # Create notifications
     mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
     if mentor:
+        mentor_user = db.query(User).filter(User.id == mentor.user_id).first()
+        mentor_name = mentor_user.full_name if mentor_user else "mentor"
+        
         # For learner
         learner_notification = Notification(
             user_id=current_user.id,
             title="Booking Confirmed",
-            message=f"Your booking with {mentor.user.full_name if mentor.user else 'mentor'} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+            message=f"Your booking with {mentor_name} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
             type="success"
         )
         
@@ -1422,28 +1449,53 @@ async def change_password(
     
     return RedirectResponse(url="/dashboard", status_code=303)
 
-# Error handlers - FIXED: Include current_user
+# Error handlers
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: HTTPException):
-    current_user = await get_current_user(request, next(get_db()))
-    return templates.TemplateResponse("404.html", {
-        "request": request,
-        "current_user": current_user,
-        "detail": exc.detail
-    }, status_code=404)
+    # Try to get current_user
+    try:
+        db_gen = get_db()
+        db = next(db_gen)
+        current_user = get_current_user(request, db)
+    except:
+        current_user = None
+        db = None
+    
+    try:
+        return templates.TemplateResponse("404.html", {
+            "request": request,
+            "current_user": current_user,
+            "detail": exc.detail
+        }, status_code=404)
+    finally:
+        if db:
+            try:
+                next(db_gen)
+            except StopIteration:
+                pass
 
 @app.exception_handler(500)
 async def internal_exception_handler(request: Request, exc: HTTPException):
-    # Try to get current_user, but don't fail if we can't
+    # Try to get current_user
     try:
-        current_user = await get_current_user(request, next(get_db()))
+        db_gen = get_db()
+        db = next(db_gen)
+        current_user = get_current_user(request, db)
     except:
         current_user = None
+        db = None
     
-    return templates.TemplateResponse("500.html", {
-        "request": request,
-        "current_user": current_user
-    }, status_code=500)
+    try:
+        return templates.TemplateResponse("500.html", {
+            "request": request,
+            "current_user": current_user
+        }, status_code=500)
+    finally:
+        if db:
+            try:
+                next(db_gen)
+            except StopIteration:
+                pass
 
 # Health check endpoint
 @app.get("/health")
