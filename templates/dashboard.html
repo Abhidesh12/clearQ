@@ -31,6 +31,8 @@
         color: #4b5563;
         transition: all 0.2s ease;
         margin-bottom: 4px;
+        cursor: pointer;
+        text-decoration: none;
     }
     
     .sidebar-link:hover {
@@ -63,12 +65,6 @@
         border: 2px dashed #d1d5db;
     }
     
-    .chart-container {
-        position: relative;
-        height: 300px;
-        width: 100%;
-    }
-    
     .notification-dot {
         position: absolute;
         top: -2px;
@@ -83,6 +79,42 @@
     .avatar-ring {
         border: 3px solid #e0e7ff;
         padding: 2px;
+    }
+    
+    .dashboard-section {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .action-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .service-card {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .service-card:hover {
+        border-color: #4f46e5;
+        transform: translateY(-4px);
+    }
+    
+    .booking-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .booking-row:hover {
+        background-color: #f9fafb;
     }
 </style>
 
@@ -102,7 +134,7 @@
                     <!-- Notifications -->
                     <div class="relative">
                         <button id="notificationBtn" 
-                                class="p-2 rounded-full hover:bg-gray-100 relative">
+                                class="p-2 rounded-full hover:bg-gray-100 relative action-btn">
                             <i class="fas fa-bell text-gray-600 text-lg"></i>
                             {% if notifications and notifications|length > 0 %}
                             <span class="notification-dot"></span>
@@ -140,7 +172,7 @@
                                         <div class="ml-3 flex-1">
                                             <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
                                             <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
-                                            <p class="text-xs text-gray-500 mt-1">{{ notification.created_at.strftime('%I:%M %p') }}</p>
+                                            <p class="text-xs text-gray-500 mt-1">{{ notification.created_at.strftime('%I:%M %p') if notification.created_at else 'Just now' }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -166,7 +198,7 @@
                     <!-- User Menu -->
                     <div class="relative">
                         <button id="userMenuBtn" 
-                                class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100">
+                                class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 action-btn">
                             <div class="relative">
                                 <div class="w-10 h-10 rounded-full avatar-ring">
                                     {% if current_user.profile_image %}
@@ -206,11 +238,13 @@
                                     <i class="fas fa-cog mr-3 text-gray-500"></i>
                                     Settings
                                 </a>
+                                {% if current_user.role != 'mentor' %}
                                 <a href="/become-mentor" 
                                    class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
                                     <i class="fas fa-chalkboard-teacher mr-3 text-gray-500"></i>
                                     Become a Mentor
                                 </a>
+                                {% endif %}
                             </div>
                             
                             <div class="p-2 border-t border-gray-100">
@@ -233,14 +267,14 @@
             <div class="lg:col-span-1">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <nav class="space-y-1">
-                        <a href="#overview" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link active" 
                            onclick="showSection('overview')">
                             <i class="fas fa-chart-pie"></i>
                             <span>Overview</span>
                         </a>
                         
-                        <a href="#bookings" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('bookings')">
                             <i class="fas fa-calendar-alt"></i>
@@ -248,21 +282,21 @@
                         </a>
                         
                         {% if current_user.role == 'mentor' %}
-                        <a href="#services" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('services')">
                             <i class="fas fa-concierge-bell"></i>
                             <span>My Services</span>
                         </a>
                         
-                        <a href="#availability" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('availability')">
                             <i class="fas fa-clock"></i>
                             <span>Availability</span>
                         </a>
                         
-                        <a href="#earnings" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('earnings')">
                             <i class="fas fa-wallet"></i>
@@ -271,7 +305,7 @@
                         {% endif %}
                         
                         {% if current_user.role == 'learner' %}
-                        <a href="#mentors" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('mentors')">
                             <i class="fas fa-users"></i>
@@ -279,14 +313,14 @@
                         </a>
                         {% endif %}
                         
-                        <a href="#reviews" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('reviews')">
                             <i class="fas fa-star"></i>
                             <span>Reviews</span>
                         </a>
                         
-                        <a href="#settings" 
+                        <a href="javascript:void(0)" 
                            class="sidebar-link" 
                            onclick="showSection('settings')">
                             <i class="fas fa-cog"></i>
@@ -337,6 +371,7 @@
             <div class="lg:col-span-3">
                 <!-- Overview Section (Default) -->
                 <div id="overview-section" class="dashboard-section">
+                    <!-- Your existing overview content here -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <!-- Stats Cards -->
                         <div class="stat-card p-6 rounded-2xl border border-gray-200">
@@ -381,7 +416,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {% if current_user.role == 'learner' %}
                             <a href="/explore" 
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all action-btn">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mr-4">
                                         <i class="fas fa-search text-blue-600"></i>
@@ -394,7 +429,7 @@
                             </a>
                             
                             <a href="#" 
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all">
+                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all action-btn">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mr-4">
                                         <i class="fas fa-calendar-plus text-green-600"></i>
@@ -408,9 +443,9 @@
                             {% endif %}
                             
                             {% if current_user.role == 'mentor' %}
-                            <a href="/dashboard?section=services" 
+                            <a href="javascript:void(0)" 
                                onclick="showSection('services')"
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all">
+                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all action-btn">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mr-4">
                                         <i class="fas fa-plus-circle text-purple-600"></i>
@@ -422,9 +457,9 @@
                                 </div>
                             </a>
                             
-                            <a href="/dashboard?section=availability" 
+                            <a href="javascript:void(0)" 
                                onclick="showSection('availability')"
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all">
+                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all action-btn">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center mr-4">
                                         <i class="fas fa-clock text-yellow-600"></i>
@@ -438,7 +473,7 @@
                             {% endif %}
                             
                             <a href="/profile/edit" 
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all action-btn">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mr-4">
                                         <i class="fas fa-user-edit text-indigo-600"></i>
@@ -456,7 +491,7 @@
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-bold text-gray-900">Upcoming Sessions</h2>
-                            <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                            <a href="javascript:void(0)" onclick="showSection('bookings')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
                                 View all
                             </a>
                         </div>
@@ -490,28 +525,28 @@
                                         <div class="flex items-center space-x-6 mt-3">
                                             <div class="flex items-center text-sm text-gray-600">
                                                 <i class="fas fa-calendar-alt mr-2"></i>
-                                                {{ session.scheduled_for.strftime('%d %b %Y') }}
+                                                {{ session.scheduled_for.strftime('%d %b %Y') if session.scheduled_for else 'Date not set' }}
                                             </div>
                                             <div class="flex items-center text-sm text-gray-600">
                                                 <i class="fas fa-clock mr-2"></i>
-                                                {{ session.scheduled_for.strftime('%I:%M %p') }}
+                                                {{ session.scheduled_for.strftime('%I:%M %p') if session.scheduled_for else 'Time not set' }}
                                             </div>
                                             <div class="flex items-center text-sm text-gray-600">
                                                 <i class="fas fa-rupee-sign mr-2"></i>
-                                                {{ session.amount }}
+                                                {{ session.amount if session.amount else 'Free' }}
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div class="flex flex-col sm:flex-row gap-3">
-                                        <span class="status-badge status-{{ session.status }}">
-                                            {{ session.status }}
+                                        <span class="status-badge status-{{ session.status if session.status else 'pending' }}">
+                                            {{ session.status if session.status else 'pending' }}
                                         </span>
                                         
                                         {% if session.meeting_link %}
                                         <a href="{{ session.meeting_link }}" 
                                            target="_blank"
-                                           class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all">
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all action-btn">
                                             <i class="fas fa-video mr-2"></i>
                                             Join Meeting
                                         </a>
@@ -536,13 +571,13 @@
                             </p>
                             {% if current_user.role == 'learner' %}
                             <a href="/explore" 
-                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all">
+                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
                                 Find Mentors
                             </a>
                             {% else %}
-                            <a href="/dashboard?section=availability" 
+                            <a href="javascript:void(0)" 
                                onclick="showSection('availability')"
-                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all">
+                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
                                 Set Availability
                             </a>
                             {% endif %}
@@ -551,16 +586,537 @@
                     </div>
                 </div>
 
-                <!-- Other Sections (Initially Hidden) -->
+                <!-- Bookings Section -->
                 <div id="bookings-section" class="dashboard-section hidden">
-                    <!-- Bookings section content -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">All Bookings</h2>
+                            <div class="flex space-x-2">
+                                <select id="booking-filter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                <button onclick="filterBookings()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 action-btn">
+                                    Filter
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if bookings and bookings|length > 0 %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Session
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Date & Time
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Amount
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for booking in bookings %}
+                                    <tr class="booking-row">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    {% if current_user.role == 'learner' %}
+                                                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                                        {{ booking.mentor.user.full_name[0] if booking.mentor.user.full_name else booking.mentor.user.username[0] }}
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center text-white font-bold">
+                                                        {{ booking.user.full_name[0] if booking.user.full_name else booking.user.username[0] }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">
+                                                        {% if current_user.role == 'learner' %}
+                                                        {{ booking.mentor.user.full_name if booking.mentor.user.full_name else booking.mentor.user.username }}
+                                                        {% else %}
+                                                        {{ booking.user.full_name if booking.user.full_name else booking.user.username }}
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500">{{ booking.service.name if booking.service else 'General Session' }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ booking.scheduled_for.strftime('%d %b %Y') if booking.scheduled_for else 'Not scheduled' }}</div>
+                                            <div class="text-sm text-gray-500">{{ booking.scheduled_for.strftime('%I:%M %p') if booking.scheduled_for else '' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            ₹{{ booking.amount if booking.amount else 'Free' }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-badge status-{{ booking.status if booking.status else 'pending' }}">
+                                                {{ booking.status if booking.status else 'pending' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            {% if booking.meeting_link and booking.status == 'confirmed' %}
+                                            <a href="{{ booking.meeting_link }}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3 action-btn">
+                                                <i class="fas fa-video"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if current_user.role == 'mentor' and booking.status == 'pending' %}
+                                            <button onclick="confirmBooking('{{ booking.id }}')" class="text-green-600 hover:text-green-900 mr-3 action-btn">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button onclick="cancelBooking('{{ booking.id }}')" class="text-red-600 hover:text-red-900 action-btn">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-calendar-alt text-gray-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">No bookings yet</h3>
+                            <p class="text-gray-600 mb-4">
+                                {% if current_user.role == 'learner' %}
+                                Start by booking your first session with a mentor
+                                {% else %}
+                                Your booking requests will appear here
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                
+
+                <!-- Services Section (Mentors Only) -->
+                {% if current_user.role == 'mentor' %}
                 <div id="services-section" class="dashboard-section hidden">
-                    <!-- Services section content -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">My Services</h2>
+                            <button onclick="showAddServiceModal()" 
+                                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
+                                <i class="fas fa-plus mr-2"></i>
+                                Add New Service
+                            </button>
+                        </div>
+                        
+                        {% if services and services|length > 0 %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for service in services %}
+                            <div class="service-card bg-white border border-gray-200 rounded-xl p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ service.name }}</h3>
+                                        <p class="text-sm text-gray-500 mt-1">{{ service.category }}</p>
+                                    </div>
+                                    <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                        ₹{{ service.price }}/hour
+                                    </span>
+                                </div>
+                                
+                                <p class="text-gray-600 text-sm mb-4">{{ service.description[:100] }}{% if service.description|length > 100 %}...{% endif %}</p>
+                                
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center text-sm text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        <span>{{ service.duration }} mins</span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-500">
+                                        <i class="fas fa-users mr-1"></i>
+                                        <span>{{ service.bookings_count if service.bookings_count else 0 }} bookings</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button onclick="editService('{{ service.id }}')" 
+                                            class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition action-btn">
+                                        Edit
+                                    </button>
+                                    <button onclick="deleteService('{{ service.id }}')" 
+                                            class="flex-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition action-btn">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-concierge-bell text-gray-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">No services created yet</h3>
+                            <p class="text-gray-600 mb-4 max-w-sm mx-auto">
+                                Create your first service to start accepting bookings from learners
+                            </p>
+                            <button onclick="showAddServiceModal()" 
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
+                                <i class="fas fa-plus mr-2"></i>
+                                Create First Service
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Availability Section (Mentors Only) -->
+                {% if current_user.role == 'mentor' %}
+                <div id="availability-section" class="dashboard-section hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Set Your Availability</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Weekly Schedule -->
+                            <div class="lg:col-span-2">
+                                <div class="mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Weekly Schedule</h3>
+                                    <div class="space-y-3">
+                                        {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                            <span class="font-medium text-gray-700">{{ day }}</span>
+                                            <div class="flex items-center space-x-4">
+                                                <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                                                    <option>9:00 AM</option>
+                                                    <option>10:00 AM</option>
+                                                    <option selected>Not Available</option>
+                                                </select>
+                                                <span class="text-gray-500">to</span>
+                                                <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                                                    <option>5:00 PM</option>
+                                                    <option>6:00 PM</option>
+                                                    <option selected>Not Available</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Timezone & Settings -->
+                            <div>
+                                <div class="bg-gray-50 rounded-xl p-6">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Settings</h3>
+                                    
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Timezone
+                                            </label>
+                                            <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                                <option>Asia/Kolkata (IST)</option>
+                                                <option>UTC</option>
+                                                <option>America/New_York</option>
+                                                <option>Europe/London</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Session Duration
+                                            </label>
+                                            <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                                <option>30 minutes</option>
+                                                <option selected>60 minutes</option>
+                                                <option>90 minutes</option>
+                                                <option>120 minutes</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Buffer Time Between Sessions
+                                            </label>
+                                            <select class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                                                <option>0 minutes</option>
+                                                <option selected>15 minutes</option>
+                                                <option>30 minutes</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <button class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
+                                            Save Availability
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Settings Section -->
+                <div id="settings-section" class="dashboard-section hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Account Settings</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Navigation -->
+                            <div class="lg:col-span-1">
+                                <nav class="space-y-1">
+                                    <a href="javascript:void(0)" onclick="showSettingsTab('profile')" 
+                                       class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg settings-tab active">
+                                        <i class="fas fa-user mr-3"></i>
+                                        Profile Settings
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="showSettingsTab('notifications')" 
+                                       class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg settings-tab">
+                                        <i class="fas fa-bell mr-3"></i>
+                                        Notifications
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="showSettingsTab('security')" 
+                                       class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg settings-tab">
+                                        <i class="fas fa-shield-alt mr-3"></i>
+                                        Security
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="showSettingsTab('privacy')" 
+                                       class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg settings-tab">
+                                        <i class="fas fa-lock mr-3"></i>
+                                        Privacy
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="showSettingsTab('billing')" 
+                                       class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg settings-tab">
+                                        <i class="fas fa-credit-card mr-3"></i>
+                                        Billing
+                                    </a>
+                                </nav>
+                            </div>
+                            
+                            <!-- Content Area -->
+                            <div class="lg:col-span-2">
+                                <div id="profile-tab" class="settings-tab-content">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
+                                    <form class="space-y-4">
+                                        <!-- Profile settings form here -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Email Notifications
+                                            </label>
+                                            <div class="flex items-center">
+                                                <input type="checkbox" id="email-notifications" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                <label for="email-notifications" class="ml-2 text-sm text-gray-700">
+                                                    Receive email notifications about bookings and updates
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <!-- Other tabs will be loaded here -->
+                                <div id="notifications-tab" class="settings-tab-content hidden">
+                                    <!-- Notifications settings -->
+                                </div>
+                                
+                                <div id="security-tab" class="settings-tab-content hidden">
+                                    <!-- Security settings -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Earnings Section (Mentors Only) -->
+                {% if current_user.role == 'mentor' %}
+                <div id="earnings-section" class="dashboard-section hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Earnings Overview</h2>
+                        
+                        <!-- Earnings Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-blue-50 p-6 rounded-xl">
+                                <p class="text-sm text-blue-600 font-medium">Total Earnings</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ total_earnings if total_earnings else 0 }}</p>
+                            </div>
+                            <div class="bg-green-50 p-6 rounded-xl">
+                                <p class="text-sm text-green-600 font-medium">This Month</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ monthly_earnings if monthly_earnings else 0 }}</p>
+                            </div>
+                            <div class="bg-purple-50 p-6 rounded-xl">
+                                <p class="text-sm text-purple-600 font-medium">Completed Sessions</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">{{ completed_sessions if completed_sessions else 0 }}</p>
+                            </div>
+                            <div class="bg-yellow-50 p-6 rounded-xl">
+                                <p class="text-sm text-yellow-600 font-medium">Avg. per Session</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ avg_earnings if avg_earnings else 0 }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Payout Information -->
+                        <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Payout Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <p class="text-sm text-gray-600">Available Balance</p>
+                                    <p class="text-2xl font-bold text-gray-900">₹{{ available_balance if available_balance else 0 }}</p>
+                                    <button class="mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
+                                        Request Payout
+                                    </button>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 mb-2">Next Payout Date</p>
+                                    <p class="text-lg font-semibold text-gray-900">15th of next month</p>
+                                    <p class="text-sm text-gray-600 mt-2">Minimum payout: ₹1000</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Transactions -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
+                            <div class="space-y-3">
+                                {% for transaction in transactions[:5] if transactions %}
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ transaction.description }}</p>
+                                        <p class="text-sm text-gray-600">{{ transaction.date.strftime('%d %b %Y') if transaction.date else '' }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-gray-900">₹{{ transaction.amount }}</p>
+                                        <span class="text-sm {{ 'text-green-600' if transaction.type == 'credit' else 'text-red-600' }}">
+                                            {{ transaction.type|title }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-wallet text-3xl mb-3"></i>
+                                    <p>No transactions yet</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Reviews Section -->
+                <div id="reviews-section" class="dashboard-section hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Reviews & Ratings</h2>
+                        
+                        <!-- Overall Rating -->
+                        <div class="flex items-center mb-8 p-6 bg-gray-50 rounded-xl">
+                            <div class="text-center mr-8">
+                                <div class="text-5xl font-bold text-gray-900">{{ average_rating|default('4.8') }}</div>
+                                <div class="flex items-center justify-center mt-2">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star {{ 'text-yellow-400' if i < average_rating|int else 'text-gray-300' }}"></i>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2">{{ total_reviews|default('0') }} reviews</p>
+                            </div>
+                            <div class="flex-1">
+                                <div class="space-y-2">
+                                    {% for i in range(5, 0, -1) %}
+                                    <div class="flex items-center">
+                                        <span class="text-sm text-gray-600 w-8">{{ i }} star</span>
+                                        <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
+                                            <div class="h-full bg-yellow-400 rounded-full" style="width: {{ (rating_distribution[i] / total_reviews * 100 if rating_distribution and total_reviews else 0)|round }}%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-600 w-12">{{ rating_distribution[i] if rating_distribution else 0 }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Reviews List -->
+                        <div class="space-y-6">
+                            {% if reviews and reviews|length > 0 %}
+                            {% for review in reviews[:10] %}
+                            <div class="border-b border-gray-200 pb-6 last:border-0">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
+                                            {{ review.reviewer.full_name[0] if review.reviewer.full_name else review.reviewer.username[0] }}
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900">{{ review.reviewer.full_name if review.reviewer.full_name else review.reviewer.username }}</p>
+                                            <div class="flex items-center mt-1">
+                                                {% for i in range(5) %}
+                                                <i class="fas fa-star {{ 'text-yellow-400' if i < review.rating else 'text-gray-300' }} text-sm"></i>
+                                                {% endfor %}
+                                                <span class="text-sm text-gray-600 ml-2">{{ review.created_at.strftime('%d %b %Y') if review.created_at else '' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-gray-700">{{ review.comment }}</p>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="empty-state">
+                                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                    <i class="fas fa-star text-gray-400 text-xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">No reviews yet</h3>
+                                <p class="text-gray-600 mb-4">
+                                    {% if current_user.role == 'mentor' %}
+                                    Your reviews will appear here once learners rate your sessions
+                                    {% else %}
+                                    You haven't reviewed any sessions yet
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Add Service Modal -->
+<div id="addServiceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Add New Service</h3>
+            <button onclick="closeAddServiceModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="serviceForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Service Name</label>
+                <input type="text" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea name="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Price per hour (₹)</label>
+                <input type="number" name="price" min="0" step="50" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeAddServiceModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Save Service
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -602,16 +1158,24 @@
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
-            if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+            if (notificationBtn && !notificationBtn.contains(e.target) && notificationDropdown && !notificationDropdown.contains(e.target)) {
                 notificationDropdown.classList.add('hidden');
             }
-            if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+            if (userMenuBtn && !userMenuBtn.contains(e.target) && userMenuDropdown && !userMenuDropdown.contains(e.target)) {
                 userMenuDropdown.classList.add('hidden');
             }
         });
         
-        // Initialize charts if needed
-        initializeCharts();
+        // Service form submission
+        const serviceForm = document.getElementById('serviceForm');
+        if (serviceForm) {
+            serviceForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Add service logic here
+                alert('Service added successfully!');
+                closeAddServiceModal();
+            });
+        }
     });
     
     function showSection(sectionId) {
@@ -629,7 +1193,7 @@
         // Update active link in sidebar
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.classList.remove('active');
-            if (link.getAttribute('href') === `#${sectionId}`) {
+            if (link.onclick && link.onclick.toString().includes(`showSection('${sectionId}')`)) {
                 link.classList.add('active');
             }
         });
@@ -640,10 +1204,82 @@
         window.history.pushState({}, '', url);
     }
     
-    function initializeCharts() {
-        // This is where you would initialize any charts
-        // For example, using Chart.js
-        // Placeholder for chart initialization
+    function showSettingsTab(tabId) {
+        // Hide all tab contents
+        document.querySelectorAll('.settings-tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        
+        // Show selected tab content
+        const selectedTab = document.getElementById(`${tabId}-tab`);
+        if (selectedTab) {
+            selectedTab.classList.remove('hidden');
+        }
+        
+        // Update active tab in navigation
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.onclick && tab.onclick.toString().includes(`showSettingsTab('${tabId}')`)) {
+                tab.classList.add('active');
+            }
+        });
     }
+    
+    function showAddServiceModal() {
+        const modal = document.getElementById('addServiceModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+    
+    function closeAddServiceModal() {
+        const modal = document.getElementById('addServiceModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    function filterBookings() {
+        const filter = document.getElementById('booking-filter').value;
+        // Implement filtering logic here
+        console.log('Filtering by:', filter);
+    }
+    
+    function confirmBooking(bookingId) {
+        if (confirm('Are you sure you want to confirm this booking?')) {
+            // Implement confirmation logic here
+            console.log('Confirming booking:', bookingId);
+        }
+    }
+    
+    function cancelBooking(bookingId) {
+        if (confirm('Are you sure you want to cancel this booking?')) {
+            // Implement cancellation logic here
+            console.log('Cancelling booking:', bookingId);
+        }
+    }
+    
+    function editService(serviceId) {
+        // Implement edit service logic here
+        console.log('Editing service:', serviceId);
+    }
+    
+    function deleteService(serviceId) {
+        if (confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
+            // Implement delete service logic here
+            console.log('Deleting service:', serviceId);
+        }
+    }
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const section = urlParams.get('section');
+        if (section) {
+            showSection(section);
+        } else {
+            showSection('overview');
+        }
+    });
 </script>
 {% endblock %}
