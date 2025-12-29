@@ -164,9 +164,11 @@ class Service(Base):
     digital_product_url = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     mentor = relationship("Mentor", back_populates="services")
+    bookings = relationship("Booking", back_populates="service")
 
 class Availability(Base):
     __tablename__ = "availabilities"
@@ -444,7 +446,128 @@ async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "admin": admin
     })
+# GET route to show services (already in your dashboard)
+@app.get("/dashboard/services")
+async def get_services(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return RedirectResponse(url="/login", status_code=303)
     
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    services = db.query(Service).filter(Service.mentor_id == mentor.id).all()
+    
+    return templates.TemplateResponse("services.html", {
+        "request": request,
+        "current_user": current_user,
+        "services": services,
+        "mentor": mentor
+    })
+
+# POST route to create a new service
+@app.post("/services/create")
+async def create_service(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    form_data = await request.form()
+    
+    # Create new service
+    service = Service(
+        mentor_id=mentor.id,
+        name=form_data.get("name"),
+        description=form_data.get("description"),
+        price=float(form_data.get("price", 0)),
+        duration=int(form_data.get("duration", 60)),
+        category=form_data.get("category", "General"),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    
+    db.add(service)
+    db.commit()
+    db.refresh(service)
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service created successfully", status_code=303)
+
+# POST route to update a service
+@app.post("/services/{service_id}/update")
+async def update_service(
+    service_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    service = db.query(Service).filter(
+        Service.id == service_id,
+        Service.mentor_id == mentor.id
+    ).first()
+    
+    if not service:
+        return {"success": False, "message": "Service not found"}
+    
+    form_data = await request.form()
+    
+    # Update service
+    service.name = form_data.get("name", service.name)
+    service.description = form_data.get("description", service.description)
+    service.price = float(form_data.get("price", service.price))
+    service.duration = int(form_data.get("duration", service.duration))
+    service.category = form_data.get("category", service.category)
+    service.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service updated successfully", status_code=303)
+
+# POST route to delete a service
+@app.post("/services/{service_id}/delete")
+async def delete_service(
+    service_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    service = db.query(Service).filter(
+        Service.id == service_id,
+        Service.mentor_id == mentor.id
+    ).first()
+    
+    if not service:
+        return {"success": False, "message": "Service not found"}
+    
+    # Soft delete (set inactive) or hard delete
+    db.delete(service)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service deleted successfully", status_code=303)    
 @app.get("/enroll", response_class=HTMLResponse, name="enroll")
 async def enroll_page(request: Request, current_user: User = Depends(get_current_user)):
     if not current_user:
@@ -634,7 +757,7 @@ async def edit_profile(
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
     
-    # Get role-specific profile if exists
+    # Users can only edit their own profile - no user_id parameter in URL
     mentor_profile = None
     learner_profile = None
     
@@ -649,7 +772,7 @@ async def edit_profile(
         "mentor_profile": mentor_profile,
         "learner_profile": learner_profile
     })
-    
+   
 @app.post("/profile/update")
 async def update_profile(
     request: Request,
@@ -1177,6 +1300,128 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
         "is_mentor": is_mentor,
         "mentor": mentor
     })
+# GET route to show services (already in your dashboard)
+@app.get("/dashboard/services")
+async def get_services(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return RedirectResponse(url="/login", status_code=303)
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    services = db.query(Service).filter(Service.mentor_id == mentor.id).all()
+    
+    return templates.TemplateResponse("services.html", {
+        "request": request,
+        "current_user": current_user,
+        "services": services,
+        "mentor": mentor
+    })
+
+# POST route to create a new service
+@app.post("/services/create")
+async def create_service(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    form_data = await request.form()
+    
+    # Create new service
+    service = Service(
+        mentor_id=mentor.id,
+        name=form_data.get("name"),
+        description=form_data.get("description"),
+        price=float(form_data.get("price", 0)),
+        duration=int(form_data.get("duration", 60)),
+        category=form_data.get("category", "General"),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    
+    db.add(service)
+    db.commit()
+    db.refresh(service)
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service created successfully", status_code=303)
+
+# POST route to update a service
+@app.post("/services/{service_id}/update")
+async def update_service(
+    service_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    service = db.query(Service).filter(
+        Service.id == service_id,
+        Service.mentor_id == mentor.id
+    ).first()
+    
+    if not service:
+        return {"success": False, "message": "Service not found"}
+    
+    form_data = await request.form()
+    
+    # Update service
+    service.name = form_data.get("name", service.name)
+    service.description = form_data.get("description", service.description)
+    service.price = float(form_data.get("price", service.price))
+    service.duration = int(form_data.get("duration", service.duration))
+    service.category = form_data.get("category", service.category)
+    service.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service updated successfully", status_code=303)
+
+# POST route to delete a service
+@app.post("/services/{service_id}/delete")
+async def delete_service(
+    service_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user or current_user.role != "mentor":
+        return {"success": False, "message": "Unauthorized"}
+    
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        return {"success": False, "message": "Mentor profile not found"}
+    
+    service = db.query(Service).filter(
+        Service.id == service_id,
+        Service.mentor_id == mentor.id
+    ).first()
+    
+    if not service:
+        return {"success": False, "message": "Service not found"}
+    
+    # Soft delete (set inactive) or hard delete
+    db.delete(service)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard?section=services&success=Service deleted successfully", status_code=303)    
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Get pending mentor approvals
@@ -1693,6 +1938,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
