@@ -1465,6 +1465,7 @@ async def not_found_exception_handler(request: Request, exc: HTTPException):
         return templates.TemplateResponse("404.html", {
             "request": request,
             "current_user": current_user,
+            "now": datetime.now(),
             "detail": exc.detail
         }, status_code=404)
     finally:
@@ -1488,7 +1489,8 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
     try:
         return templates.TemplateResponse("500.html", {
             "request": request,
-            "current_user": current_user
+            "current_user": current_user,
+            "now": datetime.now()
         }, status_code=500)
     finally:
         if db:
@@ -1505,3 +1507,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
