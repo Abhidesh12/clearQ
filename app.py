@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float, DateTime, Text, ForeignKey, JSON, Enum
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import sessionmaker, Session, relationship, backref
 from sqlalchemy.sql import func
 import bcrypt
 from jose import JWTError, jwt
@@ -52,9 +52,9 @@ security = HTTPBearer()
 # Razorpay Configuration
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
-razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
-# Database Models
+# Database Models - FIXED RELATIONSHIPS
 class User(Base):
     __tablename__ = "users"
     
@@ -72,10 +72,10 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships
-    mentor = relationship("Mentor", back_populates="user", uselist=False)
-    learner = relationship("Learner", back_populates="user", uselist=False)
+    # Relationships - FIXED: Remove ambiguous relationships
     bookings = relationship("Booking", back_populates="user")
+    reviews_written = relationship("Review", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
 
 class Mentor(Base):
     __tablename__ = "mentors"
@@ -99,8 +99,8 @@ class Mentor(Base):
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Relationships
-    user = relationship("User", back_populates="mentor")
+    # Relationships - FIXED: Specify foreign_keys where needed
+    user = relationship("User", backref=backref("mentor_profile", uselist=False))
     services = relationship("Service", back_populates="mentor")
     availabilities = relationship("Availability", back_populates="mentor")
     bookings = relationship("Booking", back_populates="mentor")
@@ -116,7 +116,7 @@ class Learner(Base):
     interests = Column(Text)  # Comma separated interests
     
     # Relationships
-    user = relationship("User", back_populates="learner")
+    user = relationship("User", backref=backref("learner_profile", uselist=False))
     bookings = relationship("Booking", back_populates="learner")
 
 class Service(Base):
@@ -200,7 +200,7 @@ class Review(Base):
     # Relationships
     booking = relationship("Booking", back_populates="review")
     mentor = relationship("Mentor", back_populates="reviews")
-    user = relationship("User")
+    user = relationship("User", back_populates="reviews_written")
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -212,6 +212,9 @@ class Notification(Base):
     type = Column(String(50))  # info, success, warning, error
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="notifications")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -329,6 +332,18 @@ def require_admin(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+# Helper function to get mentor object from user
+def get_mentor_for_user(user: User, db: Session):
+    if user.role == "mentor":
+        return db.query(Mentor).filter(Mentor.user_id == user.id).first()
+    return None
+
+# Helper function to get learner object from user
+def get_learner_for_user(user: User, db: Session):
+    if user.role == "learner":
+        return db.query(Learner).filter(Learner.user_id == user.id).first()
+    return None
+
 # Add this to ensure admin is created on startup
 @app.on_event("startup")
 async def startup_event():
@@ -354,17 +369,29 @@ async def startup_event():
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # Get featured mentors
-    featured_mentors = db.query(Mentor).join(User).filter(
-        Mentor.is_approved == True,
-        User.is_active == True
-    ).order_by(Mentor.rating.desc()).limit(6).all()
+    # Get featured mentors - FIXED: Simplified query
+    featured_mentors_query = db.query(Mentor).filter(
+        Mentor.is_approved == True
+    ).order_by(Mentor.rating.desc()).limit(6)
+    
+    featured_mentors = []
+    for mentor in featured_mentors_query.all():
+        user = db.query(User).filter(User.id == mentor.user_id, User.is_active == True).first()
+        if user:
+            mentor.user = user
+            featured_mentors.append(mentor)
     
     # Get top services
-    top_services = db.query(Service).join(Mentor).filter(
-        Service.is_active == True,
-        Mentor.is_approved == True
+    top_services = db.query(Service).filter(
+        Service.is_active == True
     ).order_by(Service.price).limit(8).all()
+    
+    # Add mentor user to each service
+    for service in top_services:
+        mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id, Mentor.is_approved == True).first()
+        if mentor:
+            service.mentor = mentor
+            service.mentor.user = db.query(User).filter(User.id == mentor.user_id).first()
     
     return templates.TemplateResponse("index.html", {
         "request": request,
@@ -388,7 +415,7 @@ async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
         "admin": admin
     })
 
-@app.get("/explore",name="explore", response_class=HTMLResponse)
+@app.get("/explore", name="explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
     db: Session = Depends(get_db),
@@ -399,56 +426,84 @@ async def explore_mentors(
     max_price: float = None,
     search: str = None
 ):
-    query = db.query(Mentor).join(User).filter(
-        Mentor.is_approved == True,
-        User.is_active == True
-    )
-    
-    if category:
-        query = query.join(Service).filter(Service.category == category)
+    # Start with approved mentors
+    mentor_query = db.query(Mentor).filter(Mentor.is_approved == True)
     
     if industry:
-        query = query.filter(Mentor.industry.ilike(f"%{industry}%"))
+        mentor_query = mentor_query.filter(Mentor.industry.ilike(f"%{industry}%"))
     
-    if search:
-        query = query.filter(
-            (User.full_name.ilike(f"%{search}%")) |
-            (Mentor.job_title.ilike(f"%{search}%")) |
-            (Mentor.skills.ilike(f"%{search}%"))
-        )
+    mentors_result = mentor_query.all()
     
-    mentors = query.distinct().all()
+    # Filter by active users and search criteria
+    mentors = []
+    for mentor in mentors_result:
+        user = db.query(User).filter(User.id == mentor.user_id, User.is_active == True).first()
+        if user:
+            mentor.user = user
+            
+            # Apply category filter if specified
+            if category:
+                services = db.query(Service).filter(
+                    Service.mentor_id == mentor.id,
+                    Service.category == category,
+                    Service.is_active == True
+                ).first()
+                if not services:
+                    continue
+            
+            # Apply search filter if specified
+            if search:
+                search_lower = search.lower()
+                if not (
+                    (user.full_name and search_lower in user.full_name.lower()) or
+                    (mentor.job_title and search_lower in mentor.job_title.lower()) or
+                    (mentor.skills and search_lower in mentor.skills.lower())
+                ):
+                    continue
+            
+            mentors.append(mentor)
     
     # Get unique industries
     industries = db.query(Mentor.industry).distinct().filter(Mentor.industry.isnot(None)).all()
-    industries = [i[0] for i in industries]
+    industries = [i[0] for i in industries if i[0]]
     
     return templates.TemplateResponse("explore.html", {
         "request": request,
         "current_user": current_user,
         "mentors": mentors,
         "industries": industries,
-        "search_query": search
+        "search_query": search,
+        "category": category
     })
 
 @app.get("/mentor/{username}", response_class=HTMLResponse)
 async def mentor_profile(request: Request, username: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    mentor = db.query(User).filter(
+    user = db.query(User).filter(
         User.username == username,
         User.role == "mentor",
         User.is_active == True
     ).first()
     
-    if not mentor or not mentor.mentor or not mentor.mentor.is_approved:
+    if not user:
         raise HTTPException(status_code=404, detail="Mentor not found")
     
+    mentor = db.query(Mentor).filter(
+        Mentor.user_id == user.id,
+        Mentor.is_approved == True
+    ).first()
+    
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor profile not found")
+    
+    mentor.user = user
+    
     services = db.query(Service).filter(
-        Service.mentor_id == mentor.mentor.id,
+        Service.mentor_id == mentor.id,
         Service.is_active == True
     ).all()
     
     reviews = db.query(Review).filter(
-        Review.mentor_id == mentor.mentor.id,
+        Review.mentor_id == mentor.id,
         Review.is_verified == True
     ).order_by(Review.created_at.desc()).limit(10).all()
     
@@ -467,6 +522,7 @@ async def mentor_profile(request: Request, username: str, db: Session = Depends(
         "request": request,
         "current_user": current_user,
         "mentor": mentor,
+        "user": user,
         "services": services,
         "reviews": reviews,
         "available_dates": availabilities
@@ -478,11 +534,16 @@ async def service_detail(request: Request, service_id: int, db: Session = Depend
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
     
+    mentor = db.query(Mentor).filter(Mentor.id == service.mentor_id).first()
+    if mentor:
+        user = db.query(User).filter(User.id == mentor.user_id).first()
+        mentor.user = user
+    
     return templates.TemplateResponse("service_detail.html", {
         "request": request,
         "current_user": current_user,
         "service": service,
-        "mentor": service.mentor.user
+        "mentor": mentor
     })
 
 @app.get("/api/available-dates/{mentor_id}")
@@ -525,9 +586,20 @@ async def edit_profile(
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
     
+    # Get role-specific profile if exists
+    mentor_profile = None
+    learner_profile = None
+    
+    if current_user.role == "mentor":
+        mentor_profile = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    elif current_user.role == "learner":
+        learner_profile = db.query(Learner).filter(Learner.user_id == current_user.id).first()
+    
     return templates.TemplateResponse("edit_profile.html", {
         "request": request,
-        "current_user": current_user
+        "current_user": current_user,
+        "mentor_profile": mentor_profile,
+        "learner_profile": learner_profile
     })
 
 @app.post("/profile/update")
@@ -579,9 +651,11 @@ async def update_mentor_profile(
     if not current_user or current_user.role != "mentor":
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    mentor = current_user.mentor
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
     if not mentor:
-        raise HTTPException(status_code=404, detail="Mentor profile not found")
+        # Create mentor profile if doesn't exist
+        mentor = Mentor(user_id=current_user.id)
+        db.add(mentor)
     
     # Update mentor details
     mentor.experience = experience
@@ -615,7 +689,7 @@ async def create_service(
     if not current_user or current_user.role != "mentor":
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    mentor = current_user.mentor
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
     if not mentor:
         raise HTTPException(status_code=404, detail="Mentor profile not found")
     
@@ -645,7 +719,7 @@ async def update_availability(
     if not current_user or current_user.role != "mentor":
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    mentor = current_user.mentor
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
     if not mentor:
         raise HTTPException(status_code=404, detail="Mentor profile not found")
     
@@ -683,7 +757,7 @@ async def get_dashboard_stats(
     stats = {}
     
     if current_user.role == "mentor":
-        mentor = current_user.mentor
+        mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
         if mentor:
             # Calculate earnings for last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
@@ -714,28 +788,35 @@ async def get_dashboard_stats(
             }
     
     elif current_user.role == "learner":
-        # Get learner stats
-        total_bookings = db.query(Booking).filter(
-            Booking.user_id == current_user.id
-        ).count()
-        
-        completed_sessions = db.query(Booking).filter(
-            Booking.user_id == current_user.id,
-            Booking.status == "completed"
-        ).count()
-        
-        upcoming_sessions = db.query(Booking).filter(
-            Booking.user_id == current_user.id,
-            Booking.status == "confirmed",
-            Booking.scheduled_for >= datetime.now()
-        ).count()
-        
-        stats = {
-            "total_bookings": total_bookings,
-            "completed_sessions": completed_sessions,
-            "upcoming_sessions": upcoming_sessions,
-            "total_spent": 0  # This would be calculated from actual data
-        }
+        learner = db.query(Learner).filter(Learner.user_id == current_user.id).first()
+        if learner:
+            # Get learner stats
+            total_bookings = db.query(Booking).filter(
+                Booking.learner_id == learner.id
+            ).count()
+            
+            completed_sessions = db.query(Booking).filter(
+                Booking.learner_id == learner.id,
+                Booking.status == "completed"
+            ).count()
+            
+            upcoming_sessions = db.query(Booking).filter(
+                Booking.learner_id == learner.id,
+                Booking.status == "confirmed",
+                Booking.scheduled_for >= datetime.now()
+            ).count()
+            
+            total_spent = db.query(func.sum(Booking.amount)).filter(
+                Booking.learner_id == learner.id,
+                Booking.status == "completed"
+            ).scalar() or 0
+            
+            stats = {
+                "total_bookings": total_bookings,
+                "completed_sessions": completed_sessions,
+                "upcoming_sessions": upcoming_sessions,
+                "total_spent": total_spent
+            }
     
     return {"success": True, "stats": stats}
 
@@ -873,43 +954,45 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
     
     if current_user.role == "mentor":
         # Get mentor-specific data
-        mentor = current_user.mentor
-        upcoming_sessions = db.query(Booking).filter(
-            Booking.mentor_id == mentor.id,
-            Booking.status.in_(["confirmed"]),
-            Booking.scheduled_for >= datetime.now()
-        ).order_by(Booking.scheduled_for).limit(10).all()
-        
-        earnings = db.query(func.sum(Booking.amount)).filter(
-            Booking.mentor_id == mentor.id,
-            Booking.status == "completed"
-        ).scalar() or 0
-        
-        return templates.TemplateResponse("dashboard.html", {
-            "request": request,
-            "current_user": current_user,
-            "bookings": bookings,
-            "notifications": notifications,
-            "upcoming_sessions": upcoming_sessions,
-            "earnings": earnings,
-            "is_mentor": True
-        })
-    else:
-        # Learner dashboard
-        upcoming_sessions = db.query(Booking).filter(
-            Booking.user_id == current_user.id,
-            Booking.status.in_(["confirmed"]),
-            Booking.scheduled_for >= datetime.now()
-        ).order_by(Booking.scheduled_for).limit(10).all()
-        
-        return templates.TemplateResponse("dashboard.html", {
-            "request": request,
-            "current_user": current_user,
-            "bookings": bookings,
-            "notifications": notifications,
-            "upcoming_sessions": upcoming_sessions,
-            "is_mentor": False
-        })
+        mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+        if mentor:
+            upcoming_sessions = db.query(Booking).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status.in_(["confirmed"]),
+                Booking.scheduled_for >= datetime.now()
+            ).order_by(Booking.scheduled_for).limit(10).all()
+            
+            earnings = db.query(func.sum(Booking.amount)).filter(
+                Booking.mentor_id == mentor.id,
+                Booking.status == "completed"
+            ).scalar() or 0
+            
+            return templates.TemplateResponse("dashboard.html", {
+                "request": request,
+                "current_user": current_user,
+                "bookings": bookings,
+                "notifications": notifications,
+                "upcoming_sessions": upcoming_sessions,
+                "earnings": earnings,
+                "is_mentor": True,
+                "mentor": mentor
+            })
+    
+    # Learner dashboard or fallback for mentor without profile
+    upcoming_sessions = db.query(Booking).filter(
+        Booking.user_id == current_user.id,
+        Booking.status.in_(["confirmed"]),
+        Booking.scheduled_for >= datetime.now()
+    ).order_by(Booking.scheduled_for).limit(10).all()
+    
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "current_user": current_user,
+        "bookings": bookings,
+        "notifications": notifications,
+        "upcoming_sessions": upcoming_sessions,
+        "is_mentor": False
+    })
 
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
@@ -958,7 +1041,9 @@ async def approve_mentor(
     mentor.approved_at = datetime.now()
     
     # Update user verification status
-    mentor.user.is_verified = True
+    user = db.query(User).filter(User.id == mentor.user_id).first()
+    if user:
+        user.is_verified = True
     
     db.commit()
     
@@ -1004,11 +1089,16 @@ async def create_booking(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
     
+    # Get learner profile
+    learner = db.query(Learner).filter(Learner.user_id == current_user.id).first()
+    if not learner:
+        raise HTTPException(status_code=400, detail="Learner profile not found")
+    
     # Create booking
     booking = Booking(
         booking_uid=generate_booking_uid(),
         user_id=current_user.id,
-        learner_id=current_user.learner.id,
+        learner_id=learner.id,
         mentor_id=service.mentor_id,
         service_id=service_id,
         scheduled_for=scheduled_datetime,
@@ -1028,14 +1118,29 @@ async def create_booking(
         'notes': {
             'booking_id': str(booking.id),
             'service': service.name,
-            'mentor': service.mentor.user.full_name
+            'mentor': service.mentor.user.full_name if service.mentor and service.mentor.user else "Mentor"
         }
     }
     
     try:
-        order = razorpay_client.order.create(data=order_data)
-        booking.razorpay_order_id = order['id']
-        db.commit()
+        if razorpay_client:
+            order = razorpay_client.order.create(data=order_data)
+            booking.razorpay_order_id = order['id']
+            db.commit()
+        else:
+            # For testing without Razorpay
+            booking.razorpay_order_id = f"test_order_{booking.id}"
+            booking.status = "confirmed"
+            db.commit()
+            return {
+                "success": True,
+                "booking_id": booking.id,
+                "order_id": booking.razorpay_order_id,
+                "amount": service.price,
+                "currency": "INR",
+                "key_id": "test_key",
+                "test_mode": True
+            }
     except Exception as e:
         db.delete(booking)
         db.commit()
@@ -1059,7 +1164,53 @@ async def verify_payment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Verify payment signature
+    # For testing without Razorpay
+    if razorpay_order_id.startswith("test_order_"):
+        # Update booking for test mode
+        booking = db.query(Booking).filter(
+            Booking.razorpay_order_id == razorpay_order_id,
+            Booking.user_id == current_user.id
+        ).first()
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        booking.razorpay_payment_id = "test_payment"
+        booking.razorpay_signature = "test_signature"
+        booking.status = "confirmed"
+        booking.meeting_link = f"https://meet.clearq.in/{booking.booking_uid}"
+        
+        db.commit()
+        
+        # Create notifications
+        mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
+        if mentor:
+            # For learner
+            learner_notification = Notification(
+                user_id=current_user.id,
+                title="Booking Confirmed",
+                message=f"Your booking with {mentor.user.full_name if mentor.user else 'mentor'} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+                type="success"
+            )
+            
+            # For mentor
+            mentor_notification = Notification(
+                user_id=mentor.user_id,
+                title="New Booking",
+                message=f"{current_user.full_name} has booked a session with you on {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+                type="info"
+            )
+            
+            db.add(learner_notification)
+            db.add(mentor_notification)
+            db.commit()
+        
+        return {"success": True, "message": "Payment verified successfully", "test_mode": True}
+    
+    # Verify payment signature for production
+    if not razorpay_client:
+        raise HTTPException(status_code=500, detail="Payment gateway not configured")
+    
     params_dict = {
         'razorpay_order_id': razorpay_order_id,
         'razorpay_payment_id': razorpay_payment_id,
@@ -1090,25 +1241,27 @@ async def verify_payment(
     db.commit()
     
     # Create notifications
-    # For learner
-    learner_notification = Notification(
-        user_id=current_user.id,
-        title="Booking Confirmed",
-        message=f"Your booking with {booking.mentor.user.full_name} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
-        type="success"
-    )
-    
-    # For mentor
-    mentor_notification = Notification(
-        user_id=booking.mentor.user_id,
-        title="New Booking",
-        message=f"{current_user.full_name} has booked a session with you on {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
-        type="info"
-    )
-    
-    db.add(learner_notification)
-    db.add(mentor_notification)
-    db.commit()
+    mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
+    if mentor:
+        # For learner
+        learner_notification = Notification(
+            user_id=current_user.id,
+            title="Booking Confirmed",
+            message=f"Your booking with {mentor.user.full_name if mentor.user else 'mentor'} is confirmed for {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+            type="success"
+        )
+        
+        # For mentor
+        mentor_notification = Notification(
+            user_id=mentor.user_id,
+            title="New Booking",
+            message=f"{current_user.full_name} has booked a session with you on {booking.scheduled_for.strftime('%d %B %Y at %I:%M %p')}",
+            type="info"
+        )
+        
+        db.add(learner_notification)
+        db.add(mentor_notification)
+        db.commit()
     
     return {"success": True, "message": "Payment verified successfully"}
 
@@ -1126,9 +1279,6 @@ async def get_available_slots(
         Service.mentor_id == mentor_id,
         Service.is_active == True
     ).all()
-    
-    # Get mentor's availability
-    availabilities = db.query(Availability).filter(Availability.mentor_id == mentor_id).all()
     
     # Get existing bookings for the date
     bookings = db.query(Booking).filter(
@@ -1197,10 +1347,11 @@ async def submit_review(
     db.add(review)
     
     # Update mentor rating
-    mentor = booking.mentor
-    total_reviews = mentor.total_reviews + 1
-    mentor.rating = ((mentor.rating * mentor.total_reviews) + rating) / total_reviews
-    mentor.total_reviews = total_reviews
+    mentor = db.query(Mentor).filter(Mentor.id == booking.mentor_id).first()
+    if mentor:
+        total_reviews = mentor.total_reviews + 1
+        mentor.rating = ((mentor.rating * mentor.total_reviews) + rating) / total_reviews
+        mentor.total_reviews = total_reviews
     
     db.commit()
     
@@ -1271,21 +1422,34 @@ async def change_password(
     
     return RedirectResponse(url="/dashboard", status_code=303)
 
-# Error handlers
+# Error handlers - FIXED: Include current_user
 @app.exception_handler(404)
 async def not_found_exception_handler(request: Request, exc: HTTPException):
+    current_user = await get_current_user(request, next(get_db()))
     return templates.TemplateResponse("404.html", {
         "request": request,
+        "current_user": current_user,
         "detail": exc.detail
     }, status_code=404)
 
 @app.exception_handler(500)
 async def internal_exception_handler(request: Request, exc: HTTPException):
+    # Try to get current_user, but don't fail if we can't
+    try:
+        current_user = await get_current_user(request, next(get_db()))
+    except:
+        current_user = None
+    
     return templates.TemplateResponse("500.html", {
-        "request": request
+        "request": request,
+        "current_user": current_user
     }, status_code=500)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
