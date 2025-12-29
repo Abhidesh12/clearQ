@@ -112,12 +112,14 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
-    # Relationships
+    # Relationships - FIXED
     mentor_profile = relationship("Mentor", back_populates="user", foreign_keys="[Mentor.user_id]")
     learner_profile = relationship("Learner", back_populates="user", uselist=False)
     bookings_as_user = relationship("Booking", back_populates="user", foreign_keys="[Booking.user_id]")
     reviews_written = relationship("Review", back_populates="reviewer", foreign_keys="[Review.user_id]")
     notifications = relationship("Notification", back_populates="user")
+    # Add relationship for approvals
+    mentor_approvals = relationship("Mentor", back_populates="approver", foreign_keys="[Mentor.approved_by]")
 
 class Mentor(Base):
     __tablename__ = "mentors"
@@ -141,13 +143,13 @@ class Mentor(Base):
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Relationships
-    user = relationship("User", back_populates="mentor_profile")
+    # Relationships - FIXED
+    user = relationship("User", back_populates="mentor_profile", foreign_keys=[user_id])
+    approver = relationship("User", back_populates="mentor_approvals", foreign_keys=[approved_by])
     services = relationship("Service", back_populates="mentor", cascade="all, delete-orphan")
     availabilities = relationship("Availability", back_populates="mentor", cascade="all, delete-orphan")
     bookings = relationship("Booking", back_populates="mentor", foreign_keys="[Booking.mentor_id]")
     reviews = relationship("Review", back_populates="mentor", foreign_keys="[Review.mentor_id]")
-    approver = relationship("User", foreign_keys=[approved_by])
 
 class Learner(Base):
     __tablename__ = "learners"
@@ -159,7 +161,7 @@ class Learner(Base):
     interests = Column(Text)
     
     # Relationships
-    user = relationship("User", back_populates="learner_profile")
+    user = relationship("User", back_populates="learner_profile", foreign_keys=[user_id])
     bookings = relationship("Booking", back_populates="learner", foreign_keys="[Booking.learner_id]")
 
 class Service(Base):
@@ -222,7 +224,7 @@ class Booking(Base):
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relationships
+    # Relationships - FIXED
     user = relationship("User", foreign_keys=[user_id], back_populates="bookings_as_user")
     learner = relationship("Learner", foreign_keys=[learner_id], back_populates="bookings")
     mentor = relationship("Mentor", foreign_keys=[mentor_id], back_populates="bookings")
@@ -241,7 +243,7 @@ class Review(Base):
     is_verified = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relationships
+    # Relationships - FIXED
     booking = relationship("Booking", back_populates="review")
     mentor = relationship("Mentor", foreign_keys=[mentor_id], back_populates="reviews")
     reviewer = relationship("User", foreign_keys=[user_id], back_populates="reviews_written")
@@ -262,7 +264,6 @@ class Notification(Base):
 
 # Create tables
 Base.metadata.create_all(bind=engine)
-
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
@@ -1168,4 +1169,5 @@ async def internal_exception_handler(request: Request, exc: HTTPException):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
