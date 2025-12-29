@@ -411,8 +411,18 @@
                                     {% endif %}
                                 </div>
                             <div>
-                                    <p class="font-medium text-gray-900">{{ current_user.username if current_user and current_user.username else 'User' }}</p>
-                                    <p class="text-sm text-gray-500">{{ current_user.email if current_user and current_user.email }}</p>
+                                    <p class="font-medium text-gray-900">
+    {% if current_user and current_user.username is defined %}
+        {{ current_user.username }}
+    {% else %}
+        User
+    {% endif %}
+</p>
+                                    <p class="text-sm text-gray-500">
+    {% if current_user and current_user.email is defined %}
+        {{ current_user.email }}
+    {% endif %}
+</p>
                          </div>
                             </div>
                             <a href="/profile/edit" 
@@ -878,6 +888,7 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+
 
 
 
