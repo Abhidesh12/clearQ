@@ -403,7 +403,17 @@ async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "admin": admin
     })
-
+    
+@app.get("/enroll", response_class=HTMLResponse, name="enroll")
+async def enroll_page(request: Request, current_user: User = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    return templates.TemplateResponse("enroll.html", {
+        "request": request,
+        "current_user": current_user
+    })
+    
 @app.get("/explore", name="explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
@@ -1507,4 +1517,5 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
