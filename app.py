@@ -419,7 +419,18 @@ async def index(request: Request, db: Session = Depends(get_db), current_user: U
         "top_services": top_services,
         "now": datetime.now()
     })
-
+@app.get("/settings")
+async def settings_page(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "current_user": current_user
+    })
 @app.get("/admin/setup", response_class=HTMLResponse)
 async def admin_setup_page(request: Request, db: Session = Depends(get_db)):
     # Check if admin already exists
@@ -1547,6 +1558,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
