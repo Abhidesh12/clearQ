@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - ClearQ{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Edit Profile</h1>
+            <p class="text-gray-600">Update your personal information and preferences</p>
+        </div>
+
+        <!-- Profile Form -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <form method="POST" action="/profile/update" enctype="multipart/form-data" class="space-y-6">
+                <!-- Profile Picture Section -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Profile Picture</h2>
+                    
+                    <div class="flex items-center space-x-6">
+                        <!-- Current Profile Picture -->
+                        <div class="relative">
+                            {% if current_user.profile_pic %}
+                            <img src="{{ current_user.profile_pic }}" 
+                                 alt="Profile Picture" 
+                                 class="w-32 h-32 rounded-full object-cover border-4 border-blue-100">
+                            {% else %}
+                            <div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-100">
+                                <span class="text-4xl text-blue-500 font-bold">
+                                    {{ current_user.username[0] if current_user.username else 'U' }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            <div class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Upload new photo
+                            </label>
+                            <div class="flex items-center">
+                                <input type="file" 
+                                       name="profile_picture" 
+                                       id="profile_picture"
+                                       accept="image/*"
+                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            </div>
+                            <p class="mt-1 text-sm text-gray-500">JPEG, PNG or GIF. Max 5MB.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Personal Information</h2>
+                    
+                    <!-- Full Name -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">
+                                First Name
+                            </label>
+                            <input type="text" 
+                                   id="first_name" 
+                                   name="first_name" 
+                                   value="{{ current_user.first_name if current_user.first_name else '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        </div>
+                        
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">
+                                Last Name
+                            </label>
+                            <input type="text" 
+                                   id="last_name" 
+                                   name="last_name" 
+                                   value="{{ current_user.last_name if current_user.last_name else '' }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+                            Username
+                        </label>
+                        <input type="text" 
+                               id="username" 
+                               name="username" 
+                               value="{{ current_user.username }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                            Email Address
+                        </label>
+                        <input type="email" 
+                               id="email" 
+                               name="email" 
+                               value="{{ current_user.email }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+
+                    <!-- Bio -->
+                    <div>
+                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">
+                            Bio
+                        </label>
+                        <textarea id="bio" 
+                                  name="bio" 
+                                  rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none">{{ current_user.bio if current_user.bio else '' }}</textarea>
+                        <p class="mt-1 text-sm text-gray-500">Tell us a little about yourself</p>
+                    </div>
+                </div>
+
+                <!-- Role-specific Information -->
+                {% if current_user.role == "mentor" and mentor_profile %}
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Mentor Information</h2>
+                    
+                    <div>
+                        <label for="expertise" class="block text-sm font-medium text-gray-700 mb-1">
+                            Expertise
+                        </label>
+                        <input type="text" 
+                               id="expertise" 
+                               name="expertise" 
+                               value="{{ mentor_profile.expertise if mentor_profile.expertise else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               placeholder="e.g., Python, Machine Learning, Web Development">
+                    </div>
+                    
+                    <div>
+                        <label for="hourly_rate" class="block text-sm font-medium text-gray-700 mb-1">
+                            Hourly Rate ($)
+                        </label>
+                        <input type="number" 
+                               id="hourly_rate" 
+                               name="hourly_rate" 
+                               value="{{ mentor_profile.hourly_rate if mentor_profile.hourly_rate else '' }}"
+                               min="0"
+                               step="0.01"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    
+                    <div>
+                        <label for="experience" class="block text-sm font-medium text-gray-700 mb-1">
+                            Years of Experience
+                        </label>
+                        <input type="number" 
+                               id="experience" 
+                               name="experience" 
+                               value="{{ mentor_profile.experience if mentor_profile.experience else '' }}"
+                               min="0"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                </div>
+                {% elif current_user.role == "learner" and learner_profile %}
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Learner Information</h2>
+                    
+                    <div>
+                        <label for="learning_goals" class="block text-sm font-medium text-gray-700 mb-1">
+                            Learning Goals
+                        </label>
+                        <textarea id="learning_goals" 
+                                  name="learning_goals" 
+                                  rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none">{{ learner_profile.learning_goals if learner_profile.learning_goals else '' }}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="skill_level" class="block text-sm font-medium text-gray-700 mb-1">
+                            Current Skill Level
+                        </label>
+                        <select id="skill_level" 
+                                name="skill_level" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <option value="">Select skill level</option>
+                            <option value="beginner" {% if learner_profile.skill_level == 'beginner' %}selected{% endif %}>Beginner</option>
+                            <option value="intermediate" {% if learner_profile.skill_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+                            <option value="advanced" {% if learner_profile.skill_level == 'advanced' %}selected{% endif %}>Advanced</option>
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Contact Information -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Contact Information</h2>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            Phone Number
+                        </label>
+                        <input type="tel" 
+                               id="phone" 
+                               name="phone" 
+                               value="{{ current_user.phone if current_user.phone else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">
+                            Location
+                        </label>
+                        <input type="text" 
+                               id="location" 
+                               name="location" 
+                               value="{{ current_user.location if current_user.location else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               placeholder="City, Country">
+                    </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Social Links</h2>
+                    
+                    <div>
+                        <label for="linkedin" class="block text-sm font-medium text-gray-700 mb-1">
+                            LinkedIn Profile
+                        </label>
+                        <input type="url" 
+                               id="linkedin" 
+                               name="linkedin" 
+                               value="{{ current_user.linkedin if current_user.linkedin else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               placeholder="https://linkedin.com/in/yourprofile">
+                    </div>
+                    
+                    <div>
+                        <label for="github" class="block text-sm font-medium text-gray-700 mb-1">
+                            GitHub Profile
+                        </label>
+                        <input type="url" 
+                               id="github" 
+                               name="github" 
+                               value="{{ current_user.github if current_user.github else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               placeholder="https://github.com/yourusername">
+                    </div>
+                    
+                    <div>
+                        <label for="website" class="block text-sm font-medium text-gray-700 mb-1">
+                            Personal Website
+                        </label>
+                        <input type="url" 
+                               id="website" 
+                               name="website" 
+                               value="{{ current_user.website if current_user.website else '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                               placeholder="https://yourwebsite.com">
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="pt-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <a href="/dashboard"
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Account Settings -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Account Settings</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium text-gray-800">Email Notifications</h3>
+                        <p class="text-sm text-gray-600">Receive email updates about your account</p>
+                    </div>
+                    <a href="/settings/notifications" 
+                       class="px-4 py-2 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition">
+                        Configure
+                    </a>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium text-gray-800">Change Password</h3>
+                        <p class="text-sm text-gray-600">Update your password regularly</p>
+                    </div>
+                    <a href="/change-password" 
+                       class="px-4 py-2 text-blue-600 font-medium hover:bg-blue-50 rounded-lg transition">
+                        Change
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-2">Danger Zone</h3>
+            <p class="text-red-700 mb-4">These actions are irreversible. Please proceed with caution.</p>
+            
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 class="font-medium text-red-800">Delete Account</h4>
+                        <p class="text-sm text-red-700">Permanently delete your account and all associated data</p>
+                    </div>
+                    <button type="button"
+                            onclick="confirmDelete()"
+                            class="mt-3 sm:mt-0 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition">
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Image preview
+document.getElementById('profile_picture').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            this.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.querySelector('.relative img');
+            if (img) {
+                img.src = e.target.result;
+            } else {
+                const avatarDiv = document.querySelector('.relative div');
+                if (avatarDiv) {
+                    avatarDiv.innerHTML = `<img src="${e.target.result}" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100" alt="Preview">`;
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Confirm account deletion
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently deleted.')) {
+        // Redirect to delete endpoint
+        window.location.href = '/account/delete';
+    }
+}
+
+// Show success message if present in URL
+if (window.location.search.includes('success=true')) {
+    alert('Profile updated successfully!');
+}
+</script>
+{% endblock %}
