@@ -1,8 +1,45 @@
 {% extends "base.html" %}
 
+{% block title %}ClearQ - Expert Mentorship Platform{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Additional styles specific to homepage */
+    .hero-section {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .testimonial-card {
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+    
+    .company-logo {
+        filter: grayscale(100%);
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+    
+    .company-logo:hover {
+        filter: grayscale(0%);
+        opacity: 1;
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-bg min-h-[90vh] flex items-center">
+<section class="hero-section hero-bg min-h-[90vh] flex items-center">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
             <!-- Left Content -->
@@ -33,7 +70,7 @@
                        class="px-8 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-semibold hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-1">
                         Find Your Mentor →
                     </a>
-                    {% if current_user and not current_user.is_authenticated %}
+                    {% if not current_user %}
                     <a href="/register" 
                        class="px-8 py-3 rounded-full border-2 border-primary text-primary font-semibold hover:bg-primary/5 transition-colors">
                         Become a Mentor
@@ -44,11 +81,11 @@
                 <!-- Stats -->
                 <div class="flex flex-wrap gap-8 mt-8">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-dark mb-1 stat-number" data-target="600">600+</div>
+                        <div class="text-2xl font-bold text-dark mb-1 stat-number" data-target="600">0+</div>
                         <div class="text-sm text-gray-500">Expert Mentors</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-dark mb-1 stat-number" data-target="94">94%</div>
+                        <div class="text-2xl font-bold text-dark mb-1 stat-number" data-target="94">0%</div>
                         <div class="text-sm text-gray-500">Success Rate</div>
                     </div>
                     <div class="text-center">
@@ -62,7 +99,7 @@
             <div class="reveal">
                 <div class="relative">
                     <!-- Floating Cards -->
-                    <div class="absolute -top-6 -left-6 w-64 bg-white p-6 rounded-2xl shadow-lg float-animation border border-gray-100">
+                    <div class="absolute -top-6 -left-6 w-64 bg-white p-6 rounded-2xl shadow-lg float-animation border border-gray-100 hidden lg:block">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                                 <i class="fas fa-users text-primary text-xl"></i>
@@ -74,7 +111,7 @@
                         </div>
                     </div>
                     
-                    <div class="absolute -bottom-6 -right-6 w-64 bg-white p-6 rounded-2xl shadow-lg float-animation border border-gray-100" style="animation-delay: 2s;">
+                    <div class="absolute -bottom-6 -right-6 w-64 bg-white p-6 rounded-2xl shadow-lg float-animation border border-gray-100 hidden lg:block" style="animation-delay: 2s;">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                                 <i class="fas fa-star text-secondary text-xl"></i>
@@ -105,7 +142,7 @@
                                 </a>
                             </div>
                             
-                            <div class="flex justify-center gap-3">
+                            <div class="flex justify-center gap-3 items-center">
                                 <div class="flex items-center">
                                     <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">G</div>
                                     <div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center text-sm font-bold -ml-2">A</div>
@@ -133,7 +170,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Engineering -->
-            <div class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
+            <a href="/explore?category=coding_help" class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
                 <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center mb-6">
                     <i class="fas fa-code text-primary text-2xl"></i>
                 </div>
@@ -156,10 +193,10 @@
                         Data Structures
                     </li>
                 </ul>
-            </div>
+            </a>
 
             <!-- Data & AI -->
-            <div class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
+            <a href="/explore?category=skill_development" class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
                 <div class="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center mb-6">
                     <i class="fas fa-database text-secondary text-2xl"></i>
                 </div>
@@ -182,10 +219,10 @@
                         Business Analytics
                     </li>
                 </ul>
-            </div>
+            </a>
 
             <!-- Business -->
-            <div class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
+            <a href="/explore?category=career_guidance" class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
                 <div class="w-14 h-14 rounded-xl bg-indigo-50 flex items-center justify-center mb-6">
                     <i class="fas fa-briefcase text-indigo-600 text-2xl"></i>
                 </div>
@@ -208,10 +245,10 @@
                         Finance & Sales
                     </li>
                 </ul>
-            </div>
+            </a>
 
             <!-- Design -->
-            <div class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
+            <a href="/explore?category=portfolio_review" class="category-card reveal bg-white rounded-2xl p-6 border border-gray-100 hover:border-primary/20 transition-all duration-300">
                 <div class="w-14 h-14 rounded-xl bg-orange-50 flex items-center justify-center mb-6">
                     <i class="fas fa-pen-nib text-orange-500 text-2xl"></i>
                 </div>
@@ -234,7 +271,7 @@
                         User Research
                     </li>
                 </ul>
-            </div>
+            </a>
         </div>
     </div>
 </section>
@@ -372,6 +409,89 @@
     </div>
 </section>
 
+<!-- Testimonials Section -->
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 reveal">
+            <h2 class="text-3xl md:text-4xl font-bold text-dark mb-4">Success Stories</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Hear from professionals who transformed their careers with ClearQ mentorship.
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Testimonial 1 -->
+            <div class="testimonial-card reveal">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold mr-4">
+                        A
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-dark">Anjali Sharma</h4>
+                        <p class="text-sm text-gray-500">Senior Software Engineer</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    "My mentor helped me transition from a junior developer to a senior role in just 6 months. The guidance was invaluable!"
+                </p>
+                <div class="flex text-yellow-400">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            
+            <!-- Testimonial 2 -->
+            <div class="testimonial-card reveal">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold mr-4">
+                        R
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-dark">Rahul Verma</h4>
+                        <p class="text-sm text-gray-500">Product Manager</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    "The structured mentorship program helped me land my dream product management role at a FAANG company."
+                </p>
+                <div class="flex text-yellow-400">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+            </div>
+            
+            <!-- Testimonial 3 -->
+            <div class="testimonial-card reveal">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold mr-4">
+                        P
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-dark">Priya Patel</h4>
+                        <p class="text-sm text-gray-500">Data Scientist</p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    "My mentor provided real-world projects and industry insights that my college courses never covered. 100% worth it!"
+                </p>
+                <div class="flex text-yellow-400">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- CTA Section -->
 <section class="py-20 bg-gradient-to-r from-primary to-secondary">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -383,10 +503,15 @@
                 Join thousands who've accelerated their careers with personalized mentorship.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                {% if current_user and not current_user.is_authenticated %}
+                {% if not current_user %}
                 <a href="/register" 
                    class="px-8 py-4 bg-white text-primary rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:-translate-y-1 shadow-lg">
                     Start Free Trial
+                </a>
+                {% else %}
+                <a href="/explore" 
+                   class="px-8 py-4 bg-white text-primary rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:-translate-y-1 shadow-lg">
+                    Find Your Mentor
                 </a>
                 {% endif %}
                 <a href="/explore" 
@@ -418,6 +543,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Trigger initial animation check
     const event = new Event('scroll');
     window.dispatchEvent(event);
+    
+    // Initialize counters with Intersection Observer
+    const counters = document.querySelectorAll('.stat-number');
+    
+    if (counters.length > 0 && 'IntersectionObserver' in window) {
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = parseInt(entry.target.getAttribute('data-target') || '0');
+                    const isPercentage = entry.target.textContent.includes('%');
+                    
+                    let current = 0;
+                    const increment = target / 50; // 50 steps for smooth animation
+                    const duration = 1000; // 1 second
+                    const stepTime = duration / 50;
+                    
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            entry.target.textContent = isPercentage ? target + '%' : target + '+';
+                            clearInterval(timer);
+                        } else {
+                            entry.target.textContent = isPercentage 
+                                ? Math.floor(current) + '%' 
+                                : Math.floor(current) + '+';
+                        }
+                    }, stepTime);
+                    
+                    counterObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        counters.forEach(counter => {
+            counterObserver.observe(counter);
+        });
+    }
 });
 </script>
 {% endblock %}
