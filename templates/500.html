@@ -25,7 +25,7 @@
                 </div>
                 <div class="ml-3">
                     <p class="text-sm text-yellow-700">
-                        Error Reference: <code class="bg-yellow-100 px-2 py-1 rounded">ERR-{{ now.timestamp()|int }}</code>
+                        Error Reference: <code class="bg-yellow-100 px-2 py-1 rounded">ERR-{{ "%06d" | format(range(100000, 999999) | random) }}</code>
                     </p>
                 </div>
             </div>
@@ -58,30 +58,6 @@
                         <i class="fas fa-phone mr-2"></i>
                         Call Support
                     </a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="mt-12">
-            <h3 class="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Service Status</h3>
-            <div class="space-y-3">
-                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span class="text-sm text-gray-700">Platform API</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Operational
-                    </span>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span class="text-sm text-gray-700">Payment Gateway</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Operational
-                    </span>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span class="text-sm text-gray-700">Database</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Maintenance
-                    </span>
                 </div>
             </div>
         </div>
