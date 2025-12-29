@@ -1060,10 +1060,17 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
             # Get services
             services = db.query(Service).filter(Service.mentor_id == mentor.id).all()
             
-            # Get reviews for mentor
-            reviews = db.query(Review).filter(
-                Review.mentor_id == mentor.id
-            ).order_by(Review.created_at.desc()).limit(10).all()
+            # Get reviews for mentor - CHECK YOUR REVIEW MODEL STRUCTURE
+            # Option 1: If Review has mentor_id
+            try:
+                reviews = db.query(Review).filter(
+                    Review.mentor_id == mentor.id
+                ).order_by(Review.created_at.desc()).limit(10).all()
+            except:
+                # If mentor_id doesn't exist, try user_id
+                reviews = db.query(Review).filter(
+                    Review.user_id == current_user.id
+                ).order_by(Review.created_at.desc()).limit(10).all()
             
             # Calculate average rating
             if reviews:
@@ -1111,12 +1118,25 @@ async def dashboard(request: Request, db: Session = Depends(get_db), current_use
             Booking.scheduled_for >= datetime.now()
         ).order_by(Booking.scheduled_for).limit(10).all()
         
-        # Get learner's reviews
+        # Get learner's reviews - FIX THIS PART
+        # Remove or fix the learner_id query
         learner = db.query(Learner).filter(Learner.user_id == current_user.id).first()
         if learner:
-            reviews = db.query(Review).filter(
-                Review.learner_id == learner.id
-            ).order_by(Review.created_at.desc()).limit(10).all()
+            # Check what fields your Review model actually has
+            # Try different approaches based on your model
+            try:
+                # Option 1: If reviews are linked to bookings
+                reviews = []
+                learner_bookings = db.query(Booking).filter(Booking.user_id == current_user.id).all()
+                for booking in learner_bookings:
+                    if hasattr(booking, 'review'):
+                        reviews.append(booking.review)
+                # Option 2: If Review has user_id
+                reviews = db.query(Review).filter(
+                    Review.user_id == current_user.id
+                ).order_by(Review.created_at.desc()).limit(10).all()
+            except:
+                reviews = []
             
             if reviews:
                 total_reviews = len(reviews)
@@ -1664,6 +1684,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
