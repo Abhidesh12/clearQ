@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional, List
 from pathlib import Path
-
 from fastapi import FastAPI, Request, Depends, HTTPException, status, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -59,6 +58,11 @@ templates.env.globals.update({
 })
 
 # Static files
+# Create static directories if they don't exist
+static_dir = Path("static")
+uploads_dir = static_dir / "uploads" / "profile_pics"
+uploads_dir.mkdir(parents=True, exist_ok=True)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Create uploads directory
@@ -380,6 +384,7 @@ async def startup_event():
         db.close()
 
 # Routes
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Get featured mentors
@@ -438,7 +443,7 @@ async def enroll_page(request: Request, current_user: User = Depends(get_current
         "request": request,
         "current_user": current_user
     })
-    
+ 
 @app.get("/explore", name="explore", response_class=HTMLResponse)
 async def explore_mentors(
     request: Request,
@@ -1542,6 +1547,7 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
