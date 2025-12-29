@@ -116,6 +116,14 @@
     .booking-row:hover {
         background-color: #f9fafb;
     }
+    
+    .settings-tab-content {
+        display: none;
+    }
+    
+    .settings-tab-content.active {
+        display: block;
+    }
 </style>
 
 <div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -239,7 +247,7 @@
                                     Settings
                                 </a>
                                 {% if current_user.role != 'mentor' %}
-                                <a href="/become-mentor" 
+                                <a href="/register?role=mentor" 
                                    class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">
                                     <i class="fas fa-chalkboard-teacher mr-3 text-gray-500"></i>
                                     Become a Mentor
@@ -268,14 +276,14 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <nav class="space-y-1">
                         <a href="javascript:void(0)" 
-                           class="sidebar-link active" 
+                           class="sidebar-link {% if section == 'overview' %}active{% endif %}" 
                            onclick="showSection('overview')">
                             <i class="fas fa-chart-pie"></i>
                             <span>Overview</span>
                         </a>
                         
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'bookings' %}active{% endif %}" 
                            onclick="showSection('bookings')">
                             <i class="fas fa-calendar-alt"></i>
                             <span>Bookings</span>
@@ -283,21 +291,21 @@
                         
                         {% if current_user.role == 'mentor' %}
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'services' %}active{% endif %}" 
                            onclick="showSection('services')">
                             <i class="fas fa-concierge-bell"></i>
                             <span>My Services</span>
                         </a>
                         
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'availability' %}active{% endif %}" 
                            onclick="showSection('availability')">
                             <i class="fas fa-clock"></i>
                             <span>Availability</span>
                         </a>
                         
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'earnings' %}active{% endif %}" 
                            onclick="showSection('earnings')">
                             <i class="fas fa-wallet"></i>
                             <span>Earnings</span>
@@ -306,7 +314,7 @@
                         
                         {% if current_user.role == 'learner' %}
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'mentors' %}active{% endif %}" 
                            onclick="showSection('mentors')">
                             <i class="fas fa-users"></i>
                             <span>My Mentors</span>
@@ -314,14 +322,14 @@
                         {% endif %}
                         
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'reviews' %}active{% endif %}" 
                            onclick="showSection('reviews')">
                             <i class="fas fa-star"></i>
                             <span>Reviews</span>
                         </a>
                         
                         <a href="javascript:void(0)" 
-                           class="sidebar-link" 
+                           class="sidebar-link {% if section == 'settings' %}active{% endif %}" 
                            onclick="showSection('settings')">
                             <i class="fas fa-cog"></i>
                             <span>Settings</span>
@@ -329,32 +337,32 @@
                     </nav>
                     
                     <!-- Mentor Verification Status -->
-                    {% if current_user.role == 'mentor' and current_user.mentor %}
+                    {% if current_user.role == 'mentor' and mentor %}
                     <div class="mt-8 p-4 rounded-lg 
-                        {% if current_user.mentor.is_approved %}bg-green-50 border border-green-200
+                        {% if mentor.is_approved %}bg-green-50 border border-green-200
                         {% else %}bg-yellow-50 border border-yellow-200{% endif %}">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-10 h-10 rounded-full flex items-center justify-center
-                                    {% if current_user.mentor.is_approved %}bg-green-100 text-green-600
+                                    {% if mentor.is_approved %}bg-green-100 text-green-600
                                     {% else %}bg-yellow-100 text-yellow-600{% endif %}">
-                                    <i class="fas fa-{{ 'check-circle' if current_user.mentor.is_approved else 'clock' }}"></i>
+                                    <i class="fas fa-{{ 'check-circle' if mentor.is_approved else 'clock' }}"></i>
                                 </div>
                             </div>
                             <div class="ml-3">
                                 <h4 class="text-sm font-semibold 
-                                    {% if current_user.mentor.is_approved %}text-green-800
+                                    {% if mentor.is_approved %}text-green-800
                                     {% else %}text-yellow-800{% endif %}">
-                                    {% if current_user.mentor.is_approved %}
+                                    {% if mentor.is_approved %}
                                     Verified Mentor
                                     {% else %}
                                     Pending Verification
                                     {% endif %}
                                 </h4>
                                 <p class="text-xs 
-                                    {% if current_user.mentor.is_approved %}text-green-700
+                                    {% if mentor.is_approved %}text-green-700
                                     {% else %}text-yellow-700{% endif %} mt-1">
-                                    {% if current_user.mentor.is_approved %}
+                                    {% if mentor.is_approved %}
                                     Your profile is visible to learners
                                     {% else %}
                                     Admin approval required (usually within 48 hours)
@@ -369,9 +377,8 @@
 
             <!-- Main Content -->
             <div class="lg:col-span-3">
-                <!-- Overview Section (Default) -->
-                <div id="overview-section" class="dashboard-section">
-                    <!-- Your existing overview content here -->
+                <!-- Overview Section -->
+                <div id="overview-section" class="dashboard-section {% if section == 'overview' %}active{% endif %}">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <!-- Stats Cards -->
                         <div class="stat-card p-6 rounded-2xl border border-gray-200">
@@ -381,7 +388,7 @@
                                     <i class="fas fa-calendar-check text-blue-600 text-xl"></i>
                                 </div>
                             </div>
-                            <p class="text-3xl font-bold text-gray-900 mb-2">{{ bookings|length if bookings else 0 }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mb-2">{{ total_bookings }}</p>
                             <p class="text-sm text-gray-600">All time bookings</p>
                         </div>
                         
@@ -393,7 +400,7 @@
                                     <i class="fas fa-rupee-sign text-green-600 text-xl"></i>
                                 </div>
                             </div>
-                            <p class="text-3xl font-bold text-gray-900 mb-2">₹{{ earnings if earnings else 0 }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mb-2">₹{{ total_earnings }}</p>
                             <p class="text-sm text-gray-600">Lifetime earnings</p>
                         </div>
                         {% endif %}
@@ -405,7 +412,7 @@
                                     <i class="fas fa-video text-purple-600 text-xl"></i>
                                 </div>
                             </div>
-                            <p class="text-3xl font-bold text-gray-900 mb-2">{{ upcoming_sessions|length if upcoming_sessions else 0 }}</p>
+                            <p class="text-3xl font-bold text-gray-900 mb-2">{{ upcoming_sessions|length }}</p>
                             <p class="text-sm text-gray-600">Next 30 days</p>
                         </div>
                     </div>
@@ -424,19 +431,6 @@
                                     <div>
                                         <h3 class="font-semibold text-gray-900">Find Mentors</h3>
                                         <p class="text-sm text-gray-600 mt-1">Browse expert mentors</p>
-                                    </div>
-                                </div>
-                            </a>
-                            
-                            <a href="#" 
-                               class="p-6 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all action-btn">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mr-4">
-                                        <i class="fas fa-calendar-plus text-green-600"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900">Book Session</h3>
-                                        <p class="text-sm text-gray-600 mt-1">Schedule new meeting</p>
                                     </div>
                                 </div>
                             </a>
@@ -498,26 +492,26 @@
                         
                         {% if upcoming_sessions and upcoming_sessions|length > 0 %}
                         <div class="space-y-4">
-                            {% for session in upcoming_sessions[:5] %}
+                            {% for session in upcoming_sessions %}
                             <div class="meeting-card p-5 rounded-lg">
                                 <div class="flex flex-col md:flex-row md:items-center justify-between">
                                     <div class="mb-4 md:mb-0">
                                         <div class="flex items-center mb-2">
-                                            {% if current_user.role == 'learner' %}
+                                            {% if current_user.role == 'learner' and session.mentor and session.mentor.user %}
                                             <div class="w-10 h-10 rounded-full mr-3 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                                                 {{ session.mentor.user.full_name[0] if session.mentor.user.full_name else session.mentor.user.username[0] }}
                                             </div>
                                             <div>
                                                 <h3 class="font-semibold text-gray-900">{{ session.mentor.user.full_name if session.mentor.user.full_name else session.mentor.user.username }}</h3>
-                                                <p class="text-sm text-gray-600">{{ session.service.name }}</p>
+                                                <p class="text-sm text-gray-600">{{ session.service.name if session.service else 'General Session' }}</p>
                                             </div>
-                                            {% else %}
+                                            {% elif current_user.role == 'mentor' and session.user %}
                                             <div class="w-10 h-10 rounded-full mr-3 bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm">
                                                 {{ session.user.full_name[0] if session.user.full_name else session.user.username[0] }}
                                             </div>
                                             <div>
                                                 <h3 class="font-semibold text-gray-900">{{ session.user.full_name if session.user.full_name else session.user.username }}</h3>
-                                                <p class="text-sm text-gray-600">{{ session.service.name }}</p>
+                                                <p class="text-sm text-gray-600">{{ session.service.name if session.service else 'General Session' }}</p>
                                             </div>
                                             {% endif %}
                                         </div>
@@ -587,7 +581,7 @@
                 </div>
 
                 <!-- Bookings Section -->
-                <div id="bookings-section" class="dashboard-section hidden">
+                <div id="bookings-section" class="dashboard-section {% if section == 'bookings' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-bold text-gray-900">All Bookings</h2>
@@ -633,11 +627,11 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
-                                                    {% if current_user.role == 'learner' %}
+                                                    {% if current_user.role == 'learner' and booking.mentor and booking.mentor.user %}
                                                     <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
                                                         {{ booking.mentor.user.full_name[0] if booking.mentor.user.full_name else booking.mentor.user.username[0] }}
                                                     </div>
-                                                    {% else %}
+                                                    {% elif current_user.role == 'mentor' and booking.user %}
                                                     <div class="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-teal-600 flex items-center justify-center text-white font-bold">
                                                         {{ booking.user.full_name[0] if booking.user.full_name else booking.user.username[0] }}
                                                     </div>
@@ -645,9 +639,9 @@
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="text-sm font-medium text-gray-900">
-                                                        {% if current_user.role == 'learner' %}
+                                                        {% if current_user.role == 'learner' and booking.mentor and booking.mentor.user %}
                                                         {{ booking.mentor.user.full_name if booking.mentor.user.full_name else booking.mentor.user.username }}
-                                                        {% else %}
+                                                        {% elif current_user.role == 'mentor' and booking.user %}
                                                         {{ booking.user.full_name if booking.user.full_name else booking.user.username }}
                                                         {% endif %}
                                                     </div>
@@ -707,7 +701,7 @@
 
                 <!-- Services Section (Mentors Only) -->
                 {% if current_user.role == 'mentor' %}
-                <div id="services-section" class="dashboard-section hidden">
+                <div id="services-section" class="dashboard-section {% if section == 'services' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-bold text-gray-900">My Services</h2>
@@ -741,7 +735,7 @@
                                     </div>
                                     <div class="flex items-center text-sm text-gray-500">
                                         <i class="fas fa-users mr-1"></i>
-                                        <span>{{ service.bookings_count if service.bookings_count else 0 }} bookings</span>
+                                        <span>0 bookings</span>
                                     </div>
                                 </div>
                                 
@@ -780,7 +774,7 @@
 
                 <!-- Availability Section (Mentors Only) -->
                 {% if current_user.role == 'mentor' %}
-                <div id="availability-section" class="dashboard-section hidden">
+                <div id="availability-section" class="dashboard-section {% if section == 'availability' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">Set Your Availability</h2>
                         
@@ -865,7 +859,7 @@
                 {% endif %}
 
                 <!-- Settings Section -->
-                <div id="settings-section" class="dashboard-section hidden">
+                <div id="settings-section" class="dashboard-section {% if section == 'settings' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">Account Settings</h2>
                         
@@ -903,10 +897,48 @@
                             
                             <!-- Content Area -->
                             <div class="lg:col-span-2">
-                                <div id="profile-tab" class="settings-tab-content">
+                                <div id="profile-tab" class="settings-tab-content active">
                                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Profile Settings</h3>
-                                    <form class="space-y-4">
-                                        <!-- Profile settings form here -->
+                                    <form class="space-y-4" action="/profile/update" method="POST" enctype="multipart/form-data">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Full Name
+                                            </label>
+                                            <input type="text" name="full_name" value="{{ current_user.full_name if current_user.full_name else '' }}" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Email
+                                            </label>
+                                            <input type="email" name="email" value="{{ current_user.email }}" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Phone
+                                            </label>
+                                            <input type="text" name="phone" value="{{ current_user.phone if current_user.phone else '' }}" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Bio
+                                            </label>
+                                            <textarea name="bio" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg">{{ current_user.bio if current_user.bio else '' }}</textarea>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                Profile Picture
+                                            </label>
+                                            <input type="file" name="profile_image" accept="image/*" 
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                        </div>
+                                        
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                                 Email Notifications
@@ -918,15 +950,19 @@
                                                 </label>
                                             </div>
                                         </div>
+                                        
+                                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all">
+                                            Save Changes
+                                        </button>
                                     </form>
                                 </div>
                                 
                                 <!-- Other tabs will be loaded here -->
-                                <div id="notifications-tab" class="settings-tab-content hidden">
+                                <div id="notifications-tab" class="settings-tab-content">
                                     <!-- Notifications settings -->
                                 </div>
                                 
-                                <div id="security-tab" class="settings-tab-content hidden">
+                                <div id="security-tab" class="settings-tab-content">
                                     <!-- Security settings -->
                                 </div>
                             </div>
@@ -936,7 +972,7 @@
 
                 <!-- Earnings Section (Mentors Only) -->
                 {% if current_user.role == 'mentor' %}
-                <div id="earnings-section" class="dashboard-section hidden">
+                <div id="earnings-section" class="dashboard-section {% if section == 'earnings' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">Earnings Overview</h2>
                         
@@ -944,19 +980,19 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                             <div class="bg-blue-50 p-6 rounded-xl">
                                 <p class="text-sm text-blue-600 font-medium">Total Earnings</p>
-                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ total_earnings if total_earnings else 0 }}</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ total_earnings }}</p>
                             </div>
                             <div class="bg-green-50 p-6 rounded-xl">
                                 <p class="text-sm text-green-600 font-medium">This Month</p>
-                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ monthly_earnings if monthly_earnings else 0 }}</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ monthly_earnings }}</p>
                             </div>
                             <div class="bg-purple-50 p-6 rounded-xl">
                                 <p class="text-sm text-purple-600 font-medium">Completed Sessions</p>
-                                <p class="text-2xl font-bold text-gray-900 mt-2">{{ completed_sessions if completed_sessions else 0 }}</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">{{ completed_sessions }}</p>
                             </div>
                             <div class="bg-yellow-50 p-6 rounded-xl">
                                 <p class="text-sm text-yellow-600 font-medium">Avg. per Session</p>
-                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ avg_earnings if avg_earnings else 0 }}</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">₹{{ avg_earnings }}</p>
                             </div>
                         </div>
                         
@@ -966,7 +1002,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <p class="text-sm text-gray-600">Available Balance</p>
-                                    <p class="text-2xl font-bold text-gray-900">₹{{ available_balance if available_balance else 0 }}</p>
+                                    <p class="text-2xl font-bold text-gray-900">₹{{ available_balance }}</p>
                                     <button class="mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all action-btn">
                                         Request Payout
                                     </button>
@@ -984,7 +1020,7 @@
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
                             <div class="space-y-3">
                                 {% if transactions %}
-                                {% for transaction in transactions[:5] %}
+                                {% for transaction in transactions %}
                                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                     <div>
                                         <p class="font-medium text-gray-900">{{ transaction.description }}</p>
@@ -997,12 +1033,13 @@
                                         </span>
                                     </div>
                                 </div>
+                                {% endfor %}
                                 {% else %}
                                 <div class="text-center py-8 text-gray-500">
                                     <i class="fas fa-wallet text-3xl mb-3"></i>
                                     <p>No transactions yet</p>
                                 </div>
-                                {% endfor %}
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -1010,20 +1047,20 @@
                 {% endif %}
 
                 <!-- Reviews Section -->
-                <div id="reviews-section" class="dashboard-section hidden">
+                <div id="reviews-section" class="dashboard-section {% if section == 'reviews' %}active{% endif %}">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-6">Reviews & Ratings</h2>
                         
                         <!-- Overall Rating -->
                         <div class="flex items-center mb-8 p-6 bg-gray-50 rounded-xl">
                             <div class="text-center mr-8">
-                                <div class="text-5xl font-bold text-gray-900">{{ average_rating|default('4.8') }}</div>
+                                <div class="text-5xl font-bold text-gray-900">{{ average_rating }}</div>
                                 <div class="flex items-center justify-center mt-2">
                                     {% for i in range(5) %}
                                     <i class="fas fa-star {{ 'text-yellow-400' if i < average_rating|int else 'text-gray-300' }}"></i>
                                     {% endfor %}
                                 </div>
-                                <p class="text-sm text-gray-600 mt-2">{{ total_reviews|default('0') }} reviews</p>
+                                <p class="text-sm text-gray-600 mt-2">{{ total_reviews }} reviews</p>
                             </div>
                             <div class="flex-1">
                                 <div class="space-y-2">
@@ -1031,9 +1068,9 @@
                                     <div class="flex items-center">
                                         <span class="text-sm text-gray-600 w-8">{{ i }} star</span>
                                         <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
-                                            <div class="h-full bg-yellow-400 rounded-full" style="width: {{ (rating_distribution[i] / total_reviews * 100 if rating_distribution and total_reviews else 0)|round }}%"></div>
+                                            <div class="h-full bg-yellow-400 rounded-full" style="width: {{ (rating_distribution[i] / total_reviews * 100 if total_reviews > 0 else 0)|round }}%"></div>
                                         </div>
-                                        <span class="text-sm text-gray-600 w-12">{{ rating_distribution[i] if rating_distribution else 0 }}</span>
+                                        <span class="text-sm text-gray-600 w-12">{{ rating_distribution[i] }}</span>
                                     </div>
                                     {% endfor %}
                                 </div>
@@ -1043,15 +1080,15 @@
                         <!-- Reviews List -->
                         <div class="space-y-6">
                             {% if reviews and reviews|length > 0 %}
-                            {% for review in reviews[:10] %}
+                            {% for review in reviews %}
                             <div class="border-b border-gray-200 pb-6 last:border-0">
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3">
-                                            {{ review.reviewer.full_name[0] if review.reviewer.full_name else review.reviewer.username[0] }}
+                                            {{ review.reviewer.full_name[0] if review.reviewer and review.reviewer.full_name else review.user.full_name[0] if review.user and review.user.full_name else 'U' }}
                                         </div>
                                         <div>
-                                            <p class="font-medium text-gray-900">{{ review.reviewer.full_name if review.reviewer.full_name else review.reviewer.username }}</p>
+                                            <p class="font-medium text-gray-900">{{ review.reviewer.full_name if review.reviewer and review.reviewer.full_name else review.user.full_name if review.user and review.user.full_name else 'Anonymous' }}</p>
                                             <div class="flex items-center mt-1">
                                                 {% for i in range(5) %}
                                                 <i class="fas fa-star {{ 'text-yellow-400' if i < review.rating else 'text-gray-300' }} text-sm"></i>
@@ -1096,18 +1133,42 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="serviceForm" class="space-y-4">
+        <form id="addServiceForm" method="POST" action="/services/create" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Service Name</label>
-                <input type="text" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Service Name *</label>
+                <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea name="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea name="description" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Price per hour (₹)</label>
-                <input type="number" name="price" min="0" step="50" class="w-full px-4 py-2 border border-gray-300 rounded-lg" required>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <select name="category" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <option value="mock_interview">Mock Interview</option>
+                    <option value="resume_review">Resume Review</option>
+                    <option value="career_guidance">Career Guidance</option>
+                    <option value="coding_help">Coding Help</option>
+                    <option value="portfolio_review">Portfolio Review</option>
+                    <option value="salary_negotiation">Salary Negotiation</option>
+                    <option value="leadership_coaching">Leadership Coaching</option>
+                    <option value="skill_development">Skill Development</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Price (₹ per hour) *</label>
+                    <input type="number" name="price" min="0" step="50" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
+                    <select name="duration" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="30">30 minutes</option>
+                        <option value="60" selected>60 minutes</option>
+                        <option value="90">90 minutes</option>
+                        <option value="120">120 minutes</option>
+                    </select>
+                </div>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
                 <button type="button" onclick="closeAddServiceModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
@@ -1124,12 +1185,20 @@
 <script>
     // Dashboard functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle URL hash for section navigation
+        // Show the active section based on URL parameter
         const urlParams = new URLSearchParams(window.location.search);
-        const section = urlParams.get('section');
-        if (section) {
-            showSection(section);
-        }
+        const section = urlParams.get('section') || 'overview';
+        
+        // Show the active section
+        showSection(section);
+        
+        // Update active sidebar link
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.onclick && link.onclick.toString().includes(`showSection('${section}')`)) {
+                link.classList.add('active');
+            }
+        });
         
         // Notification dropdown
         const notificationBtn = document.getElementById('notificationBtn');
@@ -1140,7 +1209,8 @@
                 e.stopPropagation();
                 notificationDropdown.classList.toggle('hidden');
                 // Close other dropdowns
-                userMenuDropdown.classList.add('hidden');
+                const userMenuDropdown = document.getElementById('userMenuDropdown');
+                if (userMenuDropdown) userMenuDropdown.classList.add('hidden');
             });
         }
         
@@ -1153,7 +1223,7 @@
                 e.stopPropagation();
                 userMenuDropdown.classList.toggle('hidden');
                 // Close other dropdowns
-                notificationDropdown.classList.add('hidden');
+                if (notificationDropdown) notificationDropdown.classList.add('hidden');
             });
         }
         
@@ -1166,29 +1236,18 @@
                 userMenuDropdown.classList.add('hidden');
             }
         });
-        
-        // Service form submission
-        const serviceForm = document.getElementById('serviceForm');
-        if (serviceForm) {
-            serviceForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                // Add service logic here
-                alert('Service added successfully!');
-                closeAddServiceModal();
-            });
-        }
     });
     
     function showSection(sectionId) {
         // Hide all sections
         document.querySelectorAll('.dashboard-section').forEach(section => {
-            section.classList.add('hidden');
+            section.classList.remove('active');
         });
         
         // Show selected section
         const selectedSection = document.getElementById(`${sectionId}-section`);
         if (selectedSection) {
-            selectedSection.classList.remove('hidden');
+            selectedSection.classList.add('active');
         }
         
         // Update active link in sidebar
@@ -1199,7 +1258,7 @@
             }
         });
         
-        // Update URL without reload
+        // Update URL without reloading
         const url = new URL(window.location);
         url.searchParams.set('section', sectionId);
         window.history.pushState({}, '', url);
@@ -1208,13 +1267,13 @@
     function showSettingsTab(tabId) {
         // Hide all tab contents
         document.querySelectorAll('.settings-tab-content').forEach(tab => {
-            tab.classList.add('hidden');
+            tab.classList.remove('active');
         });
         
         // Show selected tab content
         const selectedTab = document.getElementById(`${tabId}-tab`);
         if (selectedTab) {
-            selectedTab.classList.remove('hidden');
+            selectedTab.classList.add('active');
         }
         
         // Update active tab in navigation
@@ -1244,12 +1303,14 @@
         const filter = document.getElementById('booking-filter').value;
         // Implement filtering logic here
         console.log('Filtering by:', filter);
+        alert('Filter functionality will be implemented soon!');
     }
     
     function confirmBooking(bookingId) {
         if (confirm('Are you sure you want to confirm this booking?')) {
             // Implement confirmation logic here
             console.log('Confirming booking:', bookingId);
+            alert('Booking confirmation will be implemented soon!');
         }
     }
     
@@ -1257,157 +1318,44 @@
         if (confirm('Are you sure you want to cancel this booking?')) {
             // Implement cancellation logic here
             console.log('Cancelling booking:', bookingId);
+            alert('Booking cancellation will be implemented soon!');
         }
     }
     
     function editService(serviceId) {
         // Implement edit service logic here
         console.log('Editing service:', serviceId);
+        alert('Edit service functionality will be implemented soon!');
     }
     
     function deleteService(serviceId) {
         if (confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
             // Implement delete service logic here
-            console.log('Deleting service:', serviceId);
+            fetch(`/services/${serviceId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete service. Please try again.');
+            });
         }
     }
     
     // Handle browser back/forward buttons
     window.addEventListener('popstate', function() {
         const urlParams = new URLSearchParams(window.location.search);
-        const section = urlParams.get('section');
-        if (section) {
-            showSection(section);
-        } else {
-            showSection('overview');
-        }
+        const section = urlParams.get('section') || 'overview';
+        showSection(section);
     });
-// Service form handling
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle add service form submission
-    const serviceForm = document.getElementById('addServiceForm');
-    if (serviceForm) {
-        serviceForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            try {
-                const response = await fetch('/services/create', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Service created successfully!');
-                        location.reload();
-                    } else {
-                        alert('Error: ' + result.message);
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to create service. Please try again.');
-            }
-        });
-    }
-});
-
-// Show add service modal with form
-function showAddServiceModal() {
-    const modalHTML = `
-    <div id="addServiceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-xl bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-900">Add New Service</h3>
-                <button onclick="closeAddServiceModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="addServiceForm" method="POST" action="/services/create" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Service Name *</label>
-                    <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-                    <textarea name="description" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Price (₹ per hour) *</label>
-                        <input type="number" name="price" min="0" step="50" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
-                        <select name="duration" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                            <option value="30">30 minutes</option>
-                            <option value="60" selected>60 minutes</option>
-                            <option value="90">90 minutes</option>
-                            <option value="120">120 minutes</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <input type="text" name="category" placeholder="e.g., Python Tutoring, Career Coaching" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div class="flex justify-end space-x-3 pt-4">
-                    <button type="button" onclick="closeAddServiceModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Save Service
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    `;
-    
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function closeAddServiceModal() {
-    const modal = document.getElementById('addServiceModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-// Edit service function
-function editService(serviceId) {
-    // You can implement edit functionality here
-    // Either show a pre-filled modal or redirect to edit page
-    window.location.href = `/services/${serviceId}/edit`;
-}
-
-// Delete service function
-function deleteService(serviceId) {
-    if (confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
-        fetch(`/services/${serviceId}/delete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to delete service. Please try again.');
-        });
-    }
-}
 </script>
 {% endblock %}
